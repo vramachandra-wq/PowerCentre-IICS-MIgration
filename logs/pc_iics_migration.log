@@ -1,0 +1,114 @@
+2026-06-16 11:21:20,593 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SDE_IPCS_BItimePhasedDataBudgetFact.XML
+2026-06-16 11:21:20,605 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_Proforma.XML
+2026-06-16 11:21:20,616 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_SM.XML
+2026-06-16 11:21:20,627 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS.XML
+2026-06-16 11:21:20,666 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SDE_POL_ProjectReviewSubmittedDimensionStage.XML
+2026-06-16 11:21:20,693 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML
+2026-06-16 11:21:20,707 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F.XML
+2026-06-16 11:21:20,789 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SDE_EmployeeHeadCount.XML
+2026-06-16 11:21:20,937 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SDE_ORA_EmployeeDimension.XML
+2026-06-16 11:21:21,164 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SDE_ORA_ProjectCostLine.XML
+2026-06-16 11:21:21,343 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SIL_EmployeeDimension.XML
+2026-06-16 11:21:21,413 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SIL_EmployeeDimension_SCDUpdate.XML
+2026-06-16 11:21:21,471 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SIL_EmployeeHeadCount.XML
+2026-06-16 11:21:21,616 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SIL_ProjectCostLine_Fact.XML
+2026-06-16 11:21:22,082 | INFO | pc_iics_migration | main.main:73 | Metadata parsing completed. files=14 errors=0 tables=14
+2026-06-16 11:22:26,813 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SDE_IPCS_BItimePhasedDataBudgetFact.XML
+2026-06-16 11:22:26,823 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_Proforma.XML
+2026-06-16 11:22:26,831 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_SM.XML
+2026-06-16 11:22:26,844 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS.XML
+2026-06-16 11:22:26,883 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SDE_POL_ProjectReviewSubmittedDimensionStage.XML
+2026-06-16 11:22:26,904 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML
+2026-06-16 11:22:26,914 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F.XML
+2026-06-16 11:22:26,991 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SDE_EmployeeHeadCount.XML
+2026-06-16 11:22:27,090 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SDE_ORA_EmployeeDimension.XML
+2026-06-16 11:22:27,282 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SDE_ORA_ProjectCostLine.XML
+2026-06-16 11:22:27,461 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SIL_EmployeeDimension.XML
+2026-06-16 11:22:27,514 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SIL_EmployeeDimension_SCDUpdate.XML
+2026-06-16 11:22:27,556 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SIL_EmployeeHeadCount.XML
+2026-06-16 11:22:27,664 | INFO | pc_iics_migration | xml_parser.parse_folder:56 | Parsed metadata from SIL_ProjectCostLine_Fact.XML
+2026-06-16 11:22:28,105 | INFO | pc_iics_migration | main.main:73 | Metadata parsing completed. files=14 errors=0 tables=14
+2026-06-16 11:34:19,781 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from JEG_SDE_IPCS_BItimePhasedDataBudgetFact.XML
+2026-06-16 11:34:19,791 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_Proforma.XML
+2026-06-16 11:34:19,804 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_SM.XML
+2026-06-16 11:34:19,815 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS.XML
+2026-06-16 11:34:19,865 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from JEG_SDE_POL_ProjectReviewSubmittedDimensionStage.XML
+2026-06-16 11:34:19,898 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML
+2026-06-16 11:34:19,915 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F.XML
+2026-06-16 11:34:20,038 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from SDE_EmployeeHeadCount.XML
+2026-06-16 11:34:20,195 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from SDE_ORA_EmployeeDimension.XML
+2026-06-16 11:34:20,414 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from SDE_ORA_ProjectCostLine.XML
+2026-06-16 11:34:20,637 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from SIL_EmployeeDimension.XML
+2026-06-16 11:34:20,729 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from SIL_EmployeeDimension_SCDUpdate.XML
+2026-06-16 11:34:20,826 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from SIL_EmployeeHeadCount.XML
+2026-06-16 11:34:21,012 | INFO | pc_iics_migration | xml_parser.parse_folder:64 | Parsed metadata from SIL_ProjectCostLine_Fact.XML
+2026-06-16 11:34:21,257 | WARNING | pc_iics_migration | xml_parser.to_dataframes:99 | pandas is not installed. Returning table rows and writing CSV outputs only.
+2026-06-16 11:34:21,719 | INFO | pc_iics_migration | main.main:73 | Metadata parsing completed. files=14 errors=0 tables=14
+2026-06-16 11:39:15,395 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_IPCS_BItimePhasedDataBudgetFact.XML
+2026-06-16 11:39:15,406 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_Proforma.XML
+2026-06-16 11:39:15,411 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_SM.XML
+2026-06-16 11:39:15,418 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS.XML
+2026-06-16 11:39:15,446 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_POL_ProjectReviewSubmittedDimensionStage.XML
+2026-06-16 11:39:15,466 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML
+2026-06-16 11:39:15,476 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F.XML
+2026-06-16 11:39:15,541 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_EmployeeHeadCount.XML
+2026-06-16 11:39:15,641 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_ORA_EmployeeDimension.XML
+2026-06-16 11:39:15,780 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_ORA_ProjectCostLine.XML
+2026-06-16 11:39:15,889 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeDimension.XML
+2026-06-16 11:39:15,934 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeDimension_SCDUpdate.XML
+2026-06-16 11:39:15,985 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeHeadCount.XML
+2026-06-16 11:39:16,114 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_ProjectCostLine_Fact.XML
+2026-06-16 11:39:16,236 | WARNING | pc_iics_migration | xml_parser.to_dataframes:103 | pandas is not installed. Returning table rows and writing CSV outputs only.
+2026-06-16 11:39:16,471 | INFO | pc_iics_migration | main.main:73 | Metadata parsing completed. files=14 errors=0 tables=14
+2026-06-16 15:00:27,360 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_IPCS_BItimePhasedDataBudgetFact.XML
+2026-06-16 15:00:27,365 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_Proforma.XML
+2026-06-16 15:00:27,368 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_SM.XML
+2026-06-16 15:00:27,373 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS.XML
+2026-06-16 15:00:27,387 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_POL_ProjectReviewSubmittedDimensionStage.XML
+2026-06-16 15:00:27,398 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML
+2026-06-16 15:00:27,403 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F.XML
+2026-06-16 15:00:27,430 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_EmployeeHeadCount.XML
+2026-06-16 15:00:27,486 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_ORA_EmployeeDimension.XML
+2026-06-16 15:00:27,565 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_ORA_ProjectCostLine.XML
+2026-06-16 15:00:27,647 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeDimension.XML
+2026-06-16 15:00:27,670 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeDimension_SCDUpdate.XML
+2026-06-16 15:00:27,693 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeHeadCount.XML
+2026-06-16 15:00:27,750 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_ProjectCostLine_Fact.XML
+2026-06-16 15:00:27,815 | WARNING | pc_iics_migration | xml_parser.to_dataframes:103 | pandas is not installed. Returning table rows and writing CSV outputs only.
+2026-06-16 15:00:28,136 | WARNING | pc_iics_migration | canonical_builder.to_dataframes:62 | pandas is not installed. Returning canonical rows and writing CSV outputs only.
+2026-06-16 15:00:28,604 | INFO | pc_iics_migration | canonical_builder.write_outputs:83 | Canonical repository outputs written to D:\Documents\PC_IICS_MIGRATION\reports\canonical
+2026-06-16 15:00:28,604 | INFO | pc_iics_migration | main.main:95 | Canonical metadata build completed. assets=202 mappings=23 transformations=105 columns=6494 connectors=7158 sql_overrides=35
+2026-06-16 15:01:03,708 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_IPCS_BItimePhasedDataBudgetFact.XML
+2026-06-16 15:01:03,714 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_Proforma.XML
+2026-06-16 15:01:03,717 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_SM.XML
+2026-06-16 15:01:03,721 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS.XML
+2026-06-16 15:01:03,736 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_POL_ProjectReviewSubmittedDimensionStage.XML
+2026-06-16 15:01:03,748 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML
+2026-06-16 15:01:03,753 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F.XML
+2026-06-16 15:01:03,782 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_EmployeeHeadCount.XML
+2026-06-16 15:01:03,853 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_ORA_EmployeeDimension.XML
+2026-06-16 15:01:03,958 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_ORA_ProjectCostLine.XML
+2026-06-16 15:01:04,036 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeDimension.XML
+2026-06-16 15:01:04,065 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeDimension_SCDUpdate.XML
+2026-06-16 15:01:04,094 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeHeadCount.XML
+2026-06-16 15:01:04,148 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_ProjectCostLine_Fact.XML
+2026-06-16 15:01:04,215 | WARNING | pc_iics_migration | xml_parser.to_dataframes:103 | pandas is not installed. Returning table rows and writing CSV outputs only.
+2026-06-16 15:01:04,499 | WARNING | pc_iics_migration | canonical_builder.to_dataframes:62 | pandas is not installed. Returning canonical rows and writing CSV outputs only.
+2026-06-16 15:01:24,337 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_IPCS_BItimePhasedDataBudgetFact.XML
+2026-06-16 15:01:24,348 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_Proforma.XML
+2026-06-16 15:01:24,356 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_SM.XML
+2026-06-16 15:01:24,365 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS.XML
+2026-06-16 15:01:24,394 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_POL_ProjectReviewSubmittedDimensionStage.XML
+2026-06-16 15:01:24,415 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML
+2026-06-16 15:01:24,425 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F.XML
+2026-06-16 15:01:24,477 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_EmployeeHeadCount.XML
+2026-06-16 15:01:24,590 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_ORA_EmployeeDimension.XML
+2026-06-16 15:01:24,740 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_ORA_ProjectCostLine.XML
+2026-06-16 15:01:24,887 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeDimension.XML
+2026-06-16 15:01:24,936 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeDimension_SCDUpdate.XML
+2026-06-16 15:01:24,985 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeHeadCount.XML
+2026-06-16 15:01:25,098 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_ProjectCostLine_Fact.XML
+2026-06-16 15:01:25,212 | WARNING | pc_iics_migration | xml_parser.to_dataframes:103 | pandas is not installed. Returning table rows and writing CSV outputs only.
+2026-06-16 15:01:25,837 | WARNING | pc_iics_migration | canonical_builder.to_dataframes:62 | pandas is not installed. Returning canonical rows and writing CSV outputs only.
+2026-06-16 15:01:26,642 | INFO | pc_iics_migration | canonical_builder.write_outputs:83 | Canonical repository outputs written to D:\Documents\PC_IICS_MIGRATION\reports\canonical
+2026-06-16 15:01:26,642 | INFO | pc_iics_migration | main.main:95 | Canonical metadata build completed. assets=202 mappings=23 transformations=105 columns=6494 connectors=7158 sql_overrides=35

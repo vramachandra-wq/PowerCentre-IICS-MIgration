@@ -1,0 +1,3426 @@
+{
+  "mapping_id": "AST_fb821bfbd660a2c7",
+  "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+  "repository_name": "BIINFAPROD_FLEX",
+  "folder_name": "Custom_SDE_ORAR1213_Adaptor",
+  "source_file": "SDE_ORA_ProjectCostLine.XML",
+  "complexity": "MEDIUM",
+  "sources": [],
+  "targets": [
+    {
+      "target_name": "W_PROJ_COST_LINE_FS",
+      "database_type": "Oracle",
+      "columns": [
+        {
+          "column_name": "PROJECT_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "TASK_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "MFG_RESOURCE_BOM_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "MFG_RESOURCE_NL_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "FINANCIAL_RESOURCE_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXPENDITURE_CLASS_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "GL_ACCOUNTING_DT",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "PROVIDER_GL_ACCOUNTING_DT",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "PROJ_ACCOUNTING_DT",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXPENDITURE_DT",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "PROJ_ACCOUNTING_PERIOD_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "GL_ACCOUNTING_PERIOD_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "JOB_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "PROJ_ROLE_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "TRANSFER_STATUS_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "RESOURCE_CLASS_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "WORK_TYPE_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "RESOURCE_ORGANIZATION_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXPENDITURE_ORGANIZATION_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXPENDITURE_OPER_UNIT_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "INCURRED_BY_ORGANIZATION_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "COST_GL_ACCOUNT_ID",
+          "datatype": "varchar2",
+          "precision": "240",
+          "scale": "0"
+        },
+        {
+          "column_name": "INVENTORY_ITEM_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "PRODUCT_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "ENTERED_BY_EMP_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "INCURRED_BY_EMP_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "VENDOR_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXPENDITURE_ITEM_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "LINE_NUM",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "REVERSED_FLG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "BILLABLE_FLG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "CAPITALIZABLE_FLG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "LINE_TYPE",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "UOM",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "QUANTITY",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "DOC_RAW_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "DOC_BURDENED_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "LOC_RAW_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "LOC_BURDENED_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "PROJ_RAW_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "PROJ_BURDENED_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "DOC_CURR_CODE",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "LOC_CURR_CODE",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PROJ_CURR_CODE",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "LOC_EXCH_RATE_TYPE",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "LOC_EXCH_RATE_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "LOC_EXCHANGE_RATE",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "PROJ_EXCH_RATE_TYPE",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "PROJ_EXCH_RATE_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "PROJ_EXCHANGE_RATE",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "BILL_JOB_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "TRANSACTION_SOURCE",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "BURDEN_COST_RATE",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "RAW_COST_RATE",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "CREATED_BY_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "CHANGED_BY_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "CREATED_ON_DT",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "CHANGED_ON_DT",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "AUX1_CHANGED_ON_DT",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "AUX2_CHANGED_ON_DT",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "AUX3_CHANGED_ON_DT",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "AUX4_CHANGED_ON_DT",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "DELETE_FLG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "DATASOURCE_NUM_ID",
+          "datatype": "number(p,s)",
+          "precision": "10",
+          "scale": "0"
+        },
+        {
+          "column_name": "INTEGRATION_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "TENANT_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_CUSTOM",
+          "datatype": "varchar2",
+          "precision": "10",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_ATTRIBUTE8",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_RAW_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "5"
+        },
+        {
+          "column_name": "X_COST_BURDEN_DIST_FLAG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_BILL_HOLD_FLAG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_BURDEN_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "5"
+        },
+        {
+          "column_name": "X_COST_DIST_REJECTION_CODE",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_CC_CROSS_CHARGE_TYPE",
+          "datatype": "varchar2",
+          "precision": "2",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_CC_IC_PROCESSED_CODE",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_BILL_JOB_BILLING_TITLE",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_ATTRIBUTE2",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_ATTRIBUTE5",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_TRANSACTION_SOURCE",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_CC_CROSS_CHARGE_CODE",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_CONTROL_PU",
+          "datatype": "varchar2",
+          "precision": "25",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_INVOICE_NUM",
+          "datatype": "varchar2",
+          "precision": "50",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_INVOICE_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_PO_NUM",
+          "datatype": "varchar2",
+          "precision": "20",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_CHARGED_PU",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_NON_LABOR_RESOURCE",
+          "datatype": "varchar2",
+          "precision": "20",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_CC_PRVDR_ORGANIZATION_ID",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_CC_RECVR_ORGANIZATION_ID",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_JOB_CODE",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_FUNC_CURR_CODE",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_FUNC_BURDENED_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_FUNC_RAW_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_TASK_CUSTOMER_ID",
+          "datatype": "varchar2",
+          "precision": "80",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_SOURCE_TYPE",
+          "datatype": "varchar2",
+          "precision": "100",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_WORKSHARE_FLG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_PRDR_DENOM_RAW_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_PRDR_DENOM_BURDENED_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_PRDR_FUNC_RAW_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_PRDR_PROJFUNC_RAW_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_PRDR_PROJ_RAW_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_PRDR_FUNC_BURDENED_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_PRDR_PROJFUNC_BURDENED_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_PRDR_PROJ_BURDENED_COST",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_PRDR_DENOM_CURR_CODE",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_NON_BILLABLE_CODE_P",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_NON_BILLABLE_CODE_R",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_NON_BILLABLE_CODE_W",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_NON_BILLABLE_CODE_C",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_NON_BILLABLE_CODE_X",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_NB_P_HOURS",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_NB_R_HOURS",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_NB_W_HOURS",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_NB_C_HOURS",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_NB_X_HOURS",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "7"
+        },
+        {
+          "column_name": "X_CONVERSION_TYPE_NAME",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_ASSIGNED_PU_ID",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_ORIG_TRANSACTION_REFERENCE",
+          "datatype": "varchar2",
+          "precision": "50",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_GL_TRANSFER_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_CORRECTION_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "X_EXPENDITURE_END_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        }
+      ]
+    }
+  ],
+  "transformations": [
+    {
+      "transformation_name": "Exp_W_PROJ_COST_LINE_FS_Integration_id",
+      "type": "Expression",
+      "reusable": "NO",
+      "attributes": {
+        "Tracing Level": "Normal"
+      },
+      "ports": [
+        {
+          "port_name": "INP_TENANT_ID",
+          "datatype": "string",
+          "precision": "80",
+          "scale": "0",
+          "port_type": "INPUT",
+          "expression": ""
+        },
+        {
+          "port_name": "EXPENDITURE_ITEM_ID",
+          "datatype": "decimal",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT",
+          "expression": ""
+        },
+        {
+          "port_name": "LINE_NUM",
+          "datatype": "decimal",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT",
+          "expression": ""
+        },
+        {
+          "port_name": "AE_LINE_NUM",
+          "datatype": "decimal",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT",
+          "expression": ""
+        },
+        {
+          "port_name": "X_AE_HEADER_ID",
+          "datatype": "decimal",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT",
+          "expression": ""
+        },
+        {
+          "port_name": "DATASOURCE_NUM_ID",
+          "datatype": "decimal",
+          "precision": "10",
+          "scale": "0",
+          "port_type": "OUTPUT",
+          "expression": "$$DATASOURCE_NUM_ID"
+        },
+        {
+          "port_name": "INTEGRATION_ID",
+          "datatype": "string",
+          "precision": "80",
+          "scale": "0",
+          "port_type": "OUTPUT",
+          "expression": "TO_CHAR(EXPENDITURE_ITEM_ID) || '~' ||TO_CHAR(LINE_NUM) || '~' || TO_CHAR(X_AE_HEADER_ID) || '~' || TO_CHAR(AE_LINE_NUM)"
+        },
+        {
+          "port_name": "TENANT_ID",
+          "datatype": "string",
+          "precision": "80",
+          "scale": "0",
+          "port_type": "OUTPUT",
+          "expression": "IIF(ISNULL(INP_TENANT_ID), $$TENANT_ID, INP_TENANT_ID)"
+        }
+      ]
+    },
+    {
+      "transformation_name": "EXP_X_CUSTOM",
+      "type": "Expression",
+      "reusable": "NO",
+      "attributes": {
+        "Tracing Level": "Normal"
+      },
+      "ports": [
+        {
+          "port_name": "X_CUSTOM",
+          "datatype": "string",
+          "precision": "10",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_CUSTOM"
+        },
+        {
+          "port_name": "X_ATTRIBUTE8",
+          "datatype": "string",
+          "precision": "150",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_ATTRIBUTE8"
+        },
+        {
+          "port_name": "X_RAW_COST",
+          "datatype": "decimal",
+          "precision": "22",
+          "scale": "5",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_RAW_COST"
+        },
+        {
+          "port_name": "X_COST_BURDEN_DIST_FLAG",
+          "datatype": "string",
+          "precision": "1",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_COST_BURDEN_DIST_FLAG"
+        },
+        {
+          "port_name": "X_BILL_HOLD_FLAG",
+          "datatype": "string",
+          "precision": "1",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_BILL_HOLD_FLAG"
+        },
+        {
+          "port_name": "X_BURDEN_COST",
+          "datatype": "decimal",
+          "precision": "22",
+          "scale": "5",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_BURDEN_COST"
+        },
+        {
+          "port_name": "X_COST_DIST_REJECTION_CODE",
+          "datatype": "string",
+          "precision": "30",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_COST_DIST_REJECTION_CODE"
+        },
+        {
+          "port_name": "X_CC_CROSS_CHARGE_CODE",
+          "datatype": "string",
+          "precision": "1",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_CC_CROSS_CHARGE_CODE"
+        },
+        {
+          "port_name": "X_CC_IC_PROCESSED_CODE",
+          "datatype": "string",
+          "precision": "1",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_CC_IC_PROCESSED_CODE"
+        },
+        {
+          "port_name": "X_BILL_JOB_BILLING_TITLE",
+          "datatype": "string",
+          "precision": "80",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_BILL_JOB_BILLING_TITLE"
+        },
+        {
+          "port_name": "X_ATTRIBUTE2",
+          "datatype": "string",
+          "precision": "150",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_ATTRIBUTE2"
+        },
+        {
+          "port_name": "X_ATTRIBUTE5",
+          "datatype": "string",
+          "precision": "150",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_ATTRIBUTE5"
+        },
+        {
+          "port_name": "X_CC_CROSS_CHARGE_TYPE",
+          "datatype": "string",
+          "precision": "2",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_CC_CROSS_CHARGE_TYPE"
+        },
+        {
+          "port_name": "X_CONTROL_PU",
+          "datatype": "string",
+          "precision": "25",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_CONTROL_PU"
+        },
+        {
+          "port_name": "X_INVOICE_NUM",
+          "datatype": "string",
+          "precision": "50",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_INVOICE_NUM"
+        },
+        {
+          "port_name": "X_INVOICE_DATE",
+          "datatype": "date/time",
+          "precision": "29",
+          "scale": "9",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_INVOICE_DATE"
+        },
+        {
+          "port_name": "X_PO_NUM",
+          "datatype": "string",
+          "precision": "20",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_PO_NUM"
+        },
+        {
+          "port_name": "X_NON_LABOR_RESOURCE",
+          "datatype": "string",
+          "precision": "20",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_NON_LABOR_RESOURCE"
+        },
+        {
+          "port_name": "X_CHARGED_PU",
+          "datatype": "string",
+          "precision": "150",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_CHARGED_PU"
+        },
+        {
+          "port_name": "X_CC_PRVDR_ORGANIZATION_ID",
+          "datatype": "double",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_CC_PRVDR_ORGANIZATION_ID"
+        },
+        {
+          "port_name": "X_CC_RECVR_ORGANIZATION_ID",
+          "datatype": "double",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_CC_RECVR_ORGANIZATION_ID"
+        },
+        {
+          "port_name": "X_JOB_CODE",
+          "datatype": "string",
+          "precision": "150",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_JOB_CODE"
+        },
+        {
+          "port_name": "X_FUNC_CURR_CODE",
+          "datatype": "string",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_FUNC_CURR_CODE"
+        },
+        {
+          "port_name": "X_FUNC_BURDEN_COST",
+          "datatype": "double",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_FUNC_BURDEN_COST"
+        },
+        {
+          "port_name": "X_FUNC_RAW_COST",
+          "datatype": "double",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_FUNC_RAW_COST"
+        },
+        {
+          "port_name": "X_TASK_CUSTOMER_ID",
+          "datatype": "decimal",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_TASK_CUSTOMER_ID"
+        },
+        {
+          "port_name": "X_SOURCE_TYPE",
+          "datatype": "string",
+          "precision": "100",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_SOURCE_TYPE"
+        },
+        {
+          "port_name": "X_USER_NAME",
+          "datatype": "string",
+          "precision": "30",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_USER_NAME"
+        },
+        {
+          "port_name": "X_ASSIGNED_PU_ID",
+          "datatype": "string",
+          "precision": "30",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_ASSIGNED_PU_ID"
+        },
+        {
+          "port_name": "X_GL_TRANSFER_DATE",
+          "datatype": "date/time",
+          "precision": "29",
+          "scale": "9",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_GL_TRANSFER_DATE"
+        },
+        {
+          "port_name": "X_EXPENDITURE_END_DATE",
+          "datatype": "date/time",
+          "precision": "29",
+          "scale": "9",
+          "port_type": "INPUT/OUTPUT",
+          "expression": "X_EXPENDITURE_END_DATE"
+        }
+      ]
+    }
+  ],
+  "connectors": [
+    {
+      "connector_id": "CONN_cf2abb1548f2f1aa",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_ATTRIBUTE21",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_ATTRIBUTE2",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_da26c0687057d7ca",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_ATTRIBUTE51",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_ATTRIBUTE5",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_3d050d11a4975e04",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_INVOICE_DATE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_INVOICE_DATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_6b820b002035165a",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_CC_CROSS_CHARGE_TYPE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_CC_CROSS_CHARGE_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_30edf841b6dae5f1",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_CONTROL_PU1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_CONTROL_PU",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_2fac92a87c239565",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "REVERSED_FLG",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "REVERSED_FLG",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_9253a50ad5f62618",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "LINE_NUM1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "LINE_NUM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_dfde660507749709",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "EXPENDITURE_ITEM_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "EXPENDITURE_ITEM_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_5470181c3314b91f",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "VENDOR_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "VENDOR_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_691e9d15459f1544",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "INCURRED_BY_EMP_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "INCURRED_BY_EMP_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_3fe89db9c79a619d",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "LOC_EXCH_RATE_TYPE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "LOC_EXCH_RATE_TYPE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_3fd58e99e089f4f8",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "LOC_EXCH_RATE_DATE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "LOC_EXCH_RATE_DATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_121cbc8fe835c0a4",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROJ_EXCH_RATE_TYPE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROJ_EXCH_RATE_TYPE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_8cfe768975c7a7a3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROJ_EXCH_RATE_DATE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROJ_EXCH_RATE_DATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_ebeb7d6d8d02ac6a",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "LOC_RAW_COST",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "LOC_RAW_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_5575c4ac5b37297b",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "LOC_BURDENED_COST",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "LOC_BURDENED_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_0901d4f4ed5725b9",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROJECT_RAW_COST1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROJ_RAW_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_b59652e6cd7469f8",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROJECT_BURDENED_COST1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROJ_BURDENED_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_54484c8f02a63996",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_INVOICE_NUM1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_INVOICE_NUM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_2e9702b0002fc858",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_PO_NUM1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_PO_NUM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_930f2b19b740f1e3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_NON_LABOR_RESOURCE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_NON_LABOR_RESOURCE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_b7ab255147d14e31",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_CHARGED_PU1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_CHARGED_PU",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_fb2baea649095161",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_CC_PRVDR_ORGANIZATION_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_CC_PRVDR_ORGANIZATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_234f5cf5c6a00d30",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_CC_RECVR_ORGANIZATION_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_CC_RECVR_ORGANIZATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_700ec9aee498572f",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "CREATED_BY_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "CREATED_BY_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_e838a0ab589c2514",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "CHANGED_ON_DT1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "CHANGED_ON_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_9a1c6d40b14ca707",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "CREATED_ON_DT1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "CREATED_ON_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_02b2a0d040b14f3d",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "CHANGED_BY_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "CHANGED_BY_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_844040c66d493d63",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "RAW_COST_RATE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "RAW_COST_RATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_27e6430ff8019e2b",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "BURDEN_COST_RATE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "BURDEN_COST_RATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_8ab1d3d471f21a37",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "TRANSACTION_SOURCE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "TRANSACTION_SOURCE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_90da695c982aedfe",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_JOB_CODE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_JOB_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_91ea25b278d25d97",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_FUNC_CURR_CODE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_FUNC_CURR_CODE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_b24d82fe226c2451",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_FUNC_BURDEN_COST",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_FUNC_BURDENED_COST",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_39e6391f84571dcf",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_FUNC_RAW_COST",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_FUNC_RAW_COST",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_35f1551c1aa79e63",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "BILL_JOB_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "BILL_JOB_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_6017c54ae9d58c2f",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "LOC_EXCHANGE_RATE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "LOC_EXCHANGE_RATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_3b1f631d1d4eb09c",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROJ_EXCHANGE_RATE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROJ_EXCHANGE_RATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_34f870d7b137794b",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROJ_CURR_CODE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROJ_CURR_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_045cc66e4fdc9557",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "LOC_CURR_CODE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "LOC_CURR_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_c2b931255661bf84",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "DOC_CURR_CODE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "DOC_CURR_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_a697c6758b1a89fe",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "DOC_BURDENED_COST",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "DOC_BURDENED_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_7dea240807736e18",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "DOC_RAW_COST",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "DOC_RAW_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_a90c6d5dc7326002",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "QUANTITY1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "QUANTITY",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_bfa3546aef82c2f3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_TASK_CUSTOMER_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_TASK_CUSTOMER_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_864481aa5d524efc",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "ENTERED_BY_EMP_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "ENTERED_BY_EMP_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_e58f38555d585901",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "INVENTORY_ITEM_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "INVENTORY_ITEM_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_8f0448cf6c96ef41",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "INCURRED_BY_ORGANIZATION_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "INCURRED_BY_ORGANIZATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_47ffc710c1746a14",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "COST_GL_ACCOUNT_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "COST_GL_ACCOUNT_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_c7c74ac32e1fbe53",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "EXPENDITURE_OPER_UNIT_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "EXPENDITURE_OPER_UNIT_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_9b2735aa251724ac",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "EXPENDITURE_ORGANIZATION_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "EXPENDITURE_ORGANIZATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_520c2b764cc204cb",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "RESOURCE_ORGANIZATION_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "RESOURCE_ORGANIZATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_1d924563c1212e3a",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "WORK_TYPE_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "WORK_TYPE_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_2bc52917d046e8cc",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "RESOURCE_CLASS_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "RESOURCE_CLASS_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_068a64b4335b0675",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "UOM",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "UOM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_ad22f71a77c5891a",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "LINE_TYPE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "LINE_TYPE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_e7a4894a785a51f4",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "CAPITALIZABLE_FLG",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "CAPITALIZABLE_FLG",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_6631817d3f894576",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "BILLABLE_FLG",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "BILLABLE_FLG",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_95b2d28dcf1bbfbf",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_ASSIGNED_PU_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_ASSIGNED_PU_ID",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_d1ab87311783c48a",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_CUSTOM1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_CUSTOM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_3f788087341ceee4",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "TENANT_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "TENANT_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_e2b772a53c00cae3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "INTEGRATION_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "INTEGRATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_a102149ffc14c7de",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "DATASOURCE_NUM_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "DATASOURCE_NUM_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_e7a3eb7dd05f9f99",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "AUX4_CHANGED_ON_DT",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "AUX4_CHANGED_ON_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_21fd5e4f091413f2",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_GL_TRANSFER_DATE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_GL_TRANSFER_DATE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_7143124fe57fa73f",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "DELETE_FLAG",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "DELETE_FLG",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_e1eca2c4216b9574",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "AUX1_CHANGED_ON_DT",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "AUX1_CHANGED_ON_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_ecc354e5f9ddfb20",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "AUX2_CHANGED_ON_DT",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "AUX2_CHANGED_ON_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_25b0d04583963ac9",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "AUX3_CHANGED_ON_DT",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "AUX3_CHANGED_ON_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_aa3a002f4bcdf45c",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_SOURCE_TYPE",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_SOURCE_TYPE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_94ce5685c7141736",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "TRANSFER_STATUS_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "TRANSFER_STATUS_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_5d7c74ff3f377e21",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROJ_ROLE_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROJ_ROLE_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_0655e1555124d601",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "JOB_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "JOB_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_62e2f9993d0e373a",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "EXPENDITURE_DT",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "EXPENDITURE_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_633a49f1fc898c57",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "EXPENDITURE_CLASS_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "EXPENDITURE_CLASS_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_0dab29cae5e3a544",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "FINANCIAL_RESOURCE_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "FINANCIAL_RESOURCE_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_635b778192cbd905",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "MFG_RESOURCE_NL_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "MFG_RESOURCE_NL_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_41cacd58c9520cc3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "MFG_RESOURCE_BOM_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "MFG_RESOURCE_BOM_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_c78e2174eeb445f5",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "TASK_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "TASK_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_7efe7fc37bfae5fb",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROJECT_ID1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROJECT_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_c0f473293217f275",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "GL_ACCOUNTING_DT1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "GL_ACCOUNTING_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_7f7720608d73d661",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROJ_ACCOUNTING_DT1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROJ_ACCOUNTING_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_0b9d767640cad5d0",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROJ_ACCCOUNTING_PERIOD_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROJ_ACCOUNTING_PERIOD_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_0c37cdb58bb89ff3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "GL_ACCOUNTING_PERIOD_ID",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "GL_ACCOUNTING_PERIOD_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_c838ba8772989bc1",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "PROVIDER_GL_ACCOUNTING_DT1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "PROVIDER_GL_ACCOUNTING_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_d12a5c19e2fabbe4",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_ATTRIBUTE81",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_ATTRIBUTE8",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_4cb7e20da815f4c6",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_RAW_COST1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_RAW_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_7919aeeb2155e942",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_COST_BURDEN_DIST_FLAG1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_COST_BURDEN_DIST_FLAG",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_3dcda24aed6bbcfc",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_USER_NAME",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_CONVERSION_TYPE_NAME",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_b4b53fada296cf7b",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_BILL_HOLD_FLAG1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_BILL_HOLD_FLAG",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_a8c046735e2a956b",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_BURDEN_COST1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_BURDEN_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_08453ed4989376e1",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_COST_DIST_REJECTION_CODE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_COST_DIST_REJECTION_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_1f603e058cd41c92",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_CC_CROSS_CHARGE_CODE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_CC_CROSS_CHARGE_TYPE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_775aef3c68ff75e2",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_CC_IC_PROCESSED_CODE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_CC_IC_PROCESSED_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_e8563e499325cf1d",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "mplt_SA_ORA_ProjectCostLine",
+      "from_field": "X_BILL_JOB_BILLING_TITLE1",
+      "to_instance": "W_PROJ_COST_LINE_FS",
+      "to_field": "X_BILL_JOB_BILLING_TITLE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_9a9a50395cb08e57",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "Exp_W_PROJ_COST_LINE_FS_Integration_id",
+      "from_field": "TENANT_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "TENANT_ID",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_472ef01c35ff74fa",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "Exp_W_PROJ_COST_LINE_FS_Integration_id",
+      "from_field": "INTEGRATION_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "INTEGRATION_ID",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_a02e0a950d5d97d9",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "Exp_W_PROJ_COST_LINE_FS_Integration_id",
+      "from_field": "DATASOURCE_NUM_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "DATASOURCE_NUM_ID",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_3323c37109588984",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "EXPENDITURE_ITEM_ID",
+      "to_instance": "Exp_W_PROJ_COST_LINE_FS_Integration_id",
+      "to_field": "EXPENDITURE_ITEM_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_f77cdbabc7d82bd0",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "LINE_NUM",
+      "to_instance": "Exp_W_PROJ_COST_LINE_FS_Integration_id",
+      "to_field": "LINE_NUM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_558fab63cde828c1",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_XLA_AE_LINE_NUM",
+      "to_instance": "Exp_W_PROJ_COST_LINE_FS_Integration_id",
+      "to_field": "AE_LINE_NUM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_d2b0a22020e7ef32",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_AE_HEADER_ID",
+      "to_instance": "Exp_W_PROJ_COST_LINE_FS_Integration_id",
+      "to_field": "X_AE_HEADER_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_5426af4bc0d2e6b8",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_CC_CROSS_CHARGE_TYPE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_CC_CROSS_CHARGE_TYPE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_27c1dfd22bec0636",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_CONTROL_PU",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_CONTROL_PU",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_3952ba4d74306ae4",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_INVOICE_NUM",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_INVOICE_NUM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_b2a29329a0a6e697",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_INVOICE_DATE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_INVOICE_DATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_cec54e6334b0cb52",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_PO_NUM",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_PO_NUM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_4dc6c96807b1c1be",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_NON_LABOR_RESOURCE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_NON_LABOR_RESOURCE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_8a2be3dd2ddc4ac3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_CHARGED_PU",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_CHARGED_PU",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_3918405e86a09f1a",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_CC_PRVDR_ORGANIZATION_ID",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_CC_PRVDR_ORGANIZATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_dc417b717ea6a938",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_CC_RECVR_ORGANIZATION_ID",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_CC_RECVR_ORGANIZATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_53f7e569654fa682",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_JOB_CODE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_JOB_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_1e1999899802dd04",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_FUNC_CURR_CODE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_FUNC_CURR_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_87df8b7223423f32",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_ATTRIBUTE2",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_ATTRIBUTE2",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_72e86958c875fa42",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_FUNC_BURDEN_COST",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_FUNC_BURDEN_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_1cd938ae3ac51f59",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_USER_NAME",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_USER_NAME",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_9c90657c66083ad8",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_ASSIGNED_PU_ID",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_ASSIGNED_PU_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_9fc1ad051f1ce4e4",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_FUNC_RAW_COST",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_FUNC_RAW_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_8e5a20edf354c029",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_TASK_CUSTOMER_ID",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_TASK_CUSTOMER_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_0b36568cf520da58",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_SOURCE_TYPE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_SOURCE_TYPE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_fc36ca21d8715d26",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_CUSTOM",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_CUSTOM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_091d358f8153c426",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_ATTRIBUTE8",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_ATTRIBUTE8",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_1dced54f2ba0f46d",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_RAW_COST",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_RAW_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_81735efbcc1602c3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_COST_BURDEN_DIST_FLAG",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_COST_BURDEN_DIST_FLAG",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_0ce4fc934f24848b",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_BILL_HOLD_FLAG",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_BILL_HOLD_FLAG",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_5cf77fb8fc89cbaa",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_BURDEN_COST",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_BURDEN_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_577c33fd73c38d08",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_COST_DIST_REJECTION_CODE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_COST_DIST_REJECTION_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_ff1ee8cde54485c8",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_CC_CROSS_CHARGE_CODE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_CC_CROSS_CHARGE_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_f3ad499a2f13b617",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_CC_IC_PROCESSED_CODE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_CC_IC_PROCESSED_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_dffbc8c2f45c3dc3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_BILL_JOB_BILLING_TITLE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_BILL_JOB_BILLING_TITLE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_67c25c20983f9a98",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_GL_TRANSFER_DATE",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_GL_TRANSFER_DATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_db873bd5144ceeec",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_JOB_CODE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_JOB_CODE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_4687126fb5b1bd8f",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_TASK_CUSTOMER_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_TASK_CUSTOMER_ID",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_3c0067098697f2ef",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_CUSTOM",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_CUSTOM",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_55f284cf84c24180",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_ATTRIBUTE8",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_ATTRIBUTE8",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_7f9d0e6f1c5b84f5",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_RAW_COST",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_RAW_COST",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_171ff589a459bd95",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_COST_BURDEN_DIST_FLAG",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_COST_BURDEN_DIST_FLAG",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_e0618365b2c5ceea",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_BILL_HOLD_FLAG",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_BILL_HOLD_FLAG",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_e9df9e7073845b64",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_BURDEN_COST",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_BURDEN_COST",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_2fc68abe4f0127d4",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_COST_DIST_REJECTION_CODE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_COST_DIST_REJECTION_CODE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_06d13b83ae6bce78",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_CC_CROSS_CHARGE_CODE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_CC_CROSS_CHARGE_CODE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_dd4a2e592ee27396",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_CC_IC_PROCESSED_CODE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_CC_IC_PROCESSED_CODE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_388e262e22ed40f6",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_BILL_JOB_BILLING_TITLE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_BILL_JOB_BILLING_TITLE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_21b735b649ec7606",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_ATTRIBUTE2",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_ATTRIBUTE2",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_6bedfa95776ab0e1",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_ATTRIBUTE5",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_ATTRIBUTE5",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_6adab3981c52c71e",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_CC_CROSS_CHARGE_TYPE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_CC_CROSS_CHARGE_TYPE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_9e6acbbe57e65979",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_CONTROL_PU",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_CONTROL_PU",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_96a780cc9177eb4a",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_INVOICE_NUM",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_INVOICE_NUM",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_1b8345a71e0a9d94",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_INVOICE_DATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_INVOICE_DATE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_8750ffb3e0800636",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_PO_NUM",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_PO_NUM",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_771646d887a127a3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_NON_LABOR_RESOURCE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_NON_LABOR_RESOURCE",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_c315685aa4d2f5b6",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_CHARGED_PU",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_CHARGED_PU",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_7ffb85359a12b94f",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_CC_PRVDR_ORGANIZATION_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_CC_PRVDR_ORGANIZATION_ID",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_4a4c2b347c40c109",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "EXP_X_CUSTOM",
+      "from_field": "X_CC_RECVR_ORGANIZATION_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "X_CC_RECVR_ORGANIZATION_ID",
+      "from_instance_type": "Expression",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_59c9feb39b222ec0",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "X_ATTRIBUTE5",
+      "to_instance": "EXP_X_CUSTOM",
+      "to_field": "X_ATTRIBUTE5",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Expression"
+    },
+    {
+      "connector_id": "CONN_f3ae6272fc60a53d",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "SYSTEM_LINKAGE_FUNCTION",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "SYSTEM_LINKAGE_FUNCTION",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_4e5b5919031769af",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "GL_PERIOD_SET_NAME",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "GL_PERIOD_SET_NAME",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_a49d41bd619a93d9",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PA_PERIOD_SET_NAME",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PA_PERIOD_SET_NAME",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_551f8cd67a05e0f1",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "EXPENDITURE_ITEM_DATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "EXPENDITURE_ITEM_DATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_ece55ef47a9375be",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "ENTERED_BY_PERSON_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "ENTERED_BY_PERSON_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_445ca8b307cdbcf3",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "INCURRED_BY_PERSON_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "INCURRED_BY_PERSON_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_c43bac46071b612d",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "LAST_UPDATE_DATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "CHANGED_ON_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_da2e3803c1db76b0",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "CREATION_DATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "CREATED_ON_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_9f9c8c66627ec951",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "CREATED_BY",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "CREATED_BY_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_b68a61efe37cf548",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "DR_CODE_COMBINATION_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "DR_CODE_COMBINATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_5a0cd91a696ae5d5",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "EXPENDITURE_ORG_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "EXPENDITURE_ORG_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_ac1eef82877d12ae",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "WORK_TYPE_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "WORK_TYPE_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_f6e02eb601d65b8d",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "REVERSED_FLAG",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "REVERSED_FLAG",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_ae58c93d21859e02",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJECT_RATE_TYPE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJECT_RATE_TYPE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_84a18a5b7c1586fc",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJECT_EXCHANGE_RATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJECT_EXCHANGE_RATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_9893f102e555c73f",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "GL_PERIOD_NAME",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "GL_PERIOD_NAME",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_fe1803ef5646d27c",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PA_PERIOD_NAME",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PA_PERIOD_NAME",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_09d466c16260a65d",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJFUNC_CURRENCY_CODE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJFUNC_CURRENCY_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_b624ccf2acac49ed",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJFUNC_COST_RATE_DATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJFUNC_COST_RATE_DATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_aa49c200355ada08",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJFUNC_COST_RATE_TYPE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJFUNC_COST_RATE_TYPE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_65a9c89c478fb0e1",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJECT_RAW_COST",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJECT_RAW_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_85581481fee38b3a",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJECT_BURDENED_COST",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJECT_BURDENED_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_378eb1cab5291891",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "RAW_COST_RATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "RAW_COST_RATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_aa1453ffd9f9996c",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "BURDEN_COST_RATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "BURDEN_COST_RATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_850e6ef06b412659",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "BILL_JOB_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "BILL_JOB_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_34fb9c17ed39b90f",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "TRANSACTION_SOURCE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "TRANSACTION_SOURCE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_41bf95e0f8506644",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJECT_TYPE_CLASS_CODE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJECT_TYPE_CLASS_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_327e48916a7c299d",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJECT_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJECT_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_0241511cd71e7b66",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "TASK_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "TASK_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_2684f6d69d7224cb",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "NON_LABOR_RESOURCE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "NON_LABOR_RESOURCE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_8b072731836941ae",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "TRANSFER_STATUS_CODE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "TRANSFER_STATUS_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_b46379a32807c814",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "EXPENDITURE_TYPE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "EXPENDITURE_TYPE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_1e262c6ba8ffb576",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "JOB_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "JOB_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_9440e804f01a381a",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "EXPENDITURE_ORGANIZATION_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "EXPENDITURE_ORGANIZATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_7bdd5d276bfb051d",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "INCURRED_BY_ORGANIZATION_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "INCURRED_BY_ORGANIZATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_bc6992c8e465c8b1",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "GL_DATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "GL_ACCOUNTING_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_4868895edf2f65c2",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PA_DATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJ_ACCOUNTING_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_e9c04cd7f7ba21ba",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "QUANTITY",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "QUANTITY",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_798f184c7f612182",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "BILLABLE_FLAG",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "BILLABLE_FLAG",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_9cbcb4f0ed2d9483",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "LINE_NUM",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "LINE_NUM",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_e310db7302f7ff7b",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "EXPENDITURE_ITEM_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "EXPENDITURE_ITEM_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_2a32720f6eac2bb6",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "VENDOR_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "VENDOR_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_95f577638495a898",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJFUNC_COST_EXCHANGE_RATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJFUNC_COST_EXCHANGE_RATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_beb37a37281ef4aa",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "INVENTORY_ITEM_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "INVENTORY_ITEM_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_f34a39ddb4593ebb",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "UNIT_OF_MEASURE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "UNIT_OF_MEASURE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_ca5f9553673dbb38",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "LINE_TYPE_MEANING",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "LINE_TYPE_MEANING",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_0d2c9a627133039c",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "BOM_RESOURCE_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "BOM_RESOURCE_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_94b335da3d895592",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJECT_ROLE_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJECT_ROLE_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_979b9f122e535b06",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "RESOURCE_CLASS_CODE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "RESOURCE_CLASS_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_ca361732942e59a9",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "RESOURCE_ORGANIZATION_ID",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "RESOURCE_ORGANIZATION_ID",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_978c6ea3b5226952",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJFUNC_RAW_COST",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "ACCT_RAW_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_19d7b0f94ef13185",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJFUNC_BURDENED_COST",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "ACCT_BURDENED_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_397c961036c60e9b",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "RECVR_GL_DATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROVIDER_GL_ACCOUNTING_DT",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_88ee20e614782a47",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "DENOM_CURRENCY_CODE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "DENOM_CURRENCY_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_1fcc5312fbf7772f",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "DENOM_RAW_COST",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "DENOM_RAW_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_08bddc43aeeae28b",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "DENOM_BURDENED_COST",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "DENOM_BURDENED_COST",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_8aa0736ba9e616dc",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJECT_CURRENCY_CODE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJECT_CURRENCY_CODE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    },
+    {
+      "connector_id": "CONN_0da5c980c624a144",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "from_instance": "JEG_mplt_BC_ORA_ProjectCostLine_IC",
+      "from_field": "PROJECT_RATE_DATE",
+      "to_instance": "mplt_SA_ORA_ProjectCostLine",
+      "to_field": "PROJECT_RATE_DATE",
+      "from_instance_type": "Mapplet",
+      "to_instance_type": "Mapplet"
+    }
+  ],
+  "sql_overrides": [
+    {
+      "sql_override_id": "SQL_938d98dd2096b904",
+      "mapping_id": "AST_fb821bfbd660a2c7",
+      "mapping_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "context_type": "SESSION",
+      "context_name": "JEG_SDE_ORA_ProjectCostLineFact_IC_HUB",
+      "sql_query": "SELECT EXPENDITURE_ITEM_ID\r\n,LINE_NUM\r\n,CREATION_DATE\r\n,CREATED_BY\r\n,TRANSFER_STATUS_CODE\r\n,QUANTITY\r\n,BILLABLE_FLAG\r\n,PROGRAM_UPDATE_DATE\r\n,PA_DATE\r\n,COST_CODE_COMBINATION_ID\r\n,GL_DATE\r\n,RECVR_GL_DATE\r\n,REVERSED_FLAG\r\n,ORG_ID\r\n,PROJECT_ID\r\n,TASK_ID\r\n,DENOM_CURRENCY_CODE\r\n,DENOM_RAW_COST\r\n,DENOM_BURDENED_COST\r\n,PROJECT_CURRENCY_CODE\r\n,PROJECT_REV_RATE_DATE\r\n,PROJECT_REV_RATE_TYPE\r\n,PROJECT_EXCHANGE_RATE\r\n,PROJFUNC_EXCHANGE_RATE\r\n,WORK_TYPE_ID\r\n,RECVR_GL_PERIOD_NAME\r\n,RECVR_PA_PERIOD_NAME\r\n,PROJFUNC_COST_RATE_TYPE\r\n,PROJFUNC_COST_RATE_DATE\r\n,PROJFUNC_CURRENCY_CODE\r\n,EXPENDITURE_ITEM_DATE\r\n,EXPENDITURE_TYPE\r\n,EXPENDITURE_ORG_ID\r\n,JOB_ID\r\n,SYSTEM_LINKAGE_FUNCTION\r\n,INVENTORY_ITEM_ID\r\n,UNIT_OF_MEASURE\r\n,INCURRED_BY_PERSON_ID\r\n,INCURRED_BY_ORG_ID\r\n,ENTERED_BY_PERSON_ID\r\n,VENDOR_ID\r\n,PA_PERIOD_SET_NAME\r\n,GL_PERIOD_SET_NAME\r\n,PROJECT_ROLE_ID\r\n,RESOURCE_ORG_ID\r\n,NON_LABOR_RESOURCE\r\n,RESOURCE_CLASS\r\n,WIP_RESOURCE_ID\r\n,LINE_TYPE\r\n,PROJFUNC_RAW_COST\r\n,PROJFUNC_BURDENED_COST\r\n,PROJECT_RAW_COST\r\n,PROJECT_BURDENED_COST\r\n,RAW_COST_RATE\r\n,BURDEN_COST_RATE\r\n,BILL_JOB_ID\r\n,TRANSACTION_SOURCE\r\n,PROJECT_TYPE_CLASS_CODE\r\n,X_CUSTOM\r\n,ATTRIBUTE8\r\n,DENOM_RAW_COST\r\n,COST_BURDEN_DISTRIBUTED_FLAG\r\n,BILL_HOLD_FLAG\r\n,BURDEN_COST\r\n,COST_DIST_REJECTION_CODE\r\n,CC_CROSS_CHARGE_CODE\r\n,CC_IC_PROCESSED_CODE\r\n,BILL_JOB_BILLING_TITLE\r\n,ATTRIBUTE2\r\n,ATTRIBUTE5\r\n,CROSS_CHARGE_TYPE\r\n,CONTROL_PU\r\n,INVOICE_NUM\r\n,INVOICE_DATE\r\n,PO_NUM\r\n,NON_LABOR_RESOURCE\r\n,CHARGED_PU\r\n,CC_PRVDR_ORG_ID\r\n,CC_RECVR_ORG_ID\r\n,JOB_ID\r\n,FUNC_CURR_CODE\r\n,FUNC_BURDENED_COST\r\n,FUNC_RAW_COST\r\n,TASK_CUSTOMER_ID\r\n,AE_LINE_NUM\r\n,SOURCE_TYPE\r\n,AE_HEADER_ID\r\n,X_USER_NAME\r\n,X_ASSIGNED_PU_ID\r\n,X_GL_TRANSFER_DATE\r\nFROM JEG_MV_GID_COST_IC"
+    }
+  ]
+}

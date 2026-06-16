@@ -1,0 +1,913 @@
+{
+  "mapping_id": "AST_04508795b5c6c80e",
+  "mapping_name": "JEG_SDE_ORA_TRUNCATE_DIM",
+  "repository_name": "BIINFAPROD_FLEX",
+  "folder_name": "Custom_SDE",
+  "source_file": "SDE_EmployeeHeadCount.XML",
+  "complexity": "LOW",
+  "sources": [
+    {
+      "source_name": "AP_INVOICES_ALL",
+      "database_type": "Oracle",
+      "owner_name": "APPS",
+      "columns": [
+        {
+          "column_name": "INVOICE_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "LAST_UPDATE_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "LAST_UPDATED_BY",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "VENDOR_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "INVOICE_NUM",
+          "datatype": "varchar2",
+          "precision": "50",
+          "scale": "0"
+        },
+        {
+          "column_name": "SET_OF_BOOKS_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "INVOICE_CURRENCY_CODE",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAYMENT_CURRENCY_CODE",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAYMENT_CROSS_RATE",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "INVOICE_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "VENDOR_SITE_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "AMOUNT_PAID",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "DISCOUNT_AMOUNT_TAKEN",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "INVOICE_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "SOURCE",
+          "datatype": "varchar2",
+          "precision": "25",
+          "scale": "0"
+        },
+        {
+          "column_name": "INVOICE_TYPE_LOOKUP_CODE",
+          "datatype": "varchar2",
+          "precision": "25",
+          "scale": "0"
+        },
+        {
+          "column_name": "DESCRIPTION",
+          "datatype": "varchar2",
+          "precision": "240",
+          "scale": "0"
+        },
+        {
+          "column_name": "BATCH_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "AMOUNT_APPLICABLE_TO_DISCOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "TAX_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "TERMS_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "TERMS_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAYMENT_METHOD_LOOKUP_CODE",
+          "datatype": "varchar2",
+          "precision": "25",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAY_GROUP_LOOKUP_CODE",
+          "datatype": "varchar2",
+          "precision": "25",
+          "scale": "0"
+        },
+        {
+          "column_name": "ACCTS_PAY_CODE_COMBINATION_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAYMENT_STATUS_FLAG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "CREATION_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "CREATED_BY",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "BASE_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "VAT_CODE",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "LAST_UPDATE_LOGIN",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXCLUSIVE_PAYMENT_FLAG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "PO_HEADER_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "FREIGHT_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "GOODS_RECEIVED_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "INVOICE_RECEIVED_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "VOUCHER_NUM",
+          "datatype": "varchar2",
+          "precision": "50",
+          "scale": "0"
+        },
+        {
+          "column_name": "APPROVED_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "RECURRING_PAYMENT_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXCHANGE_RATE",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXCHANGE_RATE_TYPE",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXCHANGE_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "EARLIEST_SETTLEMENT_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "ORIGINAL_PREPAYMENT_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "DOC_SEQUENCE_ID",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "DOC_SEQUENCE_VALUE",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "DOC_CATEGORY_CODE",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE1",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE2",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE3",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE4",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE5",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE6",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE7",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE8",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE9",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE10",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE11",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE12",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE13",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE14",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE15",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "ATTRIBUTE_CATEGORY",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "APPROVAL_STATUS",
+          "datatype": "varchar2",
+          "precision": "25",
+          "scale": "0"
+        },
+        {
+          "column_name": "APPROVAL_DESCRIPTION",
+          "datatype": "varchar2",
+          "precision": "240",
+          "scale": "0"
+        },
+        {
+          "column_name": "INVOICE_DISTRIBUTION_TOTAL",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "POSTING_STATUS",
+          "datatype": "varchar2",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PREPAY_FLAG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "AUTHORIZED_BY",
+          "datatype": "varchar2",
+          "precision": "25",
+          "scale": "0"
+        },
+        {
+          "column_name": "CANCELLED_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "CANCELLED_BY",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "CANCELLED_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "TEMP_CANCELLED_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PROJECT_ACCOUNTING_CONTEXT",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "USSGL_TRANSACTION_CODE",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "USSGL_TRX_CODE_CONTEXT",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "PROJECT_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "TASK_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXPENDITURE_TYPE",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "EXPENDITURE_ITEM_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "PA_QUANTITY",
+          "datatype": "number(p,s)",
+          "precision": "22",
+          "scale": "5"
+        },
+        {
+          "column_name": "EXPENDITURE_ORGANIZATION_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PA_DEFAULT_DIST_CCID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "VENDOR_PREPAY_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAYMENT_AMOUNT_TOTAL",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "AWT_FLAG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "AWT_GROUP_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "REFERENCE_1",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "REFERENCE_2",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "ORG_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PRE_WITHHOLDING_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE_CATEGORY",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE1",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE2",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE3",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE4",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE5",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE6",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE7",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE8",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE9",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE10",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE11",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE12",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE13",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE14",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE15",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE16",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE17",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE18",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE19",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "GLOBAL_ATTRIBUTE20",
+          "datatype": "varchar2",
+          "precision": "150",
+          "scale": "0"
+        },
+        {
+          "column_name": "AUTO_TAX_CALC_FLAG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAYMENT_CROSS_RATE_TYPE",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAYMENT_CROSS_RATE_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAY_CURR_INVOICE_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "MRC_BASE_AMOUNT",
+          "datatype": "varchar2",
+          "precision": "2000",
+          "scale": "0"
+        },
+        {
+          "column_name": "MRC_EXCHANGE_RATE",
+          "datatype": "varchar2",
+          "precision": "2000",
+          "scale": "0"
+        },
+        {
+          "column_name": "MRC_EXCHANGE_RATE_TYPE",
+          "datatype": "varchar2",
+          "precision": "2000",
+          "scale": "0"
+        },
+        {
+          "column_name": "MRC_EXCHANGE_DATE",
+          "datatype": "varchar2",
+          "precision": "2000",
+          "scale": "0"
+        },
+        {
+          "column_name": "MRC_POSTING_STATUS",
+          "datatype": "varchar2",
+          "precision": "2000",
+          "scale": "0"
+        },
+        {
+          "column_name": "GL_DATE",
+          "datatype": "date",
+          "precision": "19",
+          "scale": "0"
+        },
+        {
+          "column_name": "AWARD_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAID_ON_BEHALF_EMPLOYEE_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "AMT_DUE_CCARD_COMPANY",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "AMT_DUE_EMPLOYEE",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "APPROVAL_READY_FLAG",
+          "datatype": "varchar2",
+          "precision": "1",
+          "scale": "0"
+        },
+        {
+          "column_name": "APPROVAL_ITERATION",
+          "datatype": "number(p,s)",
+          "precision": "9",
+          "scale": "0"
+        },
+        {
+          "column_name": "WFAPPROVAL_STATUS",
+          "datatype": "varchar2",
+          "precision": "50",
+          "scale": "0"
+        },
+        {
+          "column_name": "REQUESTER_ID",
+          "datatype": "number(p,s)",
+          "precision": "10",
+          "scale": "0"
+        },
+        {
+          "column_name": "VALIDATION_REQUEST_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "VALIDATED_TAX_AMOUNT",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAYMENT_METHOD_CODE",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        },
+        {
+          "column_name": "LEGAL_ENTITY_ID",
+          "datatype": "number(p,s)",
+          "precision": "15",
+          "scale": "0"
+        },
+        {
+          "column_name": "PAYMENT_REASON_CODE",
+          "datatype": "varchar2",
+          "precision": "30",
+          "scale": "0"
+        }
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "target_name": "W_DUAL_D",
+      "database_type": "Oracle",
+      "columns": [
+        {
+          "column_name": "COL1",
+          "datatype": "number",
+          "precision": "15",
+          "scale": "0"
+        }
+      ]
+    }
+  ],
+  "transformations": [
+    {
+      "transformation_name": "SQ_AP_INVOICES_ALL",
+      "type": "Source Qualifier",
+      "reusable": "NO",
+      "attributes": {
+        "Sql Query": "SELECT COL1 FROM W_DUAL_D",
+        "User Defined Join": "",
+        "Source Filter": "",
+        "Number Of Sorted Ports": "0",
+        "Tracing Level": "Normal",
+        "Select Distinct": "NO",
+        "Is Partitionable": "NO",
+        "Pre SQL": "",
+        "Post SQL": "",
+        "Output is deterministic": "NO",
+        "Output is repeatable": "Never"
+      },
+      "ports": [
+        {
+          "port_name": "INVOICE_DISTRIBUTION_TOTAL",
+          "datatype": "double",
+          "precision": "15",
+          "scale": "0",
+          "port_type": "INPUT/OUTPUT",
+          "expression": ""
+        }
+      ]
+    }
+  ],
+  "connectors": [
+    {
+      "connector_id": "CONN_c2b8c6272f2abf7a",
+      "mapping_id": "AST_04508795b5c6c80e",
+      "mapping_name": "JEG_SDE_ORA_TRUNCATE_DIM",
+      "from_instance": "SQ_AP_INVOICES_ALL",
+      "from_field": "INVOICE_DISTRIBUTION_TOTAL",
+      "to_instance": "W_DUAL_D",
+      "to_field": "COL1",
+      "from_instance_type": "Source Qualifier",
+      "to_instance_type": "Target Definition"
+    },
+    {
+      "connector_id": "CONN_fc32023adc7b485e",
+      "mapping_id": "AST_04508795b5c6c80e",
+      "mapping_name": "JEG_SDE_ORA_TRUNCATE_DIM",
+      "from_instance": "AP_INVOICES_ALL",
+      "from_field": "INVOICE_DISTRIBUTION_TOTAL",
+      "to_instance": "SQ_AP_INVOICES_ALL",
+      "to_field": "INVOICE_DISTRIBUTION_TOTAL",
+      "from_instance_type": "Source Definition",
+      "to_instance_type": "Source Qualifier"
+    }
+  ],
+  "sql_overrides": [
+    {
+      "sql_override_id": "SQL_27aeb7d366401140",
+      "mapping_id": "AST_04508795b5c6c80e",
+      "mapping_name": "JEG_SDE_ORA_TRUNCATE_DIM",
+      "context_type": "TRANSFORMATION",
+      "context_name": "SQ_AP_INVOICES_ALL",
+      "sql_query": "SELECT COL1 FROM W_DUAL_D"
+    },
+    {
+      "sql_override_id": "SQL_dbc664d7aaf400a6",
+      "mapping_id": "AST_04508795b5c6c80e",
+      "mapping_name": "JEG_SDE_ORA_TRUNCATE_DIM",
+      "context_type": "SESSION",
+      "context_name": "JEG_SDE_ORA_TRUNCATE_DIM_HR",
+      "sql_query": "SELECT COL1 FROM W_DUAL_D WHERE 1=2"
+    }
+  ]
+}

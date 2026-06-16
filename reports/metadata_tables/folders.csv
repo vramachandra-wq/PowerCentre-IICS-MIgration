@@ -1,0 +1,15 @@
+file_name,folder_name,mapping_count,repository_name,session_count,source_count,target_count,workflow_count
+JEG_SDE_IPCS_BItimePhasedDataBudgetFact.XML,Custom_SDE_ORAR1213_Adaptor,1,BIINFAPROD_FLEX,1,1,1,1
+JEG_SDE_ORA_PBCS_Actual_Proforma.XML,Custom_SDE_PBCS,1,BIINFAPROD_FLEX,1,1,1,1
+JEG_SDE_ORA_PBCS_Actual_SM.XML,Custom_SDE_PBCS,1,BIINFAPROD_FLEX,1,1,1,1
+JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS.XML,Custom_SDE_PBCS,1,BIINFAPROD_FLEX,1,2,1,1
+JEG_SDE_POL_ProjectReviewSubmittedDimensionStage.XML,Custom_SDE_ORAR1213_Adaptor,1,BIINFAPROD_FLEX,1,1,1,1
+JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML,Custom_SILOS_PA,1,BIINFAPROD_FLEX,1,1,1,1
+JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F.XML,Custom_SILOS_PBCS,1,BIINFAPROD_FLEX,1,2,1,1
+SDE_EmployeeHeadCount.XML,Custom_SDE,3,BIINFAPROD_FLEX,3,2,2,1
+SDE_ORA_EmployeeDimension.XML,Custom_SDE,1,BIINFAPROD_FLEX,1,7,1,1
+SDE_ORA_ProjectCostLine.XML,Custom_SDE_ORAR1213_Adaptor,8,BIINFAPROD_FLEX,11,18,2,1
+SIL_EmployeeDimension.XML,Custom_SIL,1,BIINFAPROD_FLEX,1,2,1,1
+SIL_EmployeeDimension_SCDUpdate.XML,Custom_SIL,1,BIINFAPROD_FLEX,1,1,1,1
+SIL_EmployeeHeadCount.XML,Custom_SIL,1,BIINFAPROD_FLEX,0,1,1,1
+SIL_ProjectCostLine_Fact.XML,Custom_SILOS_PA_Retro,1,BIINFAPROD_FLEX,1,19,1,1

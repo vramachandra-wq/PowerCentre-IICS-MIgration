@@ -1,0 +1,4321 @@
+{
+  "file_name": "JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML",
+  "repository": {
+    "name": "BIINFAPROD_FLEX",
+    "version": "189",
+    "codepage": "UTF-8",
+    "database_type": "Oracle",
+    "repository_version": "189.98"
+  },
+  "folders": [
+    {
+      "folder_name": "Custom_SILOS_PA",
+      "repository_name": "BIINFAPROD_FLEX",
+      "sources": [
+        {
+          "source_name": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+          "database_type": "Oracle",
+          "owner_name": "PROD_PA_BIDATA32",
+          "columns": [
+            {
+              "column_name": "ECOSYS_TIMEPHASED_BUDGETID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "PROJECT_NUMBER",
+              "datatype": "varchar2",
+              "precision": "10",
+              "scale": "0"
+            },
+            {
+              "column_name": "PROJECT_PERIOD",
+              "datatype": "varchar2",
+              "precision": "10",
+              "scale": "0"
+            },
+            {
+              "column_name": "WORKFLOW_INSTANCE_ID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "BUDGET_HEADER_ID",
+              "datatype": "varchar2",
+              "precision": "100",
+              "scale": "0"
+            },
+            {
+              "column_name": "CHANGE_HEADER_ID",
+              "datatype": "varchar2",
+              "precision": "100",
+              "scale": "0"
+            },
+            {
+              "column_name": "COST_ACCOUNT_FIELD",
+              "datatype": "varchar2",
+              "precision": "100",
+              "scale": "0"
+            },
+            {
+              "column_name": "PATH_ID",
+              "datatype": "varchar2",
+              "precision": "100",
+              "scale": "0"
+            },
+            {
+              "column_name": "MINOR_PERIOD",
+              "datatype": "varchar2",
+              "precision": "10",
+              "scale": "0"
+            },
+            {
+              "column_name": "JACOBS_COST",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "CLIENT_COST",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "JACOBS_HOURS",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "CLIENT_HOURS",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "CURRENCY",
+              "datatype": "varchar2",
+              "precision": "10",
+              "scale": "0"
+            },
+            {
+              "column_name": "AUX1_CHANGED_ON_DT",
+              "datatype": "date",
+              "precision": "19",
+              "scale": "0"
+            },
+            {
+              "column_name": "AUX2_CHANGED_ON_DT",
+              "datatype": "date",
+              "precision": "19",
+              "scale": "0"
+            },
+            {
+              "column_name": "AUX3_CHANGED_ON_DT",
+              "datatype": "date",
+              "precision": "19",
+              "scale": "0"
+            },
+            {
+              "column_name": "AUX4_CHANGED_ON_DT",
+              "datatype": "date",
+              "precision": "19",
+              "scale": "0"
+            },
+            {
+              "column_name": "DATASOURCE_NUM_ID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "INTEGRATION_ID",
+              "datatype": "varchar2",
+              "precision": "80",
+              "scale": "0"
+            },
+            {
+              "column_name": "TENANT_ID",
+              "datatype": "varchar2",
+              "precision": "80",
+              "scale": "0"
+            },
+            {
+              "column_name": "GID_EAC_HOURS",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "GDCName",
+              "datatype": "varchar2",
+              "precision": "100",
+              "scale": "0"
+            },
+            {
+              "column_name": "GID_CB_FUNC_DIRECTCOST",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "GID_CB_FUNC_ATBILLREVENUE",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "GID_Billable_Hours",
+              "datatype": "number(p,s)",
+              "precision": "13",
+              "scale": "2"
+            }
+          ]
+        }
+      ],
+      "targets": [
+        {
+          "target_name": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+          "database_type": "Oracle",
+          "columns": [
+            {
+              "column_name": "ECOSYS_TIMEPHASED_BUDGETID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "PROJECT_NUMBER",
+              "datatype": "varchar2",
+              "precision": "10",
+              "scale": "0"
+            },
+            {
+              "column_name": "PROJECT_PERIOD",
+              "datatype": "varchar2",
+              "precision": "10",
+              "scale": "0"
+            },
+            {
+              "column_name": "WORKFLOW_INSTANCE_ID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "BUDGET_HEADER_ID",
+              "datatype": "varchar2",
+              "precision": "100",
+              "scale": "0"
+            },
+            {
+              "column_name": "CHANGE_HEADER_ID",
+              "datatype": "varchar2",
+              "precision": "100",
+              "scale": "0"
+            },
+            {
+              "column_name": "COST_ACCOUNT_FIELD",
+              "datatype": "varchar2",
+              "precision": "100",
+              "scale": "0"
+            },
+            {
+              "column_name": "PATH_ID",
+              "datatype": "varchar2",
+              "precision": "100",
+              "scale": "0"
+            },
+            {
+              "column_name": "MINOR_PERIOD",
+              "datatype": "varchar2",
+              "precision": "10",
+              "scale": "0"
+            },
+            {
+              "column_name": "JACOBS_COST",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "CLIENT_COST",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "JACOBS_HOURS",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "CLIENT_HOURS",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "CURRENCY",
+              "datatype": "varchar2",
+              "precision": "10",
+              "scale": "0"
+            },
+            {
+              "column_name": "AUX1_CHANGED_ON_DT",
+              "datatype": "date",
+              "precision": "19",
+              "scale": "0"
+            },
+            {
+              "column_name": "AUX2_CHANGED_ON_DT",
+              "datatype": "date",
+              "precision": "19",
+              "scale": "0"
+            },
+            {
+              "column_name": "AUX3_CHANGED_ON_DT",
+              "datatype": "date",
+              "precision": "19",
+              "scale": "0"
+            },
+            {
+              "column_name": "AUX4_CHANGED_ON_DT",
+              "datatype": "date",
+              "precision": "19",
+              "scale": "0"
+            },
+            {
+              "column_name": "DATASOURCE_NUM_ID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "INTEGRATION_ID",
+              "datatype": "varchar2",
+              "precision": "80",
+              "scale": "0"
+            },
+            {
+              "column_name": "TENANT_ID",
+              "datatype": "varchar2",
+              "precision": "80",
+              "scale": "0"
+            },
+            {
+              "column_name": "W_INSERT_DT",
+              "datatype": "date",
+              "precision": "19",
+              "scale": "0"
+            },
+            {
+              "column_name": "W_UPDATE_DT",
+              "datatype": "date",
+              "precision": "19",
+              "scale": "0"
+            },
+            {
+              "column_name": "ETL_PROC_WID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "GLOBAL1_EXCHANGE_RATE",
+              "datatype": "number(p,s)",
+              "precision": "22",
+              "scale": "7"
+            },
+            {
+              "column_name": "GLOBAL2_EXCHANGE_RATE",
+              "datatype": "number(p,s)",
+              "precision": "22",
+              "scale": "7"
+            },
+            {
+              "column_name": "GLOBAL3_EXCHANGE_RATE",
+              "datatype": "number(p,s)",
+              "precision": "22",
+              "scale": "7"
+            },
+            {
+              "column_name": "PROJECT_WID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "MCAL_PERIOD_WID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "MINOR_PERIOD_WID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "PU_WID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "TASK_WID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "BUDGET_WID",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "GID_EAC_HOURS",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "GDCName",
+              "datatype": "varchar2",
+              "precision": "100",
+              "scale": "0"
+            },
+            {
+              "column_name": "GID_CB_FUNC_DIRECTCOST",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "GID_CB_FUNC_ATBILLREVENUE",
+              "datatype": "number",
+              "precision": "15",
+              "scale": "0"
+            },
+            {
+              "column_name": "GID_Billable_Hours",
+              "datatype": "number(p,s)",
+              "precision": "13",
+              "scale": "2"
+            }
+          ]
+        }
+      ],
+      "mappings": [
+        {
+          "mapping_name": "JEG_SIL_IPCS_BItimePhaseDataBudgetFact",
+          "is_valid": "YES",
+          "transformation_count": 6,
+          "source_count": 1,
+          "target_count": 1,
+          "transformations": [
+            {
+              "transformation_name": "UPDTRANS",
+              "transformation_type": "Update Strategy",
+              "reusable_flag": "NO",
+              "attributes": {
+                "Update Strategy Expression": "IIF(UPDATE_FLG = 'I' OR UPDATE_FLG = 'B' OR UPDATE_FLG = 'S', DD_INSERT,\r\nIIF(UPDATE_FLG = 'D' OR UPDATE_FLG = 'U', DD_UPDATE, DD_REJECT))",
+                "Forward Rejected Rows": "YES",
+                "Tracing Level": "Normal"
+              },
+              "ports": [
+                {
+                  "port_name": "ECOSYS_TIMEPHASED_BUDGETID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_NUMBER",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "WORKFLOW_INSTANCE_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "BUDGET_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CHANGE_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "COST_ACCOUNT_FIELD",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PATH_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MINOR_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "JACOBS_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CLIENT_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "JACOBS_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CLIENT_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CURRENCY",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX1_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX2_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX3_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX4_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "DATASOURCE_NUM_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "INTEGRATION_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "TENANT_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GLOBAL1_EXCH_RATE",
+                  "datatype": "decimal",
+                  "precision": "28",
+                  "scale": "10",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GLOBAL2_EXCH_RATE",
+                  "datatype": "decimal",
+                  "precision": "28",
+                  "scale": "10",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GLOBAL3_EXCH_RATE",
+                  "datatype": "decimal",
+                  "precision": "28",
+                  "scale": "10",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "UPDATE_FLG",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "W_INSERT_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "W_UPDATE_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "ETL_PROC_WID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_WID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MINOR_MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PU_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "BUDGET_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "TASK_WID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_EAC_HOURS",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GDCName",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_CB_FUNC_DIRECTCOST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_CB_FUNC_ATBILLREVENUE",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_Billable_Hours",
+                  "datatype": "decimal",
+                  "precision": "13",
+                  "scale": "2",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                }
+              ]
+            },
+            {
+              "transformation_name": "EXPTRAN",
+              "transformation_type": "Expression",
+              "reusable_flag": "NO",
+              "attributes": {
+                "Tracing Level": "Normal"
+              },
+              "ports": [
+                {
+                  "port_name": "ECOSYS_TIMEPHASED_BUDGETID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "ECOSYS_TIMEPHASED_BUDGETID"
+                },
+                {
+                  "port_name": "PROJECT_NUMBER",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "PROJECT_NUMBER"
+                },
+                {
+                  "port_name": "PROJECT_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "PROJECT_PERIOD"
+                },
+                {
+                  "port_name": "WORKFLOW_INSTANCE_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "WORKFLOW_INSTANCE_ID"
+                },
+                {
+                  "port_name": "BUDGET_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "BUDGET_HEADER_ID"
+                },
+                {
+                  "port_name": "CHANGE_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "CHANGE_HEADER_ID"
+                },
+                {
+                  "port_name": "COST_ACCOUNT_FIELD",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "COST_ACCOUNT_FIELD"
+                },
+                {
+                  "port_name": "PATH_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "PATH_ID"
+                },
+                {
+                  "port_name": "MINOR_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "MINOR_PERIOD"
+                },
+                {
+                  "port_name": "JACOBS_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "JACOBS_COST"
+                },
+                {
+                  "port_name": "CLIENT_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "CLIENT_COST"
+                },
+                {
+                  "port_name": "JACOBS_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "JACOBS_HOURS"
+                },
+                {
+                  "port_name": "CLIENT_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "CLIENT_HOURS"
+                },
+                {
+                  "port_name": "CURRENCY",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "CURRENCY"
+                },
+                {
+                  "port_name": "AUX1_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "AUX1_CHANGED_ON_DT"
+                },
+                {
+                  "port_name": "AUX2_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "AUX2_CHANGED_ON_DT"
+                },
+                {
+                  "port_name": "AUX3_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "AUX3_CHANGED_ON_DT"
+                },
+                {
+                  "port_name": "AUX4_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "AUX4_CHANGED_ON_DT"
+                },
+                {
+                  "port_name": "DATASOURCE_NUM_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "DATASOURCE_NUM_ID"
+                },
+                {
+                  "port_name": "INTEGRATION_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "INTEGRATION_ID"
+                },
+                {
+                  "port_name": "TENANT_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "TENANT_ID"
+                },
+                {
+                  "port_name": "PROJECT_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "PROJECT_WID"
+                },
+                {
+                  "port_name": "MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "MCAL_PERIOD_WID"
+                },
+                {
+                  "port_name": "MINOR_MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "MINOR_MCAL_PERIOD_WID"
+                },
+                {
+                  "port_name": "PU_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "PU_WID"
+                },
+                {
+                  "port_name": "MCAL_PERIOD_END_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "MCAL_PERIOD_END_DT"
+                },
+                {
+                  "port_name": "BUDGET_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "BUDGET_WID"
+                },
+                {
+                  "port_name": "TASK_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "TASK_WID"
+                },
+                {
+                  "port_name": "EXCH_DATASOURCE_NUM_ID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "OUTPUT",
+                  "expression": "13"
+                },
+                {
+                  "port_name": "GID_EAC_HOURS",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GID_EAC_HOURS"
+                },
+                {
+                  "port_name": "GDCName",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GDCName"
+                },
+                {
+                  "port_name": "GID_CB_FUNC_DIRECTCOST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GID_CB_FUNC_DIRECTCOST"
+                },
+                {
+                  "port_name": "GID_CB_FUNC_ATBILLREVENUE",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GID_CB_FUNC_ATBILLREVENUE"
+                },
+                {
+                  "port_name": "GID_Billable_Hours",
+                  "datatype": "decimal",
+                  "precision": "13",
+                  "scale": "2",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GID_Billable_Hours"
+                }
+              ]
+            },
+            {
+              "transformation_name": "FILTRANS",
+              "transformation_type": "Filter",
+              "reusable_flag": "NO",
+              "attributes": {
+                "Filter Condition": "IIF(UPDATE_FLG= 'X',FALSE,TRUE)",
+                "Tracing Level": "Normal"
+              },
+              "ports": [
+                {
+                  "port_name": "ECOSYS_TIMEPHASED_BUDGETID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_NUMBER",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "WORKFLOW_INSTANCE_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "BUDGET_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CHANGE_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "COST_ACCOUNT_FIELD",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PATH_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MINOR_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "JACOBS_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CLIENT_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "JACOBS_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CLIENT_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CURRENCY",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX1_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX2_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX3_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX4_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "DATASOURCE_NUM_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "INTEGRATION_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "TENANT_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GLOBAL1_EXCH_RATE",
+                  "datatype": "decimal",
+                  "precision": "28",
+                  "scale": "10",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GLOBAL2_EXCH_RATE",
+                  "datatype": "decimal",
+                  "precision": "28",
+                  "scale": "10",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GLOBAL3_EXCH_RATE",
+                  "datatype": "decimal",
+                  "precision": "28",
+                  "scale": "10",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "UPDATE_FLG",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "W_INSERT_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "W_UPDATE_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "ETL_PROC_WID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_WID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MINOR_MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PU_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "BUDGET_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "TASK_WID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_EAC_HOURS",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GDCName",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_CB_FUNC_DIRECTCOST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_CB_FUNC_ATBILLREVENUE",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_Billable_Hours",
+                  "datatype": "decimal",
+                  "precision": "13",
+                  "scale": "2",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                }
+              ]
+            },
+            {
+              "transformation_name": "EXPTRANS1",
+              "transformation_type": "Expression",
+              "reusable_flag": "NO",
+              "attributes": {
+                "Tracing Level": "Normal"
+              },
+              "ports": [
+                {
+                  "port_name": "ECOSYS_TIMEPHASED_BUDGETID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "ECOSYS_TIMEPHASED_BUDGETID"
+                },
+                {
+                  "port_name": "PROJECT_NUMBER",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "PROJECT_NUMBER"
+                },
+                {
+                  "port_name": "PROJECT_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "PROJECT_PERIOD"
+                },
+                {
+                  "port_name": "WORKFLOW_INSTANCE_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "WORKFLOW_INSTANCE_ID"
+                },
+                {
+                  "port_name": "BUDGET_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "BUDGET_HEADER_ID"
+                },
+                {
+                  "port_name": "CHANGE_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "CHANGE_HEADER_ID"
+                },
+                {
+                  "port_name": "COST_ACCOUNT_FIELD",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "COST_ACCOUNT_FIELD"
+                },
+                {
+                  "port_name": "PATH_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "PATH_ID"
+                },
+                {
+                  "port_name": "MINOR_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "MINOR_PERIOD"
+                },
+                {
+                  "port_name": "JACOBS_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "JACOBS_COST"
+                },
+                {
+                  "port_name": "CLIENT_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "CLIENT_COST"
+                },
+                {
+                  "port_name": "JACOBS_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "JACOBS_HOURS"
+                },
+                {
+                  "port_name": "CLIENT_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "CLIENT_HOURS"
+                },
+                {
+                  "port_name": "CURRENCY",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "CURRENCY"
+                },
+                {
+                  "port_name": "AUX1_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "AUX1_CHANGED_ON_DT"
+                },
+                {
+                  "port_name": "AUX2_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "AUX2_CHANGED_ON_DT"
+                },
+                {
+                  "port_name": "AUX3_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "AUX3_CHANGED_ON_DT"
+                },
+                {
+                  "port_name": "AUX4_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "AUX4_CHANGED_ON_DT"
+                },
+                {
+                  "port_name": "DATASOURCE_NUM_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "DATASOURCE_NUM_ID"
+                },
+                {
+                  "port_name": "INTEGRATION_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "INTEGRATION_ID"
+                },
+                {
+                  "port_name": "TENANT_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "TENANT_ID"
+                },
+                {
+                  "port_name": "ETL_PROC_WID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "ETL_PROC_WID"
+                },
+                {
+                  "port_name": "GLOBAL1_EXCH_RATE",
+                  "datatype": "decimal",
+                  "precision": "28",
+                  "scale": "10",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GLOBAL1_EXCH_RATE"
+                },
+                {
+                  "port_name": "GLOBAL2_EXCH_RATE",
+                  "datatype": "decimal",
+                  "precision": "28",
+                  "scale": "10",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GLOBAL2_EXCH_RATE"
+                },
+                {
+                  "port_name": "GLOBAL3_EXCH_RATE",
+                  "datatype": "decimal",
+                  "precision": "28",
+                  "scale": "10",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GLOBAL3_EXCH_RATE"
+                },
+                {
+                  "port_name": "LKP_W_INSERT_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "LKP_ETL_PROC_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "V_UPD_FLG",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "LOCAL VARIABLE",
+                  "expression": "IIF(ETL_PROC_WID = LKP_ETL_PROC_WID , 'X',\r\nIIF(ISNULL(LKP_ETL_PROC_WID),'I','U' ))"
+                },
+                {
+                  "port_name": "UPDATE_FLG",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "OUTPUT",
+                  "expression": "V_UPD_FLG"
+                },
+                {
+                  "port_name": "W_INSERT_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "OUTPUT",
+                  "expression": "IIF(V_UPD_FLG='I',SESSSTARTTIME,LKP_W_INSERT_DT)"
+                },
+                {
+                  "port_name": "W_UPDATE_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "OUTPUT",
+                  "expression": "SESSSTARTTIME"
+                },
+                {
+                  "port_name": "PROJECT_WID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "PROJECT_WID"
+                },
+                {
+                  "port_name": "MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "MCAL_PERIOD_WID"
+                },
+                {
+                  "port_name": "MINOR_MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "MINOR_MCAL_PERIOD_WID"
+                },
+                {
+                  "port_name": "PU_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "PU_WID"
+                },
+                {
+                  "port_name": "BUDGET_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "BUDGET_WID_OUT",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "OUTPUT",
+                  "expression": "IIF(ISNULL(BUDGET_WID),0,BUDGET_WID)"
+                },
+                {
+                  "port_name": "TASK_WID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "OUT_TASK_WID",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "OUTPUT",
+                  "expression": "IIF(ISNULL(TASK_WID),0,TASK_WID)"
+                },
+                {
+                  "port_name": "GID_EAC_HOURS",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GID_EAC_HOURS"
+                },
+                {
+                  "port_name": "GDCName",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GDCName"
+                },
+                {
+                  "port_name": "GID_CB_FUNC_DIRECTCOST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GID_CB_FUNC_DIRECTCOST"
+                },
+                {
+                  "port_name": "GID_CB_FUNC_ATBILLREVENUE",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GID_CB_FUNC_ATBILLREVENUE"
+                },
+                {
+                  "port_name": "GID_Billable_Hours",
+                  "datatype": "decimal",
+                  "precision": "13",
+                  "scale": "2",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": "GID_Billable_Hours"
+                }
+              ]
+            },
+            {
+              "transformation_name": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "transformation_type": "Source Qualifier",
+              "reusable_flag": "NO",
+              "attributes": {
+                "Sql Query": "SELECT    FS.ecosys_timephased_budgetid,\r\n    FS.project_number,\r\n    FS.project_period,\r\n    FS.workflow_instance_id,\r\n    FS.budget_header_id,\r\n    FS.change_header_id,\r\n    FS.cost_account_field,\r\n    FS.path_id,\r\n    FS.minor_period,\r\n    FS.jacobs_cost,\r\n    FS.client_cost,\r\n    FS.jacobs_hours,\r\n    FS.client_hours,\r\n    FS.currency,\r\n    FS.aux1_changed_on_dt,\r\n    FS.aux2_changed_on_dt,\r\n    FS.aux3_changed_on_dt,\r\n    FS.aux4_changed_on_dt,\r\n    FS.datasource_num_id,\r\n    FS.integration_id,\r\n    FS.tenant_id,\r\n\tNVL(PROJ_D.ROW_WID,0),\r\nNVL(MCAL_D.ROW_WID,0),\r\n/*case when TO_number(substr(FS.MINOR_PERIOD,-2)) > 21 then 101220211001000 \r\nwhen UPPER(FS.minor_period) in ('OCT-21','NOV-21','DEC-21') then 101220211001000 \r\nelse nvl(MINOR_MCAL_D.ROW_WID,0) end ,  */\r\nNVL(MINOR_MCAL_D.ROW_WID,0),\r\nNVL(ORG_DH.ROW_WID,0),\r\nMCAL_D.MCAL_PERIOD_END_DT,\r\nNVL(BUD_WID.ROW_WID,0),\r\nNVL(COBS.ROW_WID,0),\r\nFS.GID_EAC_HOURS,\r\nNVL(REPLACE(FS.GDCName, ' ', 'Undefined'), 'Undefined') GDCName,\r\nFS.GID_CB_FUNC_DIRECTCOST,\r\nFS.GID_CB_FUNC_ATBILLREVENUE\r\nFROM\r\n    wc_bi_timephasedata_budget_fs FS,\r\n\tW_PROJECT_D PROJ_D,\r\nW_MCAL_PERIOD_D MCAL_D,\r\nW_MCAL_PERIOD_D MINOR_MCAL_D,\r\nWC_BU_ORG_DH ORG_DH,\r\n(\r\nselect max(NVL(W_TASK_D.ROW_WID,0)) as ROW_WID ,COBS.PROJECT_NUMBER,COBS.PATH_ID ,COBS.PROJECT_PERIOD ,COBS.WORKFLOW_INSTANCE_ID \r\nFROM W_TASK_D,\r\nWC_BI_TIMEPHASEDATA_COBS_D COBS,\r\nW_PROJECT_D PROJ_D WHERE \r\nCOBS.PROJECT_NUMBER = PROJ_D.PROJECT_NUMBER  \r\nAND COBS.ORACLE_TASK_NUMBER = W_TASK_D.TASK_NUMBER\r\nAND PROJ_D.INTEGRATION_ID = W_TASK_D.PROJECT_ID \r\nAND PROJ_D.DATASOURCE_NUM_ID = W_TASK_D.DATASOURCE_NUM_ID \r\nAND PROJ_D.DATASOURCE_NUM_ID(+) = 13\r\ngroup by COBS.PROJECT_NUMBER,COBS.PATH_ID ,COBS.PROJECT_PERIOD ,COBS.WORKFLOW_INSTANCE_ID)COBS,\r\n(\r\nselect max(NVL(BUD_WID.ROW_WID,0)) as ROW_WID ,BUD_WID.WORKFLOW_INSTANCE_ID ,BUD_WID.PROJECT_NUMBER ,BUD_WID.TASK_ID\r\nfrom WC_BI_TIMEPHASEDATA_BDG_HDR_D BUD_WID \r\ngroup by BUD_WID.WORKFLOW_INSTANCE_ID ,BUD_WID.PROJECT_NUMBER ,BUD_WID.TASK_ID)BUD_WID\r\n--,WC_BI_COMPLIANCE_COMPLIANT_A COMP_AGG\r\nWHERE \r\nFS.PROJECT_NUMBER  = PROJ_D.PROJECT_NUMBER (+) \r\nAND PROJ_D.DATASOURCE_NUM_ID(+) = 13\r\nAND TO_CHAR(TO_date(concat(FS.PROJECT_PERIOD,'-01'),'YYYY-MM-DD'),'MON-YY')= TO_CHAR(MCAL_D.MCAL_PERIOD_END_DT (+) -10,'MON-YY')\r\nAND MCAL_D.MCAL_CAL_WID (+)  = 1012 AND UPPER(MCAL_D.MCAL_PERIOD_TYPE (+) ) = 'MONTH'\r\nAND TO_CHAR(TO_date(concat(FS.MINOR_PERIOD,'-01'),'YYYY-MM-DD'),'MON-YY')= TO_CHAR(MINOR_MCAL_D.MCAL_PERIOD_END_DT (+) -10,'MON-YY')  \r\nAND MINOR_MCAL_D.MCAL_CAL_WID (+)  = 1012 AND UPPER(MINOR_MCAL_D.MCAL_PERIOD_TYPE (+) ) = 'MONTH'\r\nAND PROJ_D.X_CONTROL_PU = ORG_DH.INTEGRATION_ID  (+)\r\nAND PROJ_D.DATASOURCE_NUM_ID = ORG_DH.DATASOURCE_NUM_ID (+)\r\nAND (NVL(FS.CHANGE_HEADER_ID,FS.BUDGET_HEADER_ID) = (substr(BUD_WID.PROJECt_NUMBER(+),1,6)||'.'||BUD_WID.TASK_ID(+))  )\r\nAND FS.PROJECT_NUMBER = BUD_WID.PROJECT_NUMBER  (+)\r\nAND FS.WORKFLOW_INSTANCE_ID = BUD_WID.WORKFLOW_INSTANCE_ID  (+)\r\nAND FS.PROJECT_NUMBER = COBS.PROJECT_NUMBER (+) \r\nAND FS.PATH_ID = COBS.PATH_ID (+) \r\nAND FS.PROJECT_PERIOD = COBS.PROJECT_PERIOD (+) \r\nAND FS.WORKFLOW_INSTANCE_ID = COBS.WORKFLOW_INSTANCE_ID (+)\r\n--AND FS.WORKFLOW_INSTANCE_ID = COMP_AGG.WORKFLOW_INSTANCE_ID \r\n--AND FS.DATASOURCE_NUM_ID = COMP_AGG.DATASOURCE_NUM_ID\r\n--and FS.PROJECT_NUMBER = COMP_AGG.PROJECT_NUMBER",
+                "User Defined Join": "",
+                "Source Filter": "",
+                "Number Of Sorted Ports": "0",
+                "Tracing Level": "Normal",
+                "Select Distinct": "NO",
+                "Is Partitionable": "NO",
+                "Pre SQL": "",
+                "Post SQL": "",
+                "Output is deterministic": "NO",
+                "Output is repeatable": "Never"
+              },
+              "ports": [
+                {
+                  "port_name": "ECOSYS_TIMEPHASED_BUDGETID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_NUMBER",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "WORKFLOW_INSTANCE_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "BUDGET_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CHANGE_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "COST_ACCOUNT_FIELD",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PATH_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MINOR_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "JACOBS_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CLIENT_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "JACOBS_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CLIENT_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CURRENCY",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX1_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX2_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX3_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX4_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "DATASOURCE_NUM_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "INTEGRATION_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "TENANT_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MINOR_MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PU_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MCAL_PERIOD_END_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "BUDGET_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "TASK_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_EAC_HOURS",
+                  "datatype": "decimal",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GDCName",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_CB_FUNC_DIRECTCOST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_CB_FUNC_ATBILLREVENUE",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GID_Billable_Hours",
+                  "datatype": "decimal",
+                  "precision": "13",
+                  "scale": "2",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                }
+              ]
+            },
+            {
+              "transformation_name": "LKPTRANS",
+              "transformation_type": "Lookup Procedure",
+              "reusable_flag": "NO",
+              "attributes": {
+                "Lookup Sql Override": "",
+                "Lookup table name": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+                "Lookup Source Filter": "",
+                "Lookup caching enabled": "YES",
+                "Lookup policy on multiple match": "Use Any Value",
+                "Lookup condition": "INTEGRATION_ID = INTEGRATION_ID1 AND DATASOURCE_NUM_ID = DATASOURCE_NUM_ID1",
+                "Connection Information": "$Target",
+                "Source Type": "Database",
+                "Recache if Stale": "NO",
+                "Tracing Level": "Normal",
+                "Lookup cache directory name": "$PMCacheDir",
+                "Lookup cache initialize": "NO",
+                "Lookup cache persistent": "NO",
+                "Lookup Data Cache Size": "Auto",
+                "Lookup Index Cache Size": "Auto",
+                "Dynamic Lookup Cache": "NO",
+                "Synchronize Dynamic Cache": "NO",
+                "Output Old Value On Update": "NO",
+                "Update Dynamic Cache Condition": "TRUE",
+                "Cache File Name Prefix": "",
+                "Re-cache from lookup source": "NO",
+                "Insert Else Update": "NO",
+                "Update Else Insert": "NO",
+                "Datetime Format": "",
+                "Thousand Separator": "None",
+                "Decimal Separator": ".",
+                "Case Sensitive String Comparison": "NO",
+                "Null ordering": "Null Is Highest Value",
+                "Sorted Input": "NO",
+                "Lookup source is static": "NO",
+                "Pre-build lookup cache": "Auto",
+                "Subsecond Precision": "6"
+              },
+              "ports": [
+                {
+                  "port_name": "ECOSYS_TIMEPHASED_BUDGETID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_NUMBER",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "WORKFLOW_INSTANCE_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "BUDGET_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CHANGE_HEADER_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "COST_ACCOUNT_FIELD",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PATH_ID",
+                  "datatype": "string",
+                  "precision": "100",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MINOR_PERIOD",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "JACOBS_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CLIENT_COST",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "JACOBS_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CLIENT_HOURS",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "CURRENCY",
+                  "datatype": "string",
+                  "precision": "10",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX1_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX2_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX3_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "AUX4_CHANGED_ON_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "DATASOURCE_NUM_ID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "INTEGRATION_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "TENANT_ID",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "W_INSERT_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "W_UPDATE_DT",
+                  "datatype": "date/time",
+                  "precision": "29",
+                  "scale": "9",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "ETL_PROC_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GLOBAL1_EXCHANGE_RATE",
+                  "datatype": "decimal",
+                  "precision": "22",
+                  "scale": "7",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GLOBAL2_EXCHANGE_RATE",
+                  "datatype": "decimal",
+                  "precision": "22",
+                  "scale": "7",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GLOBAL3_EXCHANGE_RATE",
+                  "datatype": "decimal",
+                  "precision": "22",
+                  "scale": "7",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PROJECT_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MCAL_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "MINOR_PERIOD_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "PU_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "TASK_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "BUDGET_WID",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "LOOKUP/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "DATASOURCE_NUM_ID1",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "INTEGRATION_ID1",
+                  "datatype": "string",
+                  "precision": "80",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GIDCBDirectCost",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                },
+                {
+                  "port_name": "GIDCBAtBillRevenue",
+                  "datatype": "double",
+                  "precision": "15",
+                  "scale": "0",
+                  "port_type": "INPUT/OUTPUT",
+                  "expression": ""
+                }
+              ]
+            }
+          ],
+          "connectors": [
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "PROJECT_NUMBER",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "PROJECT_NUMBER",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "PROJECT_PERIOD",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "PROJECT_PERIOD",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "WORKFLOW_INSTANCE_ID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "WORKFLOW_INSTANCE_ID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "BUDGET_HEADER_ID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "BUDGET_HEADER_ID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "CHANGE_HEADER_ID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "CHANGE_HEADER_ID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "COST_ACCOUNT_FIELD",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "COST_ACCOUNT_FIELD",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "PATH_ID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "PATH_ID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "MINOR_PERIOD",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "MINOR_PERIOD",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "JACOBS_COST",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "JACOBS_COST",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "CLIENT_COST",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "CLIENT_COST",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "JACOBS_HOURS",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "JACOBS_HOURS",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "CLIENT_HOURS",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "CLIENT_HOURS",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "CURRENCY",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "CURRENCY",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "AUX1_CHANGED_ON_DT",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "AUX1_CHANGED_ON_DT",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "AUX2_CHANGED_ON_DT",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "AUX2_CHANGED_ON_DT",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "AUX3_CHANGED_ON_DT",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "AUX3_CHANGED_ON_DT",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "AUX4_CHANGED_ON_DT",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "AUX4_CHANGED_ON_DT",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "DATASOURCE_NUM_ID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "DATASOURCE_NUM_ID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "INTEGRATION_ID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "INTEGRATION_ID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "TENANT_ID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "TENANT_ID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "W_INSERT_DT",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "W_INSERT_DT",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "W_UPDATE_DT",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "W_UPDATE_DT",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "ETL_PROC_WID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "ETL_PROC_WID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "GLOBAL1_EXCH_RATE",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "GLOBAL1_EXCHANGE_RATE",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "GLOBAL2_EXCH_RATE",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "GLOBAL2_EXCHANGE_RATE",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "PU_WID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "PU_WID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "BUDGET_WID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "BUDGET_WID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "TASK_WID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "TASK_WID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "GID_EAC_HOURS",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "GID_EAC_HOURS",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "GLOBAL3_EXCH_RATE",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "GLOBAL3_EXCHANGE_RATE",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "PROJECT_WID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "PROJECT_WID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "MCAL_PERIOD_WID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "MCAL_PERIOD_WID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "MINOR_MCAL_PERIOD_WID",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "MINOR_PERIOD_WID",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "GDCName",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "GDCName",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "GID_CB_FUNC_DIRECTCOST",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "GID_CB_FUNC_DIRECTCOST",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "UPDTRANS",
+              "from_field": "GID_Billable_Hours",
+              "to_instance": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "to_field": "GID_Billable_Hours",
+              "from_instance_type": "Update Strategy",
+              "to_instance_type": "Target Definition"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "CURRENCY",
+              "to_instance": "UPDTRANS",
+              "to_field": "CURRENCY",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "AUX1_CHANGED_ON_DT",
+              "to_instance": "UPDTRANS",
+              "to_field": "AUX1_CHANGED_ON_DT",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "AUX2_CHANGED_ON_DT",
+              "to_instance": "UPDTRANS",
+              "to_field": "AUX2_CHANGED_ON_DT",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "AUX3_CHANGED_ON_DT",
+              "to_instance": "UPDTRANS",
+              "to_field": "AUX3_CHANGED_ON_DT",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "ETL_PROC_WID",
+              "to_instance": "UPDTRANS",
+              "to_field": "ETL_PROC_WID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "PROJECT_WID",
+              "to_instance": "UPDTRANS",
+              "to_field": "PROJECT_WID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "BUDGET_WID",
+              "to_instance": "UPDTRANS",
+              "to_field": "BUDGET_WID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "TASK_WID",
+              "to_instance": "UPDTRANS",
+              "to_field": "TASK_WID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "MINOR_MCAL_PERIOD_WID",
+              "to_instance": "UPDTRANS",
+              "to_field": "MINOR_MCAL_PERIOD_WID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "W_INSERT_DT",
+              "to_instance": "UPDTRANS",
+              "to_field": "W_INSERT_DT",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "W_UPDATE_DT",
+              "to_instance": "UPDTRANS",
+              "to_field": "W_UPDATE_DT",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "MCAL_PERIOD_WID",
+              "to_instance": "UPDTRANS",
+              "to_field": "MCAL_PERIOD_WID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "PU_WID",
+              "to_instance": "UPDTRANS",
+              "to_field": "PU_WID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "to_instance": "UPDTRANS",
+              "to_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "PROJECT_NUMBER",
+              "to_instance": "UPDTRANS",
+              "to_field": "PROJECT_NUMBER",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "PROJECT_PERIOD",
+              "to_instance": "UPDTRANS",
+              "to_field": "PROJECT_PERIOD",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "WORKFLOW_INSTANCE_ID",
+              "to_instance": "UPDTRANS",
+              "to_field": "WORKFLOW_INSTANCE_ID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "BUDGET_HEADER_ID",
+              "to_instance": "UPDTRANS",
+              "to_field": "BUDGET_HEADER_ID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "AUX4_CHANGED_ON_DT",
+              "to_instance": "UPDTRANS",
+              "to_field": "AUX4_CHANGED_ON_DT",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "DATASOURCE_NUM_ID",
+              "to_instance": "UPDTRANS",
+              "to_field": "DATASOURCE_NUM_ID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "INTEGRATION_ID",
+              "to_instance": "UPDTRANS",
+              "to_field": "INTEGRATION_ID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "TENANT_ID",
+              "to_instance": "UPDTRANS",
+              "to_field": "TENANT_ID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "GLOBAL1_EXCH_RATE",
+              "to_instance": "UPDTRANS",
+              "to_field": "GLOBAL1_EXCH_RATE",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "GLOBAL2_EXCH_RATE",
+              "to_instance": "UPDTRANS",
+              "to_field": "GLOBAL2_EXCH_RATE",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "GLOBAL3_EXCH_RATE",
+              "to_instance": "UPDTRANS",
+              "to_field": "GLOBAL3_EXCH_RATE",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "UPDATE_FLG",
+              "to_instance": "UPDTRANS",
+              "to_field": "UPDATE_FLG",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "GID_EAC_HOURS",
+              "to_instance": "UPDTRANS",
+              "to_field": "GID_EAC_HOURS",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "CHANGE_HEADER_ID",
+              "to_instance": "UPDTRANS",
+              "to_field": "CHANGE_HEADER_ID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "COST_ACCOUNT_FIELD",
+              "to_instance": "UPDTRANS",
+              "to_field": "COST_ACCOUNT_FIELD",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "PATH_ID",
+              "to_instance": "UPDTRANS",
+              "to_field": "PATH_ID",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "MINOR_PERIOD",
+              "to_instance": "UPDTRANS",
+              "to_field": "MINOR_PERIOD",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "JACOBS_COST",
+              "to_instance": "UPDTRANS",
+              "to_field": "JACOBS_COST",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "CLIENT_COST",
+              "to_instance": "UPDTRANS",
+              "to_field": "CLIENT_COST",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "JACOBS_HOURS",
+              "to_instance": "UPDTRANS",
+              "to_field": "JACOBS_HOURS",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "CLIENT_HOURS",
+              "to_instance": "UPDTRANS",
+              "to_field": "CLIENT_HOURS",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "GDCName",
+              "to_instance": "UPDTRANS",
+              "to_field": "GDCName",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "GID_CB_FUNC_DIRECTCOST",
+              "to_instance": "UPDTRANS",
+              "to_field": "GID_CB_FUNC_DIRECTCOST",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "to_instance": "UPDTRANS",
+              "to_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "FILTRANS",
+              "from_field": "GID_Billable_Hours",
+              "to_instance": "UPDTRANS",
+              "to_field": "GID_Billable_Hours",
+              "from_instance_type": "Filter",
+              "to_instance_type": "Update Strategy"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "CLIENT_COST",
+              "to_instance": "EXPTRAN",
+              "to_field": "CLIENT_COST",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "JACOBS_HOURS",
+              "to_instance": "EXPTRAN",
+              "to_field": "JACOBS_HOURS",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "CURRENCY",
+              "to_instance": "EXPTRAN",
+              "to_field": "CURRENCY",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "AUX1_CHANGED_ON_DT",
+              "to_instance": "EXPTRAN",
+              "to_field": "AUX1_CHANGED_ON_DT",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "AUX2_CHANGED_ON_DT",
+              "to_instance": "EXPTRAN",
+              "to_field": "AUX2_CHANGED_ON_DT",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "AUX3_CHANGED_ON_DT",
+              "to_instance": "EXPTRAN",
+              "to_field": "AUX3_CHANGED_ON_DT",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "AUX4_CHANGED_ON_DT",
+              "to_instance": "EXPTRAN",
+              "to_field": "AUX4_CHANGED_ON_DT",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "DATASOURCE_NUM_ID",
+              "to_instance": "EXPTRAN",
+              "to_field": "DATASOURCE_NUM_ID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "INTEGRATION_ID",
+              "to_instance": "EXPTRAN",
+              "to_field": "INTEGRATION_ID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "GID_Billable_Hours",
+              "to_instance": "EXPTRAN",
+              "to_field": "GID_Billable_Hours",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "to_instance": "EXPTRANS1",
+              "to_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "JACOBS_COST",
+              "to_instance": "EXPTRANS1",
+              "to_field": "JACOBS_COST",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "CLIENT_COST",
+              "to_instance": "EXPTRANS1",
+              "to_field": "CLIENT_COST",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "AUX3_CHANGED_ON_DT",
+              "to_instance": "EXPTRANS1",
+              "to_field": "AUX3_CHANGED_ON_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "AUX4_CHANGED_ON_DT",
+              "to_instance": "EXPTRANS1",
+              "to_field": "AUX4_CHANGED_ON_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "DATASOURCE_NUM_ID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "DATASOURCE_NUM_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "INTEGRATION_ID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "INTEGRATION_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "TENANT_ID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "TENANT_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "PROJECT_WID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "PROJECT_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "MCAL_PERIOD_WID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "MCAL_PERIOD_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "JACOBS_HOURS",
+              "to_instance": "EXPTRANS1",
+              "to_field": "JACOBS_HOURS",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "CLIENT_HOURS",
+              "to_instance": "EXPTRANS1",
+              "to_field": "CLIENT_HOURS",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "CURRENCY",
+              "to_instance": "EXPTRANS1",
+              "to_field": "CURRENCY",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "AUX1_CHANGED_ON_DT",
+              "to_instance": "EXPTRANS1",
+              "to_field": "AUX1_CHANGED_ON_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "AUX2_CHANGED_ON_DT",
+              "to_instance": "EXPTRANS1",
+              "to_field": "AUX2_CHANGED_ON_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "BUDGET_WID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "BUDGET_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "TASK_WID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "TASK_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "GID_EAC_HOURS",
+              "to_instance": "EXPTRANS1",
+              "to_field": "GID_EAC_HOURS",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "GDCName",
+              "to_instance": "EXPTRANS1",
+              "to_field": "GDCName",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "PROJECT_NUMBER",
+              "to_instance": "EXPTRANS1",
+              "to_field": "PROJECT_NUMBER",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "MINOR_MCAL_PERIOD_WID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "MINOR_MCAL_PERIOD_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "PU_WID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "PU_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "PROJECT_PERIOD",
+              "to_instance": "EXPTRANS1",
+              "to_field": "PROJECT_PERIOD",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "WORKFLOW_INSTANCE_ID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "WORKFLOW_INSTANCE_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "BUDGET_HEADER_ID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "BUDGET_HEADER_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "CHANGE_HEADER_ID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "CHANGE_HEADER_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "COST_ACCOUNT_FIELD",
+              "to_instance": "EXPTRANS1",
+              "to_field": "COST_ACCOUNT_FIELD",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "PATH_ID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "PATH_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "MINOR_PERIOD",
+              "to_instance": "EXPTRANS1",
+              "to_field": "MINOR_PERIOD",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "GID_CB_FUNC_DIRECTCOST",
+              "to_instance": "EXPTRANS1",
+              "to_field": "GID_CB_FUNC_DIRECTCOST",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "GID_Billable_Hours",
+              "to_instance": "EXPTRANS1",
+              "to_field": "GID_Billable_Hours",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "DATASOURCE_NUM_ID",
+              "to_instance": "LKPTRANS",
+              "to_field": "DATASOURCE_NUM_ID1",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Lookup Procedure"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "INTEGRATION_ID",
+              "to_instance": "LKPTRANS",
+              "to_field": "INTEGRATION_ID1",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Lookup Procedure"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "INTEGRATION_ID",
+              "to_instance": "MPLT_GET_ETL_PROC_WID",
+              "to_field": "INTEGRATION_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Mapplet"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "CURRENCY",
+              "to_instance": "MPLT_CURCY_CONVERSION_RATES_ToGlobalCurrenciesOnly",
+              "to_field": "DOC_CURR_CODE",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Mapplet"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "MCAL_PERIOD_END_DT",
+              "to_instance": "MPLT_CURCY_CONVERSION_RATES_ToGlobalCurrenciesOnly",
+              "to_field": "EXCH_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Mapplet"
+            },
+            {
+              "from_instance": "EXPTRAN",
+              "from_field": "EXCH_DATASOURCE_NUM_ID",
+              "to_instance": "MPLT_CURCY_CONVERSION_RATES_ToGlobalCurrenciesOnly",
+              "to_field": "DATASOURCE_NUM_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Mapplet"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "TENANT_ID",
+              "to_instance": "EXPTRAN",
+              "to_field": "TENANT_ID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "PROJECT_WID",
+              "to_instance": "EXPTRAN",
+              "to_field": "PROJECT_WID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "MCAL_PERIOD_WID",
+              "to_instance": "EXPTRAN",
+              "to_field": "MCAL_PERIOD_WID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "MINOR_PERIOD",
+              "to_instance": "EXPTRAN",
+              "to_field": "MINOR_PERIOD",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "GID_EAC_HOURS",
+              "to_instance": "EXPTRAN",
+              "to_field": "GID_EAC_HOURS",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "GID_CB_FUNC_DIRECTCOST",
+              "to_instance": "EXPTRAN",
+              "to_field": "GID_CB_FUNC_DIRECTCOST",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "to_instance": "EXPTRAN",
+              "to_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "GDCName",
+              "to_instance": "EXPTRAN",
+              "to_field": "GDCName",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "to_instance": "EXPTRAN",
+              "to_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "PROJECT_NUMBER",
+              "to_instance": "EXPTRAN",
+              "to_field": "PROJECT_NUMBER",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "PROJECT_PERIOD",
+              "to_instance": "EXPTRAN",
+              "to_field": "PROJECT_PERIOD",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "WORKFLOW_INSTANCE_ID",
+              "to_instance": "EXPTRAN",
+              "to_field": "WORKFLOW_INSTANCE_ID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "BUDGET_HEADER_ID",
+              "to_instance": "EXPTRAN",
+              "to_field": "BUDGET_HEADER_ID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "CHANGE_HEADER_ID",
+              "to_instance": "EXPTRAN",
+              "to_field": "CHANGE_HEADER_ID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "COST_ACCOUNT_FIELD",
+              "to_instance": "EXPTRAN",
+              "to_field": "COST_ACCOUNT_FIELD",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "PATH_ID",
+              "to_instance": "EXPTRAN",
+              "to_field": "PATH_ID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "MINOR_MCAL_PERIOD_WID",
+              "to_instance": "EXPTRAN",
+              "to_field": "MINOR_MCAL_PERIOD_WID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "PU_WID",
+              "to_instance": "EXPTRAN",
+              "to_field": "PU_WID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "MCAL_PERIOD_END_DT",
+              "to_instance": "EXPTRAN",
+              "to_field": "MCAL_PERIOD_END_DT",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "BUDGET_WID",
+              "to_instance": "EXPTRAN",
+              "to_field": "BUDGET_WID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "TASK_WID",
+              "to_instance": "EXPTRAN",
+              "to_field": "TASK_WID",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "CLIENT_HOURS",
+              "to_instance": "EXPTRAN",
+              "to_field": "CLIENT_HOURS",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "JACOBS_COST",
+              "to_instance": "EXPTRAN",
+              "to_field": "JACOBS_COST",
+              "from_instance_type": "Source Qualifier",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "PROJECT_WID",
+              "to_instance": "FILTRANS",
+              "to_field": "PROJECT_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "MCAL_PERIOD_WID",
+              "to_instance": "FILTRANS",
+              "to_field": "MCAL_PERIOD_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "MINOR_MCAL_PERIOD_WID",
+              "to_instance": "FILTRANS",
+              "to_field": "MINOR_MCAL_PERIOD_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "PU_WID",
+              "to_instance": "FILTRANS",
+              "to_field": "PU_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "OUT_TASK_WID",
+              "to_instance": "FILTRANS",
+              "to_field": "TASK_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "BUDGET_WID_OUT",
+              "to_instance": "FILTRANS",
+              "to_field": "BUDGET_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "to_instance": "FILTRANS",
+              "to_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "PROJECT_NUMBER",
+              "to_instance": "FILTRANS",
+              "to_field": "PROJECT_NUMBER",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "PROJECT_PERIOD",
+              "to_instance": "FILTRANS",
+              "to_field": "PROJECT_PERIOD",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "WORKFLOW_INSTANCE_ID",
+              "to_instance": "FILTRANS",
+              "to_field": "WORKFLOW_INSTANCE_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "BUDGET_HEADER_ID",
+              "to_instance": "FILTRANS",
+              "to_field": "BUDGET_HEADER_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "CHANGE_HEADER_ID",
+              "to_instance": "FILTRANS",
+              "to_field": "CHANGE_HEADER_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "COST_ACCOUNT_FIELD",
+              "to_instance": "FILTRANS",
+              "to_field": "COST_ACCOUNT_FIELD",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "PATH_ID",
+              "to_instance": "FILTRANS",
+              "to_field": "PATH_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "MINOR_PERIOD",
+              "to_instance": "FILTRANS",
+              "to_field": "MINOR_PERIOD",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "JACOBS_COST",
+              "to_instance": "FILTRANS",
+              "to_field": "JACOBS_COST",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "CLIENT_COST",
+              "to_instance": "FILTRANS",
+              "to_field": "CLIENT_COST",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "JACOBS_HOURS",
+              "to_instance": "FILTRANS",
+              "to_field": "JACOBS_HOURS",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "CLIENT_HOURS",
+              "to_instance": "FILTRANS",
+              "to_field": "CLIENT_HOURS",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "CURRENCY",
+              "to_instance": "FILTRANS",
+              "to_field": "CURRENCY",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "AUX1_CHANGED_ON_DT",
+              "to_instance": "FILTRANS",
+              "to_field": "AUX1_CHANGED_ON_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "GID_EAC_HOURS",
+              "to_instance": "FILTRANS",
+              "to_field": "GID_EAC_HOURS",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "GDCName",
+              "to_instance": "FILTRANS",
+              "to_field": "GDCName",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "GID_CB_FUNC_DIRECTCOST",
+              "to_instance": "FILTRANS",
+              "to_field": "GID_CB_FUNC_DIRECTCOST",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "to_instance": "FILTRANS",
+              "to_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "AUX2_CHANGED_ON_DT",
+              "to_instance": "FILTRANS",
+              "to_field": "AUX2_CHANGED_ON_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "AUX3_CHANGED_ON_DT",
+              "to_instance": "FILTRANS",
+              "to_field": "AUX3_CHANGED_ON_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "AUX4_CHANGED_ON_DT",
+              "to_instance": "FILTRANS",
+              "to_field": "AUX4_CHANGED_ON_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "DATASOURCE_NUM_ID",
+              "to_instance": "FILTRANS",
+              "to_field": "DATASOURCE_NUM_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "INTEGRATION_ID",
+              "to_instance": "FILTRANS",
+              "to_field": "INTEGRATION_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "TENANT_ID",
+              "to_instance": "FILTRANS",
+              "to_field": "TENANT_ID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "GLOBAL1_EXCH_RATE",
+              "to_instance": "FILTRANS",
+              "to_field": "GLOBAL1_EXCH_RATE",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "GLOBAL2_EXCH_RATE",
+              "to_instance": "FILTRANS",
+              "to_field": "GLOBAL2_EXCH_RATE",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "GLOBAL3_EXCH_RATE",
+              "to_instance": "FILTRANS",
+              "to_field": "GLOBAL3_EXCH_RATE",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "UPDATE_FLG",
+              "to_instance": "FILTRANS",
+              "to_field": "UPDATE_FLG",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "W_INSERT_DT",
+              "to_instance": "FILTRANS",
+              "to_field": "W_INSERT_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "W_UPDATE_DT",
+              "to_instance": "FILTRANS",
+              "to_field": "W_UPDATE_DT",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "ETL_PROC_WID",
+              "to_instance": "FILTRANS",
+              "to_field": "ETL_PROC_WID",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "EXPTRANS1",
+              "from_field": "GID_Billable_Hours",
+              "to_instance": "FILTRANS",
+              "to_field": "GID_Billable_Hours",
+              "from_instance_type": "Expression",
+              "to_instance_type": "Filter"
+            },
+            {
+              "from_instance": "LKPTRANS",
+              "from_field": "ETL_PROC_WID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "LKP_ETL_PROC_WID",
+              "from_instance_type": "Lookup Procedure",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "MPLT_GET_ETL_PROC_WID",
+              "from_field": "ETL_PROC_WID",
+              "to_instance": "EXPTRANS1",
+              "to_field": "ETL_PROC_WID",
+              "from_instance_type": "Mapplet",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "MPLT_CURCY_CONVERSION_RATES_ToGlobalCurrenciesOnly",
+              "from_field": "EXT_DOC_TO_GLOBAL1_EXCH_RATE",
+              "to_instance": "EXPTRANS1",
+              "to_field": "GLOBAL1_EXCH_RATE",
+              "from_instance_type": "Mapplet",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "MPLT_CURCY_CONVERSION_RATES_ToGlobalCurrenciesOnly",
+              "from_field": "EXT_DOC_TO_GLOBAL2_EXCH_RATE",
+              "to_instance": "EXPTRANS1",
+              "to_field": "GLOBAL2_EXCH_RATE",
+              "from_instance_type": "Mapplet",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "MPLT_CURCY_CONVERSION_RATES_ToGlobalCurrenciesOnly",
+              "from_field": "EXT_DOC_TO_GLOBAL3_EXCH_RATE",
+              "to_instance": "EXPTRANS1",
+              "to_field": "GLOBAL3_EXCH_RATE",
+              "from_instance_type": "Mapplet",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "LKPTRANS",
+              "from_field": "W_INSERT_DT",
+              "to_instance": "EXPTRANS1",
+              "to_field": "LKP_W_INSERT_DT",
+              "from_instance_type": "Lookup Procedure",
+              "to_instance_type": "Expression"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "JACOBS_COST",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "JACOBS_COST",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "CLIENT_COST",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "CLIENT_COST",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "JACOBS_HOURS",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "JACOBS_HOURS",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "CLIENT_HOURS",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "CLIENT_HOURS",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "CURRENCY",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "CURRENCY",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "AUX1_CHANGED_ON_DT",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "AUX1_CHANGED_ON_DT",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "AUX2_CHANGED_ON_DT",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "AUX2_CHANGED_ON_DT",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "GID_CB_FUNC_DIRECTCOST",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "GID_CB_FUNC_DIRECTCOST",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "GID_CB_FUNC_ATBILLREVENUE",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "AUX3_CHANGED_ON_DT",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "AUX3_CHANGED_ON_DT",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "AUX4_CHANGED_ON_DT",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "AUX4_CHANGED_ON_DT",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "DATASOURCE_NUM_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "DATASOURCE_NUM_ID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "INTEGRATION_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "INTEGRATION_ID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "TENANT_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "TENANT_ID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "AUX4_CHANGED_ON_DT",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "MCAL_PERIOD_END_DT",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "DATASOURCE_NUM_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "PU_WID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "WORKFLOW_INSTANCE_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "MINOR_MCAL_PERIOD_WID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "DATASOURCE_NUM_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "MCAL_PERIOD_WID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "WORKFLOW_INSTANCE_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "BUDGET_WID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "WORKFLOW_INSTANCE_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "TASK_WID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "GID_EAC_HOURS",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "GID_EAC_HOURS",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "PROJECT_WID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "ECOSYS_TIMEPHASED_BUDGETID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "PROJECT_NUMBER",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "PROJECT_NUMBER",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "PROJECT_PERIOD",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "PROJECT_PERIOD",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "WORKFLOW_INSTANCE_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "WORKFLOW_INSTANCE_ID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "BUDGET_HEADER_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "BUDGET_HEADER_ID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "CHANGE_HEADER_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "CHANGE_HEADER_ID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "COST_ACCOUNT_FIELD",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "COST_ACCOUNT_FIELD",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "PATH_ID",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "PATH_ID",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "MINOR_PERIOD",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "MINOR_PERIOD",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "GDCName",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "GDCName",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            },
+            {
+              "from_instance": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "from_field": "GID_Billable_Hours",
+              "to_instance": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "to_field": "GID_Billable_Hours",
+              "from_instance_type": "Source Definition",
+              "to_instance_type": "Source Qualifier"
+            }
+          ],
+          "instances": [
+            {
+              "instance_name": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "instance_type": "TARGET",
+              "transformation_name": "WC_BI_TIMEPHASEDATA_BUDGET_F",
+              "transformation_type": "Target Definition",
+              "reusable_flag": ""
+            },
+            {
+              "instance_name": "UPDTRANS",
+              "instance_type": "TRANSFORMATION",
+              "transformation_name": "UPDTRANS",
+              "transformation_type": "Update Strategy",
+              "reusable_flag": "NO"
+            },
+            {
+              "instance_name": "EXPTRAN",
+              "instance_type": "TRANSFORMATION",
+              "transformation_name": "EXPTRAN",
+              "transformation_type": "Expression",
+              "reusable_flag": "NO"
+            },
+            {
+              "instance_name": "FILTRANS",
+              "instance_type": "TRANSFORMATION",
+              "transformation_name": "FILTRANS",
+              "transformation_type": "Filter",
+              "reusable_flag": "NO"
+            },
+            {
+              "instance_name": "EXPTRANS1",
+              "instance_type": "TRANSFORMATION",
+              "transformation_name": "EXPTRANS1",
+              "transformation_type": "Expression",
+              "reusable_flag": "NO"
+            },
+            {
+              "instance_name": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "instance_type": "TRANSFORMATION",
+              "transformation_name": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "transformation_type": "Source Qualifier",
+              "reusable_flag": "NO"
+            },
+            {
+              "instance_name": "LKPTRANS",
+              "instance_type": "TRANSFORMATION",
+              "transformation_name": "LKPTRANS",
+              "transformation_type": "Lookup Procedure",
+              "reusable_flag": "NO"
+            },
+            {
+              "instance_name": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "instance_type": "SOURCE",
+              "transformation_name": "WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "transformation_type": "Source Definition",
+              "reusable_flag": ""
+            },
+            {
+              "instance_name": "MPLT_GET_ETL_PROC_WID",
+              "instance_type": "MAPPLET",
+              "transformation_name": "MPLT_GET_ETL_PROC_WID",
+              "transformation_type": "Mapplet",
+              "reusable_flag": "YES"
+            },
+            {
+              "instance_name": "MPLT_CURCY_CONVERSION_RATES_ToGlobalCurrenciesOnly",
+              "instance_type": "MAPPLET",
+              "transformation_name": "MPLT_CURCY_CONVERSION_RATES_ToGlobalCurrenciesOnly",
+              "transformation_type": "Mapplet",
+              "reusable_flag": "YES"
+            }
+          ],
+          "sql_overrides": [
+            {
+              "context_type": "TRANSFORMATION",
+              "context_name": "SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS",
+              "parent_name": "JEG_SIL_IPCS_BItimePhaseDataBudgetFact",
+              "sql_query": "SELECT    FS.ecosys_timephased_budgetid,\r\n    FS.project_number,\r\n    FS.project_period,\r\n    FS.workflow_instance_id,\r\n    FS.budget_header_id,\r\n    FS.change_header_id,\r\n    FS.cost_account_field,\r\n    FS.path_id,\r\n    FS.minor_period,\r\n    FS.jacobs_cost,\r\n    FS.client_cost,\r\n    FS.jacobs_hours,\r\n    FS.client_hours,\r\n    FS.currency,\r\n    FS.aux1_changed_on_dt,\r\n    FS.aux2_changed_on_dt,\r\n    FS.aux3_changed_on_dt,\r\n    FS.aux4_changed_on_dt,\r\n    FS.datasource_num_id,\r\n    FS.integration_id,\r\n    FS.tenant_id,\r\n\tNVL(PROJ_D.ROW_WID,0),\r\nNVL(MCAL_D.ROW_WID,0),\r\n/*case when TO_number(substr(FS.MINOR_PERIOD,-2)) > 21 then 101220211001000 \r\nwhen UPPER(FS.minor_period) in ('OCT-21','NOV-21','DEC-21') then 101220211001000 \r\nelse nvl(MINOR_MCAL_D.ROW_WID,0) end ,  */\r\nNVL(MINOR_MCAL_D.ROW_WID,0),\r\nNVL(ORG_DH.ROW_WID,0),\r\nMCAL_D.MCAL_PERIOD_END_DT,\r\nNVL(BUD_WID.ROW_WID,0),\r\nNVL(COBS.ROW_WID,0),\r\nFS.GID_EAC_HOURS,\r\nNVL(REPLACE(FS.GDCName, ' ', 'Undefined'), 'Undefined') GDCName,\r\nFS.GID_CB_FUNC_DIRECTCOST,\r\nFS.GID_CB_FUNC_ATBILLREVENUE\r\nFROM\r\n    wc_bi_timephasedata_budget_fs FS,\r\n\tW_PROJECT_D PROJ_D,\r\nW_MCAL_PERIOD_D MCAL_D,\r\nW_MCAL_PERIOD_D MINOR_MCAL_D,\r\nWC_BU_ORG_DH ORG_DH,\r\n(\r\nselect max(NVL(W_TASK_D.ROW_WID,0)) as ROW_WID ,COBS.PROJECT_NUMBER,COBS.PATH_ID ,COBS.PROJECT_PERIOD ,COBS.WORKFLOW_INSTANCE_ID \r\nFROM W_TASK_D,\r\nWC_BI_TIMEPHASEDATA_COBS_D COBS,\r\nW_PROJECT_D PROJ_D WHERE \r\nCOBS.PROJECT_NUMBER = PROJ_D.PROJECT_NUMBER  \r\nAND COBS.ORACLE_TASK_NUMBER = W_TASK_D.TASK_NUMBER\r\nAND PROJ_D.INTEGRATION_ID = W_TASK_D.PROJECT_ID \r\nAND PROJ_D.DATASOURCE_NUM_ID = W_TASK_D.DATASOURCE_NUM_ID \r\nAND PROJ_D.DATASOURCE_NUM_ID(+) = 13\r\ngroup by COBS.PROJECT_NUMBER,COBS.PATH_ID ,COBS.PROJECT_PERIOD ,COBS.WORKFLOW_INSTANCE_ID)COBS,\r\n(\r\nselect max(NVL(BUD_WID.ROW_WID,0)) as ROW_WID ,BUD_WID.WORKFLOW_INSTANCE_ID ,BUD_WID.PROJECT_NUMBER ,BUD_WID.TASK_ID\r\nfrom WC_BI_TIMEPHASEDATA_BDG_HDR_D BUD_WID \r\ngroup by BUD_WID.WORKFLOW_INSTANCE_ID ,BUD_WID.PROJECT_NUMBER ,BUD_WID.TASK_ID)BUD_WID\r\n--,WC_BI_COMPLIANCE_COMPLIANT_A COMP_AGG\r\nWHERE \r\nFS.PROJECT_NUMBER  = PROJ_D.PROJECT_NUMBER (+) \r\nAND PROJ_D.DATASOURCE_NUM_ID(+) = 13\r\nAND TO_CHAR(TO_date(concat(FS.PROJECT_PERIOD,'-01'),'YYYY-MM-DD'),'MON-YY')= TO_CHAR(MCAL_D.MCAL_PERIOD_END_DT (+) -10,'MON-YY')\r\nAND MCAL_D.MCAL_CAL_WID (+)  = 1012 AND UPPER(MCAL_D.MCAL_PERIOD_TYPE (+) ) = 'MONTH'\r\nAND TO_CHAR(TO_date(concat(FS.MINOR_PERIOD,'-01'),'YYYY-MM-DD'),'MON-YY')= TO_CHAR(MINOR_MCAL_D.MCAL_PERIOD_END_DT (+) -10,'MON-YY')  \r\nAND MINOR_MCAL_D.MCAL_CAL_WID (+)  = 1012 AND UPPER(MINOR_MCAL_D.MCAL_PERIOD_TYPE (+) ) = 'MONTH'\r\nAND PROJ_D.X_CONTROL_PU = ORG_DH.INTEGRATION_ID  (+)\r\nAND PROJ_D.DATASOURCE_NUM_ID = ORG_DH.DATASOURCE_NUM_ID (+)\r\nAND (NVL(FS.CHANGE_HEADER_ID,FS.BUDGET_HEADER_ID) = (substr(BUD_WID.PROJECt_NUMBER(+),1,6)||'.'||BUD_WID.TASK_ID(+))  )\r\nAND FS.PROJECT_NUMBER = BUD_WID.PROJECT_NUMBER  (+)\r\nAND FS.WORKFLOW_INSTANCE_ID = BUD_WID.WORKFLOW_INSTANCE_ID  (+)\r\nAND FS.PROJECT_NUMBER = COBS.PROJECT_NUMBER (+) \r\nAND FS.PATH_ID = COBS.PATH_ID (+) \r\nAND FS.PROJECT_PERIOD = COBS.PROJECT_PERIOD (+) \r\nAND FS.WORKFLOW_INSTANCE_ID = COBS.WORKFLOW_INSTANCE_ID (+)\r\n--AND FS.WORKFLOW_INSTANCE_ID = COMP_AGG.WORKFLOW_INSTANCE_ID \r\n--AND FS.DATASOURCE_NUM_ID = COMP_AGG.DATASOURCE_NUM_ID\r\n--and FS.PROJECT_NUMBER = COMP_AGG.PROJECT_NUMBER"
+            }
+          ]
+        }
+      ],
+      "sessions": [
+        {
+          "session_name": "JEG_SIL_IPCS_BITimephaseDataBudgetFact",
+          "mapping_name": "JEG_SIL_IPCS_BItimePhaseDataBudgetFact",
+          "is_valid": "YES",
+          "reusable_flag": "YES",
+          "attributes": {
+            "Sql Query": "SELECT    FS.ecosys_timephased_budgetid,\r\n    FS.project_number,\r\n    FS.project_period,\r\n    FS.workflow_instance_id,\r\n    FS.budget_header_id,\r\n    FS.change_header_id,\r\n    FS.cost_account_field,\r\n    FS.path_id,\r\n    FS.minor_period,\r\n    FS.jacobs_cost,\r\n    FS.client_cost,\r\n    FS.jacobs_hours,\r\n    FS.client_hours,\r\n    FS.currency,\r\n    FS.aux1_changed_on_dt,\r\n    FS.aux2_changed_on_dt,\r\n    FS.aux3_changed_on_dt,\r\n    FS.aux4_changed_on_dt,\r\n    FS.datasource_num_id,\r\n    FS.integration_id,\r\n    FS.tenant_id,\r\n\tNVL(PROJ_D.ROW_WID,0),\r\nNVL(MCAL_D.ROW_WID,0),\r\n/*case when TO_number(substr(FS.MINOR_PERIOD,-2)) > 21 then 101220211001000 \r\nwhen UPPER(FS.minor_period) in ('OCT-21','NOV-21','DEC-21') then 101220211001000 \r\nelse nvl(MINOR_MCAL_D.ROW_WID,0) end ,  */\r\nNVL(MINOR_MCAL_D.ROW_WID,0),\r\nNVL(ORG_DH.ROW_WID,0),\r\nMCAL_D.MCAL_PERIOD_END_DT,\r\nNVL(BUD_WID.ROW_WID,0),\r\nNVL(COBS.ROW_WID,0),\r\nFS.GID_EAC_HOURS,\r\nNVL(REPLACE(FS.GDCName, ' ', 'Undefined'), 'Undefined') GDCName,\r\nFS.GID_CB_FUNC_DIRECTCOST,\r\nFS.GID_CB_FUNC_ATBILLREVENUE,\r\nFS.GID_Billable_Hours\r\nFROM\r\n    wc_bi_timephasedata_budget_fs FS,\r\n\tW_PROJECT_D PROJ_D,\r\nW_MCAL_PERIOD_D MCAL_D,\r\nW_MCAL_PERIOD_D MINOR_MCAL_D,\r\nWC_BU_ORG_DH ORG_DH,\r\n(\r\nselect max(NVL(W_TASK_D.ROW_WID,0)) as ROW_WID ,COBS.PROJECT_NUMBER,COBS.PATH_ID ,COBS.PROJECT_PERIOD ,COBS.WORKFLOW_INSTANCE_ID \r\nFROM W_TASK_D,\r\nWC_BI_TIMEPHASEDATA_COBS_D COBS,\r\nW_PROJECT_D PROJ_D WHERE \r\nCOBS.PROJECT_NUMBER = PROJ_D.PROJECT_NUMBER  \r\nAND COBS.ORACLE_TASK_NUMBER = W_TASK_D.TASK_NUMBER\r\nAND PROJ_D.INTEGRATION_ID = W_TASK_D.PROJECT_ID \r\nAND PROJ_D.DATASOURCE_NUM_ID = W_TASK_D.DATASOURCE_NUM_ID \r\nAND PROJ_D.DATASOURCE_NUM_ID(+) = 13\r\ngroup by COBS.PROJECT_NUMBER,COBS.PATH_ID ,COBS.PROJECT_PERIOD ,COBS.WORKFLOW_INSTANCE_ID)COBS,\r\n(\r\nselect max(NVL(BUD_WID.ROW_WID,0)) as ROW_WID ,BUD_WID.WORKFLOW_INSTANCE_ID ,BUD_WID.PROJECT_NUMBER ,BUD_WID.TASK_ID\r\nfrom WC_BI_TIMEPHASEDATA_BDG_HDR_D BUD_WID \r\ngroup by BUD_WID.WORKFLOW_INSTANCE_ID ,BUD_WID.PROJECT_NUMBER ,BUD_WID.TASK_ID)BUD_WID\r\n--,WC_BI_COMPLIANCE_COMPLIANT_A COMP_AGG\r\nWHERE \r\nFS.PROJECT_NUMBER  = PROJ_D.PROJECT_NUMBER (+) \r\nAND PROJ_D.DATASOURCE_NUM_ID(+) = 13\r\nAND TO_CHAR(TO_date(concat(FS.PROJECT_PERIOD,'-01'),'YYYY-MM-DD'),'MON-YY')= TO_CHAR(MCAL_D.MCAL_PERIOD_END_DT (+) -10,'MON-YY')\r\nAND MCAL_D.MCAL_CAL_WID (+)  = 1012 AND UPPER(MCAL_D.MCAL_PERIOD_TYPE (+) ) = 'MONTH'\r\nAND TO_CHAR(TO_date(concat(FS.MINOR_PERIOD,'-01'),'YYYY-MM-DD'),'MON-YY')= TO_CHAR(MINOR_MCAL_D.MCAL_PERIOD_END_DT (+) -10,'MON-YY')  \r\nAND MINOR_MCAL_D.MCAL_CAL_WID (+)  = 1012 AND UPPER(MINOR_MCAL_D.MCAL_PERIOD_TYPE (+) ) = 'MONTH'\r\nAND PROJ_D.X_CONTROL_PU = ORG_DH.INTEGRATION_ID  (+)\r\nAND PROJ_D.DATASOURCE_NUM_ID = ORG_DH.DATASOURCE_NUM_ID (+)\r\nAND (NVL(FS.CHANGE_HEADER_ID,FS.BUDGET_HEADER_ID) = (substr(BUD_WID.PROJECt_NUMBER(+),1,6)||'.'||BUD_WID.TASK_ID(+))  )\r\nAND FS.PROJECT_NUMBER = BUD_WID.PROJECT_NUMBER  (+)\r\nAND FS.WORKFLOW_INSTANCE_ID = BUD_WID.WORKFLOW_INSTANCE_ID  (+)\r\nAND FS.PROJECT_NUMBER = COBS.PROJECT_NUMBER (+) \r\nAND FS.PATH_ID = COBS.PATH_ID (+) \r\nAND FS.PROJECT_PERIOD = COBS.PROJECT_PERIOD (+) \r\nAND FS.WORKFLOW_INSTANCE_ID = COBS.WORKFLOW_INSTANCE_ID (+)\r\n--AND FS.WORKFLOW_INSTANCE_ID = COMP_AGG.WORKFLOW_INSTANCE_ID \r\n--AND FS.DATASOURCE_NUM_ID = COMP_AGG.DATASOURCE_NUM_ID\r\n--and FS.PROJECT_NUMBER = COMP_AGG.PROJECT_NUMBER",
+            "Target load type": "Bulk",
+            "Insert": "YES",
+            "Update as Update": "YES",
+            "Update as Insert": "NO",
+            "Update else Insert": "NO",
+            "Enable array upsert or update": "NO",
+            "Delete": "YES",
+            "Truncate target table option": "NO",
+            "Reject file directory": "$PMBadFileDir\\",
+            "Reject filename": "wc_bi_timephasedata_budget_f1.bad",
+            "General Options": "",
+            "Write Backward Compatible Session Log File": "NO",
+            "Session Log File Name": "JEG_SIL_IPCS_BITimephaseDataBudgetFact_Full.log",
+            "Session Log File directory": "$PMSessionLogDir\\",
+            "Parameter Filename": "",
+            "Enable Test Load": "NO",
+            "$Source connection value": "$DBConnection_OLAP",
+            "$Target connection value": "$DBConnection_OLAP",
+            "Treat source rows as": "Data driven",
+            "Commit Type": "Target",
+            "Commit Interval": "10000",
+            "Commit On End Of File": "YES",
+            "Rollback Transactions on Errors": "NO",
+            "Recovery Strategy": "Fail task and continue workflow",
+            "Java Classpath": "",
+            "Performance": "",
+            "DTM buffer size": "Auto",
+            "Collect performance data": "NO",
+            "Write performance data to repository": "NO",
+            "Incremental Aggregation": "NO",
+            "Enable high precision": "NO",
+            "Session retry on deadlock": "NO",
+            "Pushdown Optimization": "None",
+            "Allow Temporary View for Pushdown": "NO",
+            "Allow Temporary Sequence for Pushdown": "NO",
+            "Allow Pushdown for User Incompatible Connections": "NO"
+          },
+          "sql_overrides": [
+            {
+              "context_type": "SESSION",
+              "context_name": "JEG_SIL_IPCS_BITimephaseDataBudgetFact",
+              "parent_name": "JEG_SIL_IPCS_BItimePhaseDataBudgetFact",
+              "sql_query": "SELECT    FS.ecosys_timephased_budgetid,\r\n    FS.project_number,\r\n    FS.project_period,\r\n    FS.workflow_instance_id,\r\n    FS.budget_header_id,\r\n    FS.change_header_id,\r\n    FS.cost_account_field,\r\n    FS.path_id,\r\n    FS.minor_period,\r\n    FS.jacobs_cost,\r\n    FS.client_cost,\r\n    FS.jacobs_hours,\r\n    FS.client_hours,\r\n    FS.currency,\r\n    FS.aux1_changed_on_dt,\r\n    FS.aux2_changed_on_dt,\r\n    FS.aux3_changed_on_dt,\r\n    FS.aux4_changed_on_dt,\r\n    FS.datasource_num_id,\r\n    FS.integration_id,\r\n    FS.tenant_id,\r\n\tNVL(PROJ_D.ROW_WID,0),\r\nNVL(MCAL_D.ROW_WID,0),\r\n/*case when TO_number(substr(FS.MINOR_PERIOD,-2)) > 21 then 101220211001000 \r\nwhen UPPER(FS.minor_period) in ('OCT-21','NOV-21','DEC-21') then 101220211001000 \r\nelse nvl(MINOR_MCAL_D.ROW_WID,0) end ,  */\r\nNVL(MINOR_MCAL_D.ROW_WID,0),\r\nNVL(ORG_DH.ROW_WID,0),\r\nMCAL_D.MCAL_PERIOD_END_DT,\r\nNVL(BUD_WID.ROW_WID,0),\r\nNVL(COBS.ROW_WID,0),\r\nFS.GID_EAC_HOURS,\r\nNVL(REPLACE(FS.GDCName, ' ', 'Undefined'), 'Undefined') GDCName,\r\nFS.GID_CB_FUNC_DIRECTCOST,\r\nFS.GID_CB_FUNC_ATBILLREVENUE,\r\nFS.GID_Billable_Hours\r\nFROM\r\n    wc_bi_timephasedata_budget_fs FS,\r\n\tW_PROJECT_D PROJ_D,\r\nW_MCAL_PERIOD_D MCAL_D,\r\nW_MCAL_PERIOD_D MINOR_MCAL_D,\r\nWC_BU_ORG_DH ORG_DH,\r\n(\r\nselect max(NVL(W_TASK_D.ROW_WID,0)) as ROW_WID ,COBS.PROJECT_NUMBER,COBS.PATH_ID ,COBS.PROJECT_PERIOD ,COBS.WORKFLOW_INSTANCE_ID \r\nFROM W_TASK_D,\r\nWC_BI_TIMEPHASEDATA_COBS_D COBS,\r\nW_PROJECT_D PROJ_D WHERE \r\nCOBS.PROJECT_NUMBER = PROJ_D.PROJECT_NUMBER  \r\nAND COBS.ORACLE_TASK_NUMBER = W_TASK_D.TASK_NUMBER\r\nAND PROJ_D.INTEGRATION_ID = W_TASK_D.PROJECT_ID \r\nAND PROJ_D.DATASOURCE_NUM_ID = W_TASK_D.DATASOURCE_NUM_ID \r\nAND PROJ_D.DATASOURCE_NUM_ID(+) = 13\r\ngroup by COBS.PROJECT_NUMBER,COBS.PATH_ID ,COBS.PROJECT_PERIOD ,COBS.WORKFLOW_INSTANCE_ID)COBS,\r\n(\r\nselect max(NVL(BUD_WID.ROW_WID,0)) as ROW_WID ,BUD_WID.WORKFLOW_INSTANCE_ID ,BUD_WID.PROJECT_NUMBER ,BUD_WID.TASK_ID\r\nfrom WC_BI_TIMEPHASEDATA_BDG_HDR_D BUD_WID \r\ngroup by BUD_WID.WORKFLOW_INSTANCE_ID ,BUD_WID.PROJECT_NUMBER ,BUD_WID.TASK_ID)BUD_WID\r\n--,WC_BI_COMPLIANCE_COMPLIANT_A COMP_AGG\r\nWHERE \r\nFS.PROJECT_NUMBER  = PROJ_D.PROJECT_NUMBER (+) \r\nAND PROJ_D.DATASOURCE_NUM_ID(+) = 13\r\nAND TO_CHAR(TO_date(concat(FS.PROJECT_PERIOD,'-01'),'YYYY-MM-DD'),'MON-YY')= TO_CHAR(MCAL_D.MCAL_PERIOD_END_DT (+) -10,'MON-YY')\r\nAND MCAL_D.MCAL_CAL_WID (+)  = 1012 AND UPPER(MCAL_D.MCAL_PERIOD_TYPE (+) ) = 'MONTH'\r\nAND TO_CHAR(TO_date(concat(FS.MINOR_PERIOD,'-01'),'YYYY-MM-DD'),'MON-YY')= TO_CHAR(MINOR_MCAL_D.MCAL_PERIOD_END_DT (+) -10,'MON-YY')  \r\nAND MINOR_MCAL_D.MCAL_CAL_WID (+)  = 1012 AND UPPER(MINOR_MCAL_D.MCAL_PERIOD_TYPE (+) ) = 'MONTH'\r\nAND PROJ_D.X_CONTROL_PU = ORG_DH.INTEGRATION_ID  (+)\r\nAND PROJ_D.DATASOURCE_NUM_ID = ORG_DH.DATASOURCE_NUM_ID (+)\r\nAND (NVL(FS.CHANGE_HEADER_ID,FS.BUDGET_HEADER_ID) = (substr(BUD_WID.PROJECt_NUMBER(+),1,6)||'.'||BUD_WID.TASK_ID(+))  )\r\nAND FS.PROJECT_NUMBER = BUD_WID.PROJECT_NUMBER  (+)\r\nAND FS.WORKFLOW_INSTANCE_ID = BUD_WID.WORKFLOW_INSTANCE_ID  (+)\r\nAND FS.PROJECT_NUMBER = COBS.PROJECT_NUMBER (+) \r\nAND FS.PATH_ID = COBS.PATH_ID (+) \r\nAND FS.PROJECT_PERIOD = COBS.PROJECT_PERIOD (+) \r\nAND FS.WORKFLOW_INSTANCE_ID = COBS.WORKFLOW_INSTANCE_ID (+)\r\n--AND FS.WORKFLOW_INSTANCE_ID = COMP_AGG.WORKFLOW_INSTANCE_ID \r\n--AND FS.DATASOURCE_NUM_ID = COMP_AGG.DATASOURCE_NUM_ID\r\n--and FS.PROJECT_NUMBER = COMP_AGG.PROJECT_NUMBER"
+            }
+          ]
+        }
+      ],
+      "workflows": [
+        {
+          "workflow_name": "JEG_SIL_IPCS_BITimephaseDataBudgetFact",
+          "is_valid": "YES",
+          "is_enabled": "YES",
+          "server_name": "BIINFAPROD_FLEX_Integration_Service",
+          "task_instances": [
+            {
+              "DESCRIPTION": "",
+              "ISENABLED": "YES",
+              "NAME": "Start",
+              "REUSABLE": "NO",
+              "TASKNAME": "Start",
+              "TASKTYPE": "Start"
+            },
+            {
+              "DESCRIPTION": "",
+              "FAIL_PARENT_IF_INSTANCE_DID_NOT_RUN": "YES",
+              "FAIL_PARENT_IF_INSTANCE_FAILS": "YES",
+              "ISENABLED": "YES",
+              "NAME": "JEG_SIL_IPCS_BITimephaseDataBudgetFact",
+              "REUSABLE": "YES",
+              "TASKNAME": "JEG_SIL_IPCS_BITimephaseDataBudgetFact",
+              "TASKTYPE": "Session",
+              "TREAT_INPUTLINK_AS_AND": "YES"
+            }
+          ],
+          "workflow_links": [
+            {
+              "CONDITION": "",
+              "FROMTASK": "Start",
+              "TOTASK": "JEG_SIL_IPCS_BITimephaseDataBudgetFact"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
