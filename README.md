@@ -1,258 +1,204 @@
-# PowerCenter to IDMC/IICS Post-Conversion Stabilization Accelerator
+# PowerCenter to IICS Enterprise Metadata Accelerator
 
-This POC establishes the Week 1 foundation for understanding Informatica PowerCenter XML exports before metadata extraction, complexity scoring, and canonical repository persistence are introduced.
+This repository provides an enterprise-ready metadata foundation for PowerCenter to IICS migration planning. It parses PowerCenter XML exports, builds normalized metadata, classifies mapping complexity, generates stakeholder reports, and loads a central MySQL repository for future PowerCenter-vs-IICS comparison.
 
-Current scope:
+## Enterprise Capabilities
 
-- Scalable Python 3.13 project setup
-- Config-driven XML input and report output paths
-- Reusable PowerCenter XML exploration utility
-- Reusable PowerCenter XML parser framework
-- Canonical metadata model for PowerCenter assets
-- XML tag inventory
-- Unique Informatica component inventory
-- Folder-level summary
-- Mapping-level summary
-- Structured metadata extraction for repositories, folders, workflows, sessions, mappings, sources, targets, transformations, connectors, instances, ports, and SQL overrides
-- Normalized canonical repository outputs for future PowerCenter-vs-IICS comparison
-- File and console logging
+- Config-driven XML ingestion from `input_xml`
+- Raw metadata extraction for repositories, folders, workflows, sessions, mappings, sources, targets, transformations, ports, connectors, instances, and SQL overrides
+- Canonical metadata model for stable downstream comparison
+- Rule-based mapping complexity classification
+- Enterprise report generation for stakeholders and engineering teams
+- Central MySQL repository with normalized tables
+- MySQL Workbench scripts for schema, inserts, and verification
+- Single-command orchestration for repeatable migration assessment runs
 
-Database persistence is intentionally not implemented yet.
+## Architecture
+
+```text
+PowerCenter XMLs
+  -> Parser Layer
+  -> Raw Metadata Tables
+  -> Canonical Builder
+  -> Complexity Classifier
+  -> Enterprise Reports
+  -> MySQL Metadata Repository
+  -> Future PowerCenter vs IICS Comparator
+```
+
+More detail:
+
+- [Enterprise Architecture](docs/enterprise_architecture.md)
+- [Data Model](docs/data_model.md)
+- [Complexity Rules](docs/mapping_complexity_rules.md)
+- [Operations Runbook](docs/operations_runbook.md)
 
 ## Folder Structure
 
 ```text
 project_root/
-|-- input_xml/       PowerCenter XML exports used as parser input
-|-- parser/          XML loading and exploration framework
-|-- extractor/       Reserved for future enrichment modules
-|-- repository/      Reserved for future SQLAlchemy/MySQL persistence layer
-|-- reports/         Generated CSV, TXT, and JSON exploration outputs
-|-- config/          Runtime configuration
-|-- logs/            Application log files
+|-- config/          Runtime path, logging, and MySQL configuration
+|-- docs/            Enterprise architecture and operations documentation
+|-- extractor/       Metadata enrichment, including complexity classification
+|-- input_xml/       PowerCenter XML exports
+|-- logs/            Application logs
+|-- parser/          XML parsing framework
+|-- reports/         Generated metadata, canonical outputs, and enterprise reports
+|-- repository/      Canonical model and MySQL persistence layer
+|-- services/        End-to-end enterprise orchestration
 |-- utils/           Shared config and logging utilities
 |-- main.py          CLI entry point
 ```
 
-## Tech Stack
-
-- Python 3.13
-- MySQL
-- SQLAlchemy
-- mysql-connector-python
-- pandas
-- lxml or xml.etree.ElementTree
-- openpyxl
-- Plotly
-- JSON/dotenv-ready configuration
-
-## Configuration
-
-Update `config/config.json` before running in a new environment.
-
-```json
-{
-  "database": {
-    "host": "localhost",
-    "port": 3306,
-    "username": "root",
-    "password": "change_me",
-    "database": "pc_iics_migration",
-    "driver": "mysql+mysqlconnector"
-  },
-  "paths": {
-    "xml_folder": "input_xml",
-    "output_folder": "reports",
-    "log_folder": "logs"
-  }
-}
-```
-
-The database section is present for the future canonical metadata repository work. The current explorer does not connect to MySQL.
-
 ## Setup
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Place PowerCenter XML exports in `input_xml/`.
+Review database and path settings:
 
-## Execution Examples
+```text
+config/config.json
+```
 
-Explore all XML files in the configured folder:
+## Enterprise Commands
+
+Run the full enterprise pipeline:
+
+```bash
+python main.py --mode enterprise
+```
+
+Run the full pipeline and refresh MySQL:
+
+```bash
+python main.py --mode enterprise --persist
+```
+
+Regenerate reports from existing metadata:
+
+```bash
+python main.py --mode reports
+```
+
+Refresh MySQL from existing canonical outputs:
+
+```bash
+python main.py --mode persist
+```
+
+Run only canonical build:
 
 ```bash
 python main.py
 ```
 
-This runs the canonical metadata build by default. It parses all XML files, then writes normalized canonical outputs.
-
-Run only the raw parser:
+Run only raw parser:
 
 ```bash
 python main.py --mode parse
 ```
 
-Run the parser for one XML file:
+Run only complexity classifier:
 
 ```bash
-python main.py --xml-file input_xml/SDE_ORA_EmployeeDimension.XML
+python main.py --mode classify
 ```
 
-Explore all XML files and print the hierarchy to console:
+Explore XML structure:
 
 ```bash
 python main.py --mode explore --print-hierarchy
 ```
 
-Explore one XML file structure:
-
-```bash
-python main.py --mode explore --xml-file input_xml/SDE_ORA_EmployeeDimension.XML --print-hierarchy
-```
-
 ## Generated Outputs
 
-The parser writes one parsed JSON file per XML to:
-
-- `reports/parsed_json/`
-
-The parser writes structured metadata tables to `reports/metadata_tables/`:
-
-- `repositories.csv`
-- `folders.csv`
-- `workflows.csv`
-- `sessions.csv`
-- `mappings.csv`
-- `sources.csv`
-- `source_columns.csv`
-- `targets.csv`
-- `target_columns.csv`
-- `transformations.csv`
-- `ports.csv`
-- `connectors.csv`
-- `instances.csv`
-- `sql_overrides.csv`
-
-The parser also writes:
-
-- `reports/parser_batch_summary.json`
-
-The canonical builder writes normalized repository outputs to:
-
-- `reports/canonical/tables/canonical_assets.csv`
-- `reports/canonical/tables/canonical_mappings.csv`
-- `reports/canonical/tables/canonical_transformations.csv`
-- `reports/canonical/tables/canonical_columns.csv`
-- `reports/canonical/tables/canonical_connectors.csv`
-- `reports/canonical/tables/canonical_sql_overrides.csv`
-- `reports/canonical/mapping_json_by_id/`
-- `reports/canonical/canonical_mappings.json`
-- `reports/canonical/canonical_summary.json`
-
-## Canonical Metadata Model
-
-The canonical model standardizes PowerCenter XML metadata into comparison-ready structures. Future IDMC/IICS metadata can be transformed into the same schema and compared table-by-table.
-
-Canonical asset table:
+Raw parsed metadata:
 
 ```text
-asset_id, asset_name, asset_type, platform, repository_name, folder_name, source_file, parent_asset_id, complexity
+reports/metadata_tables/
+reports/parsed_json/
+reports/parser_batch_summary.json
 ```
 
-Canonical mapping table:
+Canonical repository outputs:
 
 ```text
-mapping_id, mapping_name, repository_name, folder_name, sources, targets, transformation_count, connector_count, sql_override_count, complexity
+reports/canonical/tables/
+reports/canonical/mapping_json_by_id/
+reports/canonical/canonical_mappings.json
+reports/canonical/canonical_summary.json
 ```
 
-Canonical transformation table:
+Enterprise reports:
 
 ```text
-transformation_id, mapping_id, mapping_name, transformation_name, transformation_type, reusable_flag, attribute_count, port_count
+reports/enterprise/asset_inventory.csv
+reports/enterprise/transformation_type_summary.csv
+reports/enterprise/mapping_migration_catalog.csv
+reports/enterprise/executive_summary.json
+reports/enterprise/enterprise_migration_report.md
 ```
 
-Canonical column table:
+Complexity reports:
 
 ```text
-column_id, asset_id, table_name, table_type, column_name, datatype, precision, scale, repository_name, folder_name, source_file
+reports/complexity_classification_report.csv
+reports/complexity_classification_report.md
 ```
 
-Canonical SQL override table:
+MySQL Workbench assets:
 
 ```text
-sql_override_id, mapping_id, mapping_name, context_type, context_name, sql_query
+repository/schema.sql
+repository/mysql_workbench_full_load.sql
+repository/verification_queries.sql
 ```
 
-Canonical mapping JSON format:
+## Central Repository Tables
 
-```json
-{
-  "mapping_name": "M_EMPLOYEE",
-  "sources": [],
-  "targets": [],
-  "transformations": [],
-  "connectors": [],
-  "sql_overrides": []
-}
+The MySQL repository stores metadata by domain, not by XML file:
+
+| Table | Purpose |
+|---|---|
+| `assets` | Master inventory for mappings, sources, targets, and transformations |
+| `mappings` | Mapping-level migration scope, counts, sources, targets, and complexity |
+| `transformations` | Transformation-level technical logic |
+| `columns_metadata` | Source and target field metadata for datatype checks |
+| `sql_overrides` | SQL override text and review status |
+| `connectors` | Data-flow and lineage links inside mappings |
+
+The 14 XML files are inputs. The six MySQL tables are normalized enterprise metadata categories. Every row retains traceability through XML/source file, repository, folder, mapping, and generated IDs.
+
+## Complexity Model
+
+Report labels:
+
+```text
+Simple
+Medium
+Complex
 ```
 
-The explorer writes these files to `reports/`:
+Canonical repository labels:
 
-- `xml_tag_inventory.csv`
-- `informatica_component_inventory.csv`
-- `folder_level_summary.csv`
-- `mapping_level_summary.csv`
-- `xml_tag_hierarchy.txt`
-- `metadata_summary.json`
+```text
+LOW
+MEDIUM
+HIGH
+```
 
-Logs are written to `logs/pc_iics_migration.log` and to the console.
+Business mapping:
 
-## Parser Classes
+| Report | Repository | Meaning |
+|---|---|---|
+| Simple | LOW | Lower migration effort |
+| Medium | MEDIUM | Needs validation and targeted review |
+| Complex | HIGH | Needs detailed analysis and possible remediation |
 
-The reusable parser framework is organized as:
+Complexity is calculated from transformation count, lookups, SQL overrides, expression logic, filters/routers, stored procedures, mapplets, and advanced transformation types.
 
-- `XMLParser`: batch orchestration, per-file JSON, and aggregate table outputs
-- `MappingParser`: mappings, connectors, instances, and mapping metrics
-- `WorkflowParser`: sessions, workflows, task instances, workflow links, and session SQL overrides
-- `TransformationParser`: transformations, ports, table attributes, and transformation SQL overrides
-- `SourceTargetParser`: source/target definitions and columns
-- `CanonicalMetadataBuilder`: converts parsed metadata into normalized canonical repository tables and mapping JSON
+## Current Scope
 
-## Asset Inventory for 14 Representative Assets
-
-| XML | Workflow | Session | Mapping | Source | Target | Transformations |
-|---|---:|---:|---:|---:|---:|---:|
-| JEG_SDE_IPCS_BItimePhasedDataBudgetFact.XML | 1 | 1 | 1 | 1 | 1 | 2 |
-| JEG_SDE_ORA_PBCS_Actual_Proforma.XML | 1 | 1 | 1 | 1 | 1 | 2 |
-| JEG_SDE_ORA_PBCS_Actual_SM.XML | 1 | 1 | 1 | 1 | 1 | 2 |
-| JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS.XML | 1 | 1 | 1 | 2 | 1 | 2 |
-| JEG_SDE_POL_ProjectReviewSubmittedDimensionStage.XML | 1 | 1 | 1 | 1 | 1 | 2 |
-| JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML | 1 | 1 | 1 | 1 | 1 | 6 |
-| JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F.XML | 1 | 1 | 1 | 2 | 1 | 2 |
-| SDE_EmployeeHeadCount.XML | 1 | 3 | 3 | 2 | 2 | 43 |
-| SDE_ORA_EmployeeDimension.XML | 1 | 1 | 1 | 7 | 1 | 2 |
-| SDE_ORA_ProjectCostLine.XML | 1 | 11 | 8 | 18 | 2 | 15 |
-| SIL_EmployeeDimension.XML | 1 | 1 | 1 | 2 | 1 | 6 |
-| SIL_EmployeeDimension_SCDUpdate.XML | 1 | 1 | 1 | 1 | 1 | 4 |
-| SIL_EmployeeHeadCount.XML | 1 | 0 | 1 | 1 | 1 | 10 |
-| SIL_ProjectCostLine_Fact.XML | 1 | 1 | 1 | 19 | 1 | 7 |
-
-## Transformation Type Counts
-
-| Transformation | Count |
-|---|---:|
-| Custom Transformation | 1 |
-| Expression | 41 |
-| Filter | 5 |
-| Lookup Procedure | 40 |
-| Source Qualifier | 15 |
-| Update Strategy | 3 |
-
-Generated from reports/metadata_tables on 2026-06-16 18:21:54 +05:30.
-
-
-
+The current implementation is focused on PowerCenter source metadata. The repository is intentionally shaped so IICS target metadata can later be loaded into the same comparison model.

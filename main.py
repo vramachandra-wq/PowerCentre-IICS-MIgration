@@ -13,9 +13,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["canonical", "parse", "explore", "classify", "persist"],
+        choices=["canonical", "parse", "explore", "classify", "persist", "reports", "enterprise"],
         default="canonical",
-        help="Run canonical model build, raw metadata parser, XML structure explorer, complexity classifier, or MySQL persistence.",
+        help=(
+            "Run canonical model build, raw metadata parser, XML structure explorer, complexity classifier, "
+            "report builder, MySQL persistence, or the full enterprise pipeline."
+        ),
     )
     parser.add_argument(
         "--config",
@@ -31,6 +34,11 @@ def parse_args() -> argparse.Namespace:
         "--print-hierarchy",
         action="store_true",
         help="Print tag hierarchy to console in addition to writing report files.",
+    )
+    parser.add_argument(
+        "--persist",
+        action="store_true",
+        help="With --mode enterprise, also load the central MySQL metadata repository.",
     )
     return parser.parse_args()
 
@@ -97,6 +105,18 @@ def main() -> None:
             summary["sql_overrides"],
             summary["connectors"],
         )
+    elif args.mode == "reports":
+        from reports.enterprise_report_builder import EnterpriseReportBuilder
+
+        report_builder = EnterpriseReportBuilder(config=config, logger=logger)
+        summary = report_builder.build_reports()
+        logger.info("Enterprise report generation completed. %s", summary)
+    elif args.mode == "enterprise":
+        from services.enterprise_pipeline import EnterpriseMigrationPipeline
+
+        pipeline = EnterpriseMigrationPipeline(config=config, logger=logger)
+        summary = pipeline.run(persist_to_mysql=args.persist)
+        logger.info("Enterprise pipeline run completed. %s", summary)
     else:
         from parser.xml_parser import XMLParser
         from repository.canonical_builder import CanonicalMetadataBuilder
