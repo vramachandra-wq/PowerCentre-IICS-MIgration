@@ -13,9 +13,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["canonical", "parse", "explore"],
+        choices=["canonical", "parse", "explore", "classify", "persist"],
         default="canonical",
-        help="Run canonical model build, raw metadata parser, or XML structure explorer.",
+        help="Run canonical model build, raw metadata parser, XML structure explorer, complexity classifier, or MySQL persistence.",
     )
     parser.add_argument(
         "--config",
@@ -76,6 +76,27 @@ def main() -> None:
                 len(result["errors"]),
                 len(result["dataframes"]),
             )
+    elif args.mode == "classify":
+        from extractor.complexity_classifier import ComplexityClassifier
+
+        classifier = ComplexityClassifier(config=config, logger=logger)
+        results = classifier.classify()
+        classifier.write_report(results)
+        logger.info("Complexity classification completed. mappings=%s", len(results))
+    elif args.mode == "persist":
+        from repository.mysql_metadata_repository import MySqlMetadataRepository
+
+        repository = MySqlMetadataRepository(config=config, logger=logger)
+        summary = repository.persist()
+        logger.info(
+            "MySQL persistence completed. assets=%s mappings=%s transformations=%s columns=%s sql_overrides=%s connectors=%s",
+            summary["assets"],
+            summary["mappings"],
+            summary["transformations"],
+            summary["columns_metadata"],
+            summary["sql_overrides"],
+            summary["connectors"],
+        )
     else:
         from parser.xml_parser import XMLParser
         from repository.canonical_builder import CanonicalMetadataBuilder

@@ -112,3 +112,29 @@
 2026-06-16 15:01:25,837 | WARNING | pc_iics_migration | canonical_builder.to_dataframes:62 | pandas is not installed. Returning canonical rows and writing CSV outputs only.
 2026-06-16 15:01:26,642 | INFO | pc_iics_migration | canonical_builder.write_outputs:83 | Canonical repository outputs written to D:\Documents\PC_IICS_MIGRATION\reports\canonical
 2026-06-16 15:01:26,642 | INFO | pc_iics_migration | main.main:95 | Canonical metadata build completed. assets=202 mappings=23 transformations=105 columns=6494 connectors=7158 sql_overrides=35
+2026-06-17 12:48:06,358 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_IPCS_BItimePhasedDataBudgetFact.XML
+2026-06-17 12:48:06,363 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_Proforma.XML
+2026-06-17 12:48:06,368 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_PBCS_Actual_SM.XML
+2026-06-17 12:48:06,374 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS.XML
+2026-06-17 12:48:06,387 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SDE_POL_ProjectReviewSubmittedDimensionStage.XML
+2026-06-17 12:48:06,399 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SIL_IPCS_BITimephaseDataBudgetFact.XML
+2026-06-17 12:48:06,404 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F.XML
+2026-06-17 12:48:06,435 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_EmployeeHeadCount.XML
+2026-06-17 12:48:06,485 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_ORA_EmployeeDimension.XML
+2026-06-17 12:48:06,567 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SDE_ORA_ProjectCostLine.XML
+2026-06-17 12:48:06,643 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeDimension.XML
+2026-06-17 12:48:06,668 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeDimension_SCDUpdate.XML
+2026-06-17 12:48:06,688 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_EmployeeHeadCount.XML
+2026-06-17 12:48:06,739 | INFO | pc_iics_migration | xml_parser.parse_folder:68 | Parsed metadata from SIL_ProjectCostLine_Fact.XML
+2026-06-17 12:48:07,518 | INFO | pc_iics_migration | canonical_builder.write_outputs:83 | Canonical repository outputs written to D:\Projects\Jacobs\Jacobs IICS Migration\Code_final\PowerCentre-IICS-MIgration\reports\canonical
+2026-06-17 12:48:07,519 | INFO | pc_iics_migration | main.main:95 | Canonical metadata build completed. assets=202 mappings=23 transformations=105 columns=6494 connectors=7158 sql_overrides=35
+2026-06-17 13:07:59,603 | INFO | pc_iics_migration | complexity_classifier.write_report:139 | Complexity classification written to D:\Projects\Jacobs\Jacobs IICS Migration\Code_final\PowerCentre-IICS-MIgration\reports\complexity_classification_report.csv and D:\Projects\Jacobs\Jacobs IICS Migration\Code_final\PowerCentre-IICS-MIgration\reports\complexity_classification_report.md
+2026-06-17 13:07:59,607 | INFO | pc_iics_migration | main.main:85 | Complexity classification completed. mappings=23
+2026-06-17 13:08:45,382 | INFO | pc_iics_migration | complexity_classifier.write_report:139 | Complexity classification written to D:\Projects\Jacobs\Jacobs IICS Migration\Code_final\PowerCentre-IICS-MIgration\reports\complexity_classification_report.csv and D:\Projects\Jacobs\Jacobs IICS Migration\Code_final\PowerCentre-IICS-MIgration\reports\complexity_classification_report.md
+2026-06-17 13:08:45,384 | INFO | pc_iics_migration | main.main:85 | Complexity classification completed. mappings=23
+2026-06-17 13:09:24,959 | INFO | pc_iics_migration | complexity_classifier.write_report:140 | Complexity classification written to D:\Projects\Jacobs\Jacobs IICS Migration\Code_final\PowerCentre-IICS-MIgration\reports\complexity_classification_report.csv and D:\Projects\Jacobs\Jacobs IICS Migration\Code_final\PowerCentre-IICS-MIgration\reports\complexity_classification_report.md
+2026-06-17 13:09:24,963 | INFO | pc_iics_migration | main.main:85 | Complexity classification completed. mappings=23
+2026-06-17 13:43:44,872 | INFO | pc_iics_migration | mysql_metadata_repository.persist:60 | Central metadata repository loaded. asset_inventory_rows=23 transformation_rows=105
+2026-06-17 13:43:44,873 | INFO | pc_iics_migration | main.main:91 | MySQL persistence completed. asset_inventory_rows=23 transformation_rows=105
+2026-06-17 17:45:56,376 | INFO | pc_iics_migration | mysql_metadata_repository.persist:147 | Central metadata repository loaded. {'assets': 202, 'mappings': 23, 'transformations': 105, 'columns_metadata': 6494, 'sql_overrides': 35, 'connectors': 7158}
+2026-06-17 17:45:56,387 | INFO | pc_iics_migration | main.main:91 | MySQL persistence completed. assets=202 mappings=23 transformations=105 columns=6494 sql_overrides=35 connectors=7158

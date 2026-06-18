@@ -15,9 +15,8 @@ Current scope:
 - Mapping-level summary
 - Structured metadata extraction for repositories, folders, workflows, sessions, mappings, sources, targets, transformations, connectors, instances, ports, and SQL overrides
 - Normalized canonical repository outputs for future PowerCenter-vs-IICS comparison
+- Central MySQL metadata repository for migration comparison inputs
 - File and console logging
-
-Database persistence is intentionally not implemented yet.
 
 ## Folder Structure
 
@@ -68,7 +67,7 @@ Update `config/config.json` before running in a new environment.
 }
 ```
 
-The database section is present for the future canonical metadata repository work. The current explorer does not connect to MySQL.
+The `persist` mode connects to MySQL and refreshes the central metadata repository tables.
 
 ## Setup
 
@@ -94,6 +93,18 @@ Run only the raw parser:
 
 ```bash
 python main.py --mode parse
+```
+
+Generate the Day 5 complexity classification report:
+
+```bash
+python main.py --mode classify
+```
+
+Persist the central MySQL metadata repository:
+
+```bash
+python main.py --mode persist
 ```
 
 Run the parser for one XML file:
@@ -152,6 +163,56 @@ The canonical builder writes normalized repository outputs to:
 - `reports/canonical/mapping_json_by_id/`
 - `reports/canonical/canonical_mappings.json`
 - `reports/canonical/canonical_summary.json`
+
+The complexity classifier writes Day 5 mapping complexity outputs to:
+
+- `reports/complexity_classification_report.csv`
+- `reports/complexity_classification_report.md`
+
+The MySQL repository loader creates and refreshes:
+
+- `assets`
+- `mappings`
+- `transformations`
+- `columns_metadata`
+- `sql_overrides`
+- `connectors`
+
+The schema is also available for MySQL Workbench in:
+
+- `repository/schema.sql`
+- `repository/mysql_workbench_full_load.sql`
+- `repository/verification_queries.sql`
+
+## Central Metadata Repository
+
+The central repository uses the database settings from `config/config.json`.
+
+```json
+"database": {
+  "host": "localhost",
+  "port": 3306,
+  "username": "root",
+  "password": "change_me",
+  "database": "pc_iics_migration",
+  "driver": "mysql+mysqlconnector"
+}
+```
+
+The repository uses six linked tables:
+
+```text
+assets              Master inventory for mappings, sources, targets, and transformations
+mappings            Mapping-level migration details and complexity
+transformations     Transformation-level metadata per mapping
+columns_metadata    Source/target column metadata for datatype and rule checks
+sql_overrides       SQL override text for migration compatibility review
+connectors          Port-to-port data flow links for impact analysis
+```
+
+Use `repository/mysql_workbench_full_load.sql` in MySQL Workbench when you want schema plus insert statements in one file. Use `repository/verification_queries.sql` to check row counts and inspect loaded rows.
+
+This repository is the foundation for the later Metadata Comparator, where PowerCenter metadata can be compared against IICS metadata in the same central database.
 
 ## Canonical Metadata Model
 

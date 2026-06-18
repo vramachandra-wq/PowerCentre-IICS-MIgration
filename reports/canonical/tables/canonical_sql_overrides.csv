@@ -1,5 +1,5 @@
-context_name,context_type,mapping_id,mapping_name,sql_override_id,sql_query
-SQ_BI_TimephasedData_Budget,TRANSFORMATION,AST_985e13f7f80a13dd,JEG_SDE_IPCS_BItimePhasedDataBudgetFact,SQL_3307b125eccb67da,"SELECT
+sql_override_id,mapping_id,mapping_name,context_type,context_name,sql_query
+SQL_3307b125eccb67da,AST_985e13f7f80a13dd,JEG_SDE_IPCS_BItimePhasedDataBudgetFact,TRANSFORMATION,SQ_BI_TimephasedData_Budget,"SELECT
     bi_timephaseddata_budget.ecosystimephasedbudgetid,
     bi_timephaseddata_budget.projectnumber,
     bi_timephaseddata_budget.projectperiod,
@@ -22,7 +22,7 @@ FROM
 where  workflowinstanceid in (
 select distinct workflowinstanceid
 from BI_TimephasedData_Queue)"
-JEG_SDE_IPCS_BItimePhasedDataBudgetFact,SESSION,AST_985e13f7f80a13dd,JEG_SDE_IPCS_BItimePhasedDataBudgetFact,SQL_0759c7255deed2d7,"SELECT
+SQL_0759c7255deed2d7,AST_985e13f7f80a13dd,JEG_SDE_IPCS_BItimePhasedDataBudgetFact,SESSION,JEG_SDE_IPCS_BItimePhasedDataBudgetFact,"SELECT
     bi_timephaseddata_budget.ecosystimephasedbudgetid,
     bi_timephaseddata_budget.projectnumber,
     bi_timephaseddata_budget.projectperiod,
@@ -56,7 +56,7 @@ and workflowinstanceid is not null) new_data
 on bi_timephaseddata_budget.projectnumber = new_data.projectnumber
 and bi_timephaseddata_budget.workflowinstanceid = new_data.workflowinstanceid
 and bi_timephaseddata_budget.workflowinstanceid is not null and bi_timephaseddata_budget.workflowinstanceid > 0"
-SQ_WC_PBCS_EXEC_ACTUALS_P_FS,TRANSFORMATION,AST_9a7117b3cab6de96,JEG_SDE_ORA_PBCS_Actual_Proforma,SQL_b53b11102084e8f7,"Select scenario, year, period, Entity legal_entity, PU performance_unit, currency, account, 'No Project' project, 'Proforma_View' audittrail, amount
+SQL_b53b11102084e8f7,AST_9a7117b3cab6de96,JEG_SDE_ORA_PBCS_Actual_Proforma,TRANSFORMATION,SQ_WC_PBCS_EXEC_ACTUALS_P_FS,"Select scenario, year, period, Entity legal_entity, PU performance_unit, currency, account, 'No Project' project, 'Proforma_View' audittrail, amount
 
 from WC_PBCS_EXEC_PLAN_P_FS
 
@@ -65,7 +65,7 @@ UNION ALL
 Select scenario, year, period, Entity legal_entity, PU performance_unit, currency, account, 'No Project' project, 'PF_Other View' audittrail, amount
 
 from WC_PBCS_EXEC_PLAN_P_OTH_FS"
-JEG_SDE_ORA_PBCS_Actual_Proforma,SESSION,AST_9a7117b3cab6de96,JEG_SDE_ORA_PBCS_Actual_Proforma,SQL_ee8a7930fa450d7c,"Select scenario, year, period, Entity legal_entity, PU performance_unit, currency, account, 'No Project' project, 'Proforma_View' audittrail, amount
+SQL_ee8a7930fa450d7c,AST_9a7117b3cab6de96,JEG_SDE_ORA_PBCS_Actual_Proforma,SESSION,JEG_SDE_ORA_PBCS_Actual_Proforma,"Select scenario, year, period, Entity legal_entity, PU performance_unit, currency, account, 'No Project' project, 'Proforma_View' audittrail, amount
 
 from WC_PBCS_EXEC_ACTUALS_P_FS
 
@@ -74,7 +74,7 @@ UNION ALL
 Select scenario, year, period, Entity legal_entity, PU performance_unit, currency, account, 'No Project' project, 'PF_Other View' audittrail, amount
 
 from WC_PBCS_EXEC_ACTUALS_P_OTH_FS"
-JEG_SDE_ORA_PBCS_Actual_SM,SESSION,AST_d6e4591fa357acf8,JEG_SDE_ORA_PBCS_Actual_SM,SQL_0884bd04a9806df6,"select scenario, year, period, Entity legal_entity, PU performance_unit, currency, account, 'No Project' project, 'Statutory_View' audittrail, amount from WC_PBCS_EXEC_ACTUALS_SM_FS
+SQL_0884bd04a9806df6,AST_d6e4591fa357acf8,JEG_SDE_ORA_PBCS_Actual_SM,SESSION,JEG_SDE_ORA_PBCS_Actual_SM,"select scenario, year, period, Entity legal_entity, PU performance_unit, currency, account, 'No Project' project, 'Statutory_View' audittrail, amount from WC_PBCS_EXEC_ACTUALS_SM_FS
 
 where audittrail like 'OPS_%' and audittrail not like 'OPS_LG%'
 
@@ -83,7 +83,7 @@ UNION ALL
 select scenario, year, period, Entity legal_entity, PU performance_unit, currency, account, 'No Project' project, 'Management_View' audittrail, amount from WC_PBCS_EXEC_ACTUALS_SM_FS
 
 where audittrail not like 'OPS_%' and audittrail not like '%DiscOps%' and audittrail not like 'MGMT_LG_LEDGER_AHFS'"
-SQ_WC_PBCS_ACTUALS_P_FS,TRANSFORMATION,AST_9373b4f41bdebd10,JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS,SQL_10e31efbf3148f4f,"select SCENARIO,concat(concat(upper(period),'-FY20'),substr(YEAR,3)) PERIOD,LEGAL_ENTITY ,substr(PERFORMANCE_UNIT,4) PERFORMANCE_UNIT,CURRENCY,(case when substr(ACCOUNT,1,3) ='AC_' THEN substr(ACCOUNT,4) ELSE ACCOUNT END) ACCOUNT,AUDITTRAIL,to_number(substr(AMOUNT,1,(instr(AMOUNT, chr(13))-1))) as AMOUNT 
+SQL_10e31efbf3148f4f,AST_9373b4f41bdebd10,JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS,TRANSFORMATION,SQ_WC_PBCS_ACTUALS_P_FS,"select SCENARIO,concat(concat(upper(period),'-FY20'),substr(YEAR,3)) PERIOD,LEGAL_ENTITY ,substr(PERFORMANCE_UNIT,4) PERFORMANCE_UNIT,CURRENCY,(case when substr(ACCOUNT,1,3) ='AC_' THEN substr(ACCOUNT,4) ELSE ACCOUNT END) ACCOUNT,AUDITTRAIL,to_number(substr(AMOUNT,1,(instr(AMOUNT, chr(13))-1))) as AMOUNT 
 FROM wc_pbcs_actuals_MS_fs where AUDITTRAIL='Management_View'
 
 UNION ALL
@@ -120,7 +120,7 @@ UNION ALL
 (select SCENARIO,concat(concat(upper(period),'-FY20'),substr(YEAR,3)) PERIOD,LEGAL_ENTITY ,substr(PERFORMANCE_UNIT,4) PERFORMANCE_UNIT,CURRENCY,(case when substr(ACCOUNT,1,3) ='AC_' THEN substr(ACCOUNT,4) ELSE ACCOUNT END) ACCOUNT,'Proforma_View' as AUDITTRAIL,to_number(substr(AMOUNT,1,(instr(AMOUNT, chr(13))-1))) as AMOUNT 
 FROM wc_pbcs_plan_p_fs )) 
 group by SCENARIO,PERIOD,LEGAL_ENTITY ,PERFORMANCE_UNIT,CURRENCY,ACCOUNT,AUDITTRAIL"
-JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS,SESSION,AST_9373b4f41bdebd10,JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS,SQL_2b130079ef11e712,"select * from WC_PBCS_ACTUALS_PS where PERIOD in (
+SQL_2b130079ef11e712,AST_9373b4f41bdebd10,JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS,SESSION,JEG_SDE_ORA_WC_PBCS_BUDGET_ACTUALS_FS,"select * from WC_PBCS_ACTUALS_PS where PERIOD in (
 select distinct PERIOD FROM(
 select concat(concat(upper(period),'-FY20'),substr(YEAR,3)) PERIOD  from wc_pbcs_actuals_MS_fs
 UNION
@@ -145,7 +145,7 @@ UNION
 select concat(concat(upper(period),'-FY20'),substr(YEAR,3)) PERIOD  from wc_pbcs_plan_p_fs
 )
 )"
-SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS,TRANSFORMATION,AST_4119cec087cd3f77,JEG_SIL_IPCS_BItimePhaseDataBudgetFact,SQL_4c28d1a8a1671d0a,"SELECT    FS.ecosys_timephased_budgetid,
+SQL_4c28d1a8a1671d0a,AST_4119cec087cd3f77,JEG_SIL_IPCS_BItimePhaseDataBudgetFact,TRANSFORMATION,SQ_WC_BI_TIMEPHASEDATA_BUDGET_FS,"SELECT    FS.ecosys_timephased_budgetid,
     FS.project_number,
     FS.project_period,
     FS.workflow_instance_id,
@@ -221,7 +221,7 @@ AND FS.WORKFLOW_INSTANCE_ID = COBS.WORKFLOW_INSTANCE_ID (+)
 --AND FS.WORKFLOW_INSTANCE_ID = COMP_AGG.WORKFLOW_INSTANCE_ID 
 --AND FS.DATASOURCE_NUM_ID = COMP_AGG.DATASOURCE_NUM_ID
 --and FS.PROJECT_NUMBER = COMP_AGG.PROJECT_NUMBER"
-JEG_SIL_IPCS_BITimephaseDataBudgetFact,SESSION,AST_4119cec087cd3f77,JEG_SIL_IPCS_BItimePhaseDataBudgetFact,SQL_dfcf2c8913c490e5,"SELECT    FS.ecosys_timephased_budgetid,
+SQL_dfcf2c8913c490e5,AST_4119cec087cd3f77,JEG_SIL_IPCS_BItimePhaseDataBudgetFact,SESSION,JEG_SIL_IPCS_BITimephaseDataBudgetFact,"SELECT    FS.ecosys_timephased_budgetid,
     FS.project_number,
     FS.project_period,
     FS.workflow_instance_id,
@@ -298,7 +298,7 @@ AND FS.WORKFLOW_INSTANCE_ID = COBS.WORKFLOW_INSTANCE_ID (+)
 --AND FS.WORKFLOW_INSTANCE_ID = COMP_AGG.WORKFLOW_INSTANCE_ID 
 --AND FS.DATASOURCE_NUM_ID = COMP_AGG.DATASOURCE_NUM_ID
 --and FS.PROJECT_NUMBER = COMP_AGG.PROJECT_NUMBER"
-SQ_WC_PBCS_BUDGET_ACTUALS_FS,TRANSFORMATION,AST_56d3aa51e47b2893,JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F,SQL_1d86e5c416c0d650,"select  /*+ PARALLEL(WC_PBCS_BUDGET_ACTUALS_FS,9,DEFAULT) */
+SQL_1d86e5c416c0d650,AST_56d3aa51e47b2893,JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F,TRANSFORMATION,SQ_WC_PBCS_BUDGET_ACTUALS_FS,"select  /*+ PARALLEL(WC_PBCS_BUDGET_ACTUALS_FS,9,DEFAULT) */
 distinct FS.PERIOD, 
 FS.LEGAL_ENTITY, 
 FS.PERFORMANCE_UNIT,
@@ -373,19 +373,19 @@ AND EX.FX_RATE_TYPE = 'FX Rates - Average'
 AND EX.PERIOD=NVL(BILL.PERIOD,Fs.PERIOD) 
  LEFT JOIN W_MCAL_PERIOD_D MP ON  MP.MCAL_PERIOD_NAME=NVL(BILL.PERIOD,FS.PERIOD) 
  WHERE 1=1)"
-SQ_W_DAY_D,TRANSFORMATION,AST_ca0ba25145b4deea,SDE_EmployeeHeadCount2,SQL_382dfe7456839b98,"(select max(to_char(trunc(sysdate),'yyyymmdd')) as dates from w_etl_run_s)
+SQL_382dfe7456839b98,AST_ca0ba25145b4deea,SDE_EmployeeHeadCount2,TRANSFORMATION,SQ_W_DAY_D,"(select max(to_char(trunc(sysdate),'yyyymmdd')) as dates from w_etl_run_s)
 union
 (select distinct to_char(to_date(M_END_CAL_DT_WID,'yyyymmdd'),'yyyymmdd')  as dates 
 from w_day_d where calendar_date between add_months(to_date(to_char(trunc(sysdate),'yyyymmdd'),'yyyymmdd'),-11) 
 and add_months(to_date(to_char(trunc(sysdate),'yyyymmdd'),'yyyymmdd'),-1))"
-SDE_EmployeeHeadCount2,SESSION,AST_ca0ba25145b4deea,SDE_EmployeeHeadCount2,SQL_64b6460b2f329070,"(select max(to_char(trunc(load_dt),'yyyymmdd')) as dates from w_etl_run_s)
+SQL_64b6460b2f329070,AST_ca0ba25145b4deea,SDE_EmployeeHeadCount2,SESSION,SDE_EmployeeHeadCount2,"(select max(to_char(trunc(load_dt),'yyyymmdd')) as dates from w_etl_run_s)
 union
 (select distinct to_char(to_date(M_END_CAL_DT_WID,'yyyymmdd'),'yyyymmdd')
 from w_day_d where calendar_date between add_months(to_date(to_char((select max(load_dt) from w_etl_run_s),'yyyymmdd'),'yyyymmdd'),-11)
 and add_months(to_date(to_char((select max(load_dt) from w_etl_run_s),'yyyymmdd'),'yyyymmdd'),-1))"
-SQ_AP_INVOICES_ALL,TRANSFORMATION,AST_04508795b5c6c80e,JEG_SDE_ORA_TRUNCATE_DIM,SQL_27aeb7d366401140,SELECT COL1 FROM W_DUAL_D
-JEG_SDE_ORA_TRUNCATE_DIM_HR,SESSION,AST_04508795b5c6c80e,JEG_SDE_ORA_TRUNCATE_DIM,SQL_dbc664d7aaf400a6,SELECT COL1 FROM W_DUAL_D WHERE 1=2
-SQ_W_DAY_D1,TRANSFORMATION,AST_91f937e85d220e76,SDE_EmployeeHeadCount1,SQL_bf7e45b69650952a,"select
+SQL_27aeb7d366401140,AST_04508795b5c6c80e,JEG_SDE_ORA_TRUNCATE_DIM,TRANSFORMATION,SQ_AP_INVOICES_ALL,SELECT COL1 FROM W_DUAL_D
+SQL_dbc664d7aaf400a6,AST_04508795b5c6c80e,JEG_SDE_ORA_TRUNCATE_DIM,SESSION,JEG_SDE_ORA_TRUNCATE_DIM_HR,SELECT COL1 FROM W_DUAL_D WHERE 1=2
+SQL_bf7e45b69650952a,AST_91f937e85d220e76,SDE_EmployeeHeadCount1,TRANSFORMATION,SQ_W_DAY_D1,"select
 ASSIGNMENT_ID,
 EFFECTIVE_START_DATE,
 EFFECTIVE_END_DATE,
@@ -439,7 +439,7 @@ DATE_OF_BIRTH,
 PU	
 from
 WC_EMP_HEAD_COUNT_DS"
-SDE_EmployeeHeadCount1,SESSION,AST_91f937e85d220e76,SDE_EmployeeHeadCount1,SQL_3cced8e896bdb288,"select
+SQL_3cced8e896bdb288,AST_91f937e85d220e76,SDE_EmployeeHeadCount1,SESSION,SDE_EmployeeHeadCount1,"select
 ASSIGNMENT_ID,
 EFFECTIVE_START_DATE,
 EFFECTIVE_END_DATE,
@@ -494,7 +494,7 @@ PU
 ,X_UPLIFT_FLAG
 from
 WC_EMP_HEAD_COUNT_DS"
-SDE_ORA_EmployeeDimension,SESSION,AST_0836e3601ffd0e5a,SDE_ORA_EmployeeDimension,SQL_f7edf70562cf8bc1,"SELECT /*+ PARALLEL(4) */ DISTINCT 
+SQL_f7edf70562cf8bc1,AST_0836e3601ffd0e5a,SDE_ORA_EmployeeDimension,SESSION,SDE_ORA_EmployeeDimension,"SELECT /*+ PARALLEL(4) */ DISTINCT 
        p.person_id
      , p.first_name
      , p.middle_names
@@ -1140,7 +1140,7 @@ AND a.people_group_id = ppg.people_group_id(+)
 AND P.person_id = EN.person_id(+)
 AND P.person_id = TE.person_id(+)
 and pav.vacancy_id (+) = a.vacancy_id"
-JEG_SDE_ORA_ProjectCostLine_Elim_mv1,SESSION,AST_5aa684f92818cf15,JEG_SDE_ORA_ProjectCostLineFact_Elim,SQL_d39dcf5599a20c6e,"SELECT
+SQL_d39dcf5599a20c6e,AST_5aa684f92818cf15,JEG_SDE_ORA_ProjectCostLineFact_Elim,SESSION,JEG_SDE_ORA_ProjectCostLine_Elim_mv1,"SELECT
   expenditure_item_id,
   line_num,
   creation_date,
@@ -1247,7 +1247,7 @@ JEG_SDE_ORA_ProjectCostLine_Elim_mv1,SESSION,AST_5aa684f92818cf15,JEG_SDE_ORA_Pr
     ,JEG_MV_COST_ELIM1.X_EXPENDITURE_END_DATE as X_EXPENDITURE_END_DATE							   
 										
 FROM   JEG_MV_COST_ELIM1"
-JEG_SDE_ORA_ProjectCostLine_Elim_mv,SESSION,AST_5aa684f92818cf15,JEG_SDE_ORA_ProjectCostLineFact_Elim,SQL_aef43ff4875c86cd,"-----------------------------------
+SQL_aef43ff4875c86cd,AST_5aa684f92818cf15,JEG_SDE_ORA_ProjectCostLineFact_Elim,SESSION,JEG_SDE_ORA_ProjectCostLine_Elim_mv,"-----------------------------------
   -- COST ELIMINATION
  -----------------------------------
 SELECT  
@@ -1345,10 +1345,10 @@ SELECT
   ,NULL AS X_EXPENDITURE_END_DATE																
 FROM 
 JEG_MV_COST_ELIM"
-SQ_AP_INVOICES_ALL,TRANSFORMATION,AST_871cd27880ef4b52,JEG_SDE_ORA_TRUNCATE_DIM,SQL_af7259d512a8f8c0,SELECT COL1 FROM W_DUAL_D
-JEG_SDE_ORA_TRUNCATE_DIM,SESSION,AST_871cd27880ef4b52,JEG_SDE_ORA_TRUNCATE_DIM,SQL_cb523048e5036598,"SELECT COL1 FROM W_DUAL_D
+SQL_af7259d512a8f8c0,AST_871cd27880ef4b52,JEG_SDE_ORA_TRUNCATE_DIM,TRANSFORMATION,SQ_AP_INVOICES_ALL,SELECT COL1 FROM W_DUAL_D
+SQL_cb523048e5036598,AST_871cd27880ef4b52,JEG_SDE_ORA_TRUNCATE_DIM,SESSION,JEG_SDE_ORA_TRUNCATE_DIM,"SELECT COL1 FROM W_DUAL_D
 where 1=2"
-SDE_ORA_ProjectCostLine_mv1,SESSION,AST_fe74445209a7bef0,SDE_ORA_ProjectCostLineFact,SQL_7de06cfc7d3ef330,"SELECT  
+SQL_7de06cfc7d3ef330,AST_fe74445209a7bef0,SDE_ORA_ProjectCostLineFact,SESSION,SDE_ORA_ProjectCostLine_mv1,"SELECT  
  /*+ use_hash(JEG_MV_COST_PA,JEG_MV_COST_XLA) parallel(JEG_MV_COST_PA, 4) NOLOGGING*/
   distinct
   JEG_MV_COST_PA.EID,
@@ -1498,7 +1498,7 @@ where JEG_MV_COST_PA.EID = JEG_MV_COST_XLA.source_distribution_id_num_1
   AND JEG_MV_COST_XLA.accounting_class_code IN ('COST','PROVIDER_COST','RECEIVER_COST')--today
   AND JEG_MV_COST_PA.system_linkage_function in('PJ','ST')--Today VI,USG
 and JEG_MV_COST_PA.line_type='D'"
-SDE_ORA_ProjectCostLine_mv,SESSION,AST_fe74445209a7bef0,SDE_ORA_ProjectCostLineFact,SQL_87997d04071fbb70,"-- LABOR DATA 'R' RAW LINES
+SQL_87997d04071fbb70,AST_fe74445209a7bef0,SDE_ORA_ProjectCostLineFact,SESSION,SDE_ORA_ProjectCostLine_mv,"-- LABOR DATA 'R' RAW LINES
 SELECT
   pa_cost_distribution_lines_all.expenditure_item_id,
   pa_cost_distribution_lines_all.line_num,
@@ -1756,7 +1756,7 @@ AND pa_cost_distribution_lines_all.expenditure_item_id = xdl.source_distribution
  AND (XAH.LAST_UPDATE_DATE >=  to_date('$$MV_LAST_EXTRACT_DATE', 'MM/DD/YYYY HH24:MI:SS')
 
  )"
-JEG_SDE_ORA_ProjectCostLine_nl_mv,SESSION,AST_2045cc8ea73a5220,JEG_SDE_ORA_ProjectCostLineFact_NL,SQL_b5ab031fbe46df89,"SELECT
+SQL_b5ab031fbe46df89,AST_2045cc8ea73a5220,JEG_SDE_ORA_ProjectCostLineFact_NL,SESSION,JEG_SDE_ORA_ProjectCostLine_nl_mv,"SELECT
 DISTINCT
   JEG_MV_COST_PA.EID,
   JEG_MV_COST_PA.line_num,
@@ -1934,7 +1934,7 @@ AND dr_gl_code_combinations.code_combination_id  =
   ,JEG_MV_COST_PA.PCDLA_code_combination_id)
   )
     AND JEG_MV_COST_XLA.APPLICATION_ID = 200"
-JEG_SDE_ORA_ProjectCostLineFact_IC_HUB,SESSION,AST_fb821bfbd660a2c7,JEG_SDE_ORA_ProjectCostLineFact_IC_HUB,SQL_938d98dd2096b904,"SELECT EXPENDITURE_ITEM_ID
+SQL_938d98dd2096b904,AST_fb821bfbd660a2c7,JEG_SDE_ORA_ProjectCostLineFact_IC_HUB,SESSION,JEG_SDE_ORA_ProjectCostLineFact_IC_HUB,"SELECT EXPENDITURE_ITEM_ID
 ,LINE_NUM
 ,CREATION_DATE
 ,CREATED_BY
@@ -2025,7 +2025,7 @@ JEG_SDE_ORA_ProjectCostLineFact_IC_HUB,SESSION,AST_fb821bfbd660a2c7,JEG_SDE_ORA_
 ,X_ASSIGNED_PU_ID
 ,X_GL_TRANSFER_DATE
 FROM JEG_MV_GID_COST_IC"
-JEG_SDE_ORA_ProjectCostLineFact_Elim_Hub,SESSION,AST_69d8787a9e09ba27,JEG_SDE_ORA_ProjectCostLineFact_Elim_Hub,SQL_02c942447f700e66,"SELECT 
+SQL_02c942447f700e66,AST_69d8787a9e09ba27,JEG_SDE_ORA_ProjectCostLineFact_Elim_Hub,SESSION,JEG_SDE_ORA_ProjectCostLineFact_Elim_Hub,"SELECT 
 EXPENDITURE_ITEM_ID,               
 LINE_NUM      ,                    
 CREATION_DATE,
@@ -2120,7 +2120,7 @@ X_GL_TRANSFER_DATE       ,
   NULL AS X_EXPENDITURE_END_DATE
   FROM
   JEG_MV_GID_COST_ELIM"
-JEG_SDE_ORA_ProjectCostLine_IC_mv,SESSION,AST_ee945dcbf48bb9bc,JEG_SDE_ORA_ProjectCostLineFact_IC,SQL_9b5552ac32f7ef09,"-----------------------------------
+SQL_9b5552ac32f7ef09,AST_ee945dcbf48bb9bc,JEG_SDE_ORA_ProjectCostLineFact_IC,SESSION,JEG_SDE_ORA_ProjectCostLine_IC_mv,"-----------------------------------
 -- COST INTERCOMPANY
 -----------------------------------
 SELECT  $$HINT1
@@ -2304,7 +2304,7 @@ WHERE XAH.AE_HEADER_ID = XAL.AE_HEADER_ID
   OR  XAH.LAST_UPDATE_DATE >=  to_date('$$MV_LAST_EXTRACT_DATE', 'MM/DD/YYYY HH24:MI:SS'))
  --AND PPA.SEGMENT1 NOT IN (SELECT DISTINCT PROJECT_NUMBER FROM ($$X_DIVESTCO_SQL)) --Added for Divestiture logic for ECR
  AND NOT EXISTS (SELECT 1 FROM ($$X_DIVESTCO_SQL) SQ WHERE SQ.PROJECT_NUMBER = PPA.SEGMENT1 )--Added for Divestiture logic."
-SDE_ORA_ProjectCostLineFact_D_PCC_mv,SESSION,AST_b1272de8ed64d14e,SDE_ORA_ProjectCostLineFact_PCC,SQL_cd33c17dbf92466f,"SELECT 
+SQL_cd33c17dbf92466f,AST_b1272de8ed64d14e,SDE_ORA_ProjectCostLineFact_PCC,SESSION,SDE_ORA_ProjectCostLineFact_D_PCC_mv,"SELECT 
  peia.expenditure_item_id ,--USG 
   pa_cost_distribution_lines_all.line_num,
   pa_cost_distribution_lines_all.creation_date,
@@ -2600,7 +2600,7 @@ AND XAL.ACCOUNTING_DATE >= to_date('10/01/2016', 'MM/DD/YYYY HH24:MI:SS')
   OR peia.LAST_UPDATE_DATE >=  to_date('$$MV_LAST_EXTRACT_DATE', 'MM/DD/YYYY HH24:MI:SS'))
   --AND pa_projects_all.SEGMENT1 NOT IN (SELECT DISTINCT PROJECT_NUMBER FROM ($$X_DIVESTCO_SQL)) --Added for Divestiture logic for ECR
   AND NOT EXISTS (SELECT 1 FROM ($$X_DIVESTCO_SQL) SQ WHERE SQ.PROJECT_NUMBER = pa_projects_all.SEGMENT1 )--Added for Divestiture logic.*/"
-SDE_ORA_ProjectCostLineFact_R_PCC_mv,SESSION,AST_b1272de8ed64d14e,SDE_ORA_ProjectCostLineFact_PCC,SQL_183c575fc6802719,"SELECT  peia.expenditure_item_id,--USG
+SQL_183c575fc6802719,AST_b1272de8ed64d14e,SDE_ORA_ProjectCostLineFact_PCC,SESSION,SDE_ORA_ProjectCostLineFact_R_PCC_mv,"SELECT  peia.expenditure_item_id,--USG
   pa_cost_distribution_lines_all.line_num,
   pa_cost_distribution_lines_all.creation_date,
   pa_cost_distribution_lines_all.created_by,
@@ -3332,7 +3332,7 @@ AND XAL.ACCOUNTING_DATE                      >= to_date('10/01/2016', 'MM/DD/YYY
 AND ( XAH.LAST_UPDATE_DATE                   >= to_date('$$MV_LAST_EXTRACT_DATE', 'MM/DD/YYYY HH24:MI:SS')
 OR peia.LAST_UPDATE_DATE                     >= to_date('$$MV_LAST_EXTRACT_DATE', 'MM/DD/YYYY HH24:MI:SS'))
   --AND NOT EXISTS (SELECT 1 FROM ($$X_DIVESTCO_SQL) SQ ----WHERE SQ.PROJECT_NUMBER = pa_projects_all.SEGMENT1 )--Added for Divestiture logic."
-Sq_W_EMPLOYEE_DS,TRANSFORMATION,AST_abf31c5465cdde5e,SIL_EmployeeDimension,SQL_4fe3cfe49c834926,"select 
+SQL_4fe3cfe49c834926,AST_abf31c5465cdde5e,SIL_EmployeeDimension,TRANSFORMATION,Sq_W_EMPLOYEE_DS,"select 
 W_EMPLOYEE_DS.FST_NAME, 
 W_EMPLOYEE_DS.MID_NAME, 
 W_EMPLOYEE_DS.LAST_NAME, 
@@ -3990,7 +3990,7 @@ ON W_EMPLOYEE_DS.RELIGION_CODE=RELIGION_CODE.SOURCE_CODE
 AND
 W_EMPLOYEE_DS.DATASOURCE_NUM_ID=RELIGION_CODE.DATASOURCE_NUM_ID
 --WHERE W_EMPLOYEE_DS.INTEGRATION_ID = '2466905'"
-SIL_EmployeeDimension,SESSION,AST_abf31c5465cdde5e,SIL_EmployeeDimension,SQL_d2b3555f009bbb7e,"select 
+SQL_d2b3555f009bbb7e,AST_abf31c5465cdde5e,SIL_EmployeeDimension,SESSION,SIL_EmployeeDimension,"select 
 W_EMPLOYEE_DS.FST_NAME, 
 W_EMPLOYEE_DS.MID_NAME, 
 W_EMPLOYEE_DS.LAST_NAME, 
@@ -4662,7 +4662,7 @@ ON W_EMPLOYEE_DS.RELIGION_CODE=RELIGION_CODE.SOURCE_CODE
 AND
 W_EMPLOYEE_DS.DATASOURCE_NUM_ID=RELIGION_CODE.DATASOURCE_NUM_ID
 --WHERE W_EMPLOYEE_DS.INTEGRATION_ID = '2466905'"
-Sq_W_EMPLOYEE_D,TRANSFORMATION,AST_9946c14212d92216,SIL_EmployeeDimension_SCDUpdate,SQL_67552316edbac4fc,"SELECT  $$Hint1
+SQL_67552316edbac4fc,AST_9946c14212d92216,SIL_EmployeeDimension_SCDUpdate,TRANSFORMATION,Sq_W_EMPLOYEE_D,"SELECT  $$Hint1
 TARGET_TABLE.ROW_WID, 
 TARGET_TABLE.FST_NAME, 
 TARGET_TABLE.MID_NAME, 
@@ -4817,7 +4817,7 @@ ORDER BY
 TARGET_TABLE.INTEGRATION_ID, 
 TARGET_TABLE.DATASOURCE_NUM_ID, 
 TARGET_TABLE.SRC_EFF_FROM_DT DESC"
-SIL_EmployeeDimension_SCDUpdate,SESSION,AST_9946c14212d92216,SIL_EmployeeDimension_SCDUpdate,SQL_f94f5de7b511fe68,"SELECT  $$Hint1
+SQL_f94f5de7b511fe68,AST_9946c14212d92216,SIL_EmployeeDimension_SCDUpdate,SESSION,SIL_EmployeeDimension_SCDUpdate,"SELECT  $$Hint1
 TARGET_TABLE.ROW_WID, 
 TARGET_TABLE.FST_NAME, 
 TARGET_TABLE.MID_NAME, 
@@ -4976,7 +4976,7 @@ ORDER BY
 TARGET_TABLE.INTEGRATION_ID, 
 TARGET_TABLE.DATASOURCE_NUM_ID, 
 TARGET_TABLE.SRC_EFF_FROM_DT DESC"
-SQ_WC_WRKFC_HEADCNT_FS1,TRANSFORMATION,AST_bcf1b6b75936b6e5,SIL_EmployeeHeadCount,SQL_e27dcc378ce00733,"SELECT
+SQL_e27dcc378ce00733,AST_bcf1b6b75936b6e5,SIL_EmployeeHeadCount,TRANSFORMATION,SQ_WC_WRKFC_HEADCNT_FS1,"SELECT
   FACT_STAGE.ASSIGNMENT_ID,
   FACT_STAGE.SNAPSHOT_DATE,
   FACT_STAGE.PERSON_ID,
@@ -5860,7 +5860,7 @@ order by person_id)qn
 
 ) FACT_STAGE
 WHERE FACT_STAGE.PERSON_ID <> '2731000'"
-SQ_W_PROJ_COST_LINE_FS,TRANSFORMATION,AST_e9ca45f91eff7722,SIL_ProjectCostLine_Fact,SQL_9b557e6e8d265a82,"SELECT W_PROJ_COST_LINE_FS.TASK_ID                                 ,
+SQL_9b557e6e8d265a82,AST_e9ca45f91eff7722,SIL_ProjectCostLine_Fact,TRANSFORMATION,SQ_W_PROJ_COST_LINE_FS,"SELECT W_PROJ_COST_LINE_FS.TASK_ID                                 ,
   W_PROJ_COST_LINE_FS.GL_ACCOUNTING_DT                              ,
   COALESCE(W_PROJ_COST_LINE_FS.PROVIDER_GL_ACCOUNTING_DT,W_PROJ_COST_LINE_FS.GL_ACCOUNTING_DT) PROVIDER_GL_ACCOUNTING_DT  ,
   W_PROJ_COST_LINE_FS.PROJ_ACCOUNTING_DT                            ,

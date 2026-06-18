@@ -6,6 +6,6 @@
   "connector_count": 7158,
   "sql_override_count": 35,
   "mapping_json_count": 23,
-  "table_output_folder": "D:\\Documents\\PC_IICS_MIGRATION\\reports\\canonical\\tables",
-  "mapping_json_output_folder": "D:\\Documents\\PC_IICS_MIGRATION\\reports\\canonical\\mapping_json_by_id"
+  "table_output_folder": "D:\\Projects\\Jacobs\\Jacobs IICS Migration\\Code_final\\PowerCentre-IICS-MIgration\\reports\\canonical\\tables",
+  "mapping_json_output_folder": "D:\\Projects\\Jacobs\\Jacobs IICS Migration\\Code_final\\PowerCentre-IICS-MIgration\\reports\\canonical\\mapping_json_by_id"
 }
