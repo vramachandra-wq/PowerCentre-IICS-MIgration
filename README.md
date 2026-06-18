@@ -1,112 +1,165 @@
-# PowerCenter to IICS Enterprise Metadata Accelerator
+# PowerCenter to IICS Metadata Migration Accelerator
 
-This repository provides an enterprise-ready metadata foundation for PowerCenter to IICS migration planning. It parses PowerCenter XML exports, builds normalized metadata, classifies mapping complexity, generates stakeholder reports, and loads a central MySQL repository for future PowerCenter-vs-IICS comparison.
+This repository provides an enterprise metadata extraction and analysis framework for **PowerCenter to IICS migration** activities.
 
-## Enterprise Capabilities
+It reads PowerCenter XML exports, extracts technical metadata, builds a normalized canonical metadata model, evaluates mapping complexity, generates migration reports, and stores processed metadata in a MySQL repository for future PowerCenter-vs-IICS comparison.
+
+## Table Of Contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Setup](#setup)
+- [Configuration](#configuration)
+- [Running The Application](#running-the-application)
+- [Generated Outputs](#generated-outputs)
+- [Database Scripts](#database-scripts)
+- [Central Repository Tables](#central-repository-tables)
+- [Documentation](#documentation)
+
+## Features
 
 - Config-driven XML ingestion from `input_xml`
-- Raw metadata extraction for repositories, folders, workflows, sessions, mappings, sources, targets, transformations, ports, connectors, instances, and SQL overrides
-- Canonical metadata model for stable downstream comparison
-- Rule-based mapping complexity classification
-- Enterprise report generation for stakeholders and engineering teams
-- Central MySQL repository with normalized tables
-- MySQL Workbench scripts for schema, inserts, and verification
-- Single-command orchestration for repeatable migration assessment runs
+- PowerCenter metadata extraction for repositories, folders, workflows, sessions, mappings, sources, targets, transformations, ports, connectors, instances, and SQL overrides
+- Canonical metadata model for downstream processing
+- Mapping complexity classification
+- Enterprise migration reports
+- MySQL-based central metadata repository
+- MySQL Workbench scripts for schema creation, loading, and validation
+- CLI-based execution for individual stages and full pipeline orchestration
 
 ## Architecture
 
 ```text
-PowerCenter XMLs
-  -> Parser Layer
-  -> Raw Metadata Tables
-  -> Canonical Builder
-  -> Complexity Classifier
-  -> Enterprise Reports
-  -> MySQL Metadata Repository
-  -> Future PowerCenter vs IICS Comparator
+PowerCenter XML Files
+        |
+        v
+XML Parser
+        |
+        v
+Raw Metadata Tables
+        |
+        v
+Canonical Metadata Builder
+        |
+        v
+Complexity Classifier
+        |
+        v
+Enterprise Report Builder
+        |
+        v
+MySQL Metadata Repository
+        |
+        v
+Future IICS Comparison Layer
 ```
 
-More detail:
-
-- [Enterprise Architecture](docs/enterprise_architecture.md)
-- [Data Model](docs/data_model.md)
-- [Complexity Rules](docs/mapping_complexity_rules.md)
-- [Operations Runbook](docs/operations_runbook.md)
-
-## Folder Structure
+## Project Structure
 
 ```text
 project_root/
-|-- config/          Runtime path, logging, and MySQL configuration
+|-- config/          Runtime configuration, paths, and database settings
 |-- docs/            Enterprise architecture and operations documentation
-|-- extractor/       Metadata enrichment, including complexity classification
-|-- input_xml/       PowerCenter XML exports
+|-- extractor/       Metadata enrichment and complexity calculation logic
+|-- input_xml/       PowerCenter XML input files
 |-- logs/            Application logs
-|-- parser/          XML parsing framework
-|-- reports/         Generated metadata, canonical outputs, and enterprise reports
-|-- repository/      Canonical model and MySQL persistence layer
-|-- services/        End-to-end enterprise orchestration
-|-- utils/           Shared config and logging utilities
-|-- main.py          CLI entry point
+|-- parser/          XML parsing components
+|-- reports/         Generated metadata and reports
+|-- repository/      Canonical model and MySQL persistence scripts
+|-- services/        Pipeline orchestration
+|-- utils/           Common utilities
+|-- main.py          Application entry point
+|-- requirements.txt Python dependencies
 ```
 
 ## Setup
+
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Review database and path settings:
+Place PowerCenter XML exports in:
+
+```text
+input_xml/
+```
+
+## Configuration
+
+Update runtime configuration in:
 
 ```text
 config/config.json
 ```
 
-## Enterprise Commands
+Important sections:
 
-Run the full enterprise pipeline:
+```json
+{
+  "database": {
+    "host": "localhost",
+    "port": 3306,
+    "username": "root",
+    "password": "change_me",
+    "database": "pc_iics_migration",
+    "driver": "mysql+mysqlconnector"
+  },
+  "paths": {
+    "xml_folder": "input_xml",
+    "output_folder": "reports",
+    "log_folder": "logs"
+  }
+}
+```
+
+## Running The Application
+
+Run the complete enterprise processing flow:
 
 ```bash
 python main.py --mode enterprise
 ```
 
-Run the full pipeline and refresh MySQL:
+Run complete processing and load results into MySQL:
 
 ```bash
 python main.py --mode enterprise --persist
 ```
 
-Regenerate reports from existing metadata:
+Generate enterprise reports from existing metadata:
 
 ```bash
 python main.py --mode reports
 ```
 
-Refresh MySQL from existing canonical outputs:
+Load canonical metadata into MySQL:
 
 ```bash
 python main.py --mode persist
 ```
 
-Run only canonical build:
+Run canonical metadata generation:
 
 ```bash
 python main.py
 ```
 
-Run only raw parser:
+Run XML parsing only:
 
 ```bash
 python main.py --mode parse
 ```
 
-Run only complexity classifier:
+Run complexity classification only:
 
 ```bash
 python main.py --mode classify
 ```
 
-Explore XML structure:
+Explore XML hierarchy:
 
 ```bash
 python main.py --mode explore --print-hierarchy
@@ -114,7 +167,7 @@ python main.py --mode explore --print-hierarchy
 
 ## Generated Outputs
 
-Raw parsed metadata:
+### Parsed Metadata
 
 ```text
 reports/metadata_tables/
@@ -122,83 +175,61 @@ reports/parsed_json/
 reports/parser_batch_summary.json
 ```
 
-Canonical repository outputs:
+### Canonical Metadata
 
 ```text
-reports/canonical/tables/
-reports/canonical/mapping_json_by_id/
-reports/canonical/canonical_mappings.json
-reports/canonical/canonical_summary.json
+reports/canonical/
+|-- tables/
+|-- mapping_json_by_id/
+|-- canonical_mappings.json
+|-- canonical_summary.json
 ```
 
-Enterprise reports:
+### Enterprise Reports
 
 ```text
-reports/enterprise/asset_inventory.csv
-reports/enterprise/transformation_type_summary.csv
-reports/enterprise/mapping_migration_catalog.csv
-reports/enterprise/executive_summary.json
-reports/enterprise/enterprise_migration_report.md
+reports/enterprise/
+|-- asset_inventory.csv
+|-- transformation_type_summary.csv
+|-- mapping_migration_catalog.csv
+|-- executive_summary.json
+|-- enterprise_migration_report.md
 ```
 
-Complexity reports:
+### Complexity Reports
 
 ```text
 reports/complexity_classification_report.csv
 reports/complexity_classification_report.md
 ```
 
-MySQL Workbench assets:
+## Database Scripts
 
 ```text
-repository/schema.sql
-repository/mysql_workbench_full_load.sql
-repository/verification_queries.sql
+repository/
+|-- schema.sql
+|-- mysql_workbench_full_load.sql
+|-- verification_queries.sql
 ```
 
-## Central Repository Tables
+Use `repository/mysql_workbench_full_load.sql` in MySQL Workbench to create the schema and insert metadata.
 
-The MySQL repository stores metadata by domain, not by XML file:
+Use `repository/verification_queries.sql` to validate table counts and inspect loaded data.
+
+## Central Repository Tables
 
 | Table | Purpose |
 |---|---|
 | `assets` | Master inventory for mappings, sources, targets, and transformations |
-| `mappings` | Mapping-level migration scope, counts, sources, targets, and complexity |
-| `transformations` | Transformation-level technical logic |
-| `columns_metadata` | Source and target field metadata for datatype checks |
-| `sql_overrides` | SQL override text and review status |
-| `connectors` | Data-flow and lineage links inside mappings |
+| `mappings` | Mapping-level migration scope, sources, targets, counts, and complexity |
+| `transformations` | Transformation-level technical logic inside mappings |
+| `columns_metadata` | Source and target column metadata for datatype and rule checks |
+| `sql_overrides` | SQL override text requiring migration compatibility review |
+| `connectors` | Port-to-port and component-to-component data-flow links |
 
-The 14 XML files are inputs. The six MySQL tables are normalized enterprise metadata categories. Every row retains traceability through XML/source file, repository, folder, mapping, and generated IDs.
+## Documentation
 
-## Complexity Model
-
-Report labels:
-
-```text
-Simple
-Medium
-Complex
-```
-
-Canonical repository labels:
-
-```text
-LOW
-MEDIUM
-HIGH
-```
-
-Business mapping:
-
-| Report | Repository | Meaning |
-|---|---|---|
-| Simple | LOW | Lower migration effort |
-| Medium | MEDIUM | Needs validation and targeted review |
-| Complex | HIGH | Needs detailed analysis and possible remediation |
-
-Complexity is calculated from transformation count, lookups, SQL overrides, expression logic, filters/routers, stored procedures, mapplets, and advanced transformation types.
-
-## Current Scope
-
-The current implementation is focused on PowerCenter source metadata. The repository is intentionally shaped so IICS target metadata can later be loaded into the same comparison model.
+- [Enterprise Architecture](docs/enterprise_architecture.md)
+- [Data Model](docs/data_model.md)
+- [Mapping Complexity Rules](docs/mapping_complexity_rules.md)
+- [Operations Runbook](docs/operations_runbook.md)
