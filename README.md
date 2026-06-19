@@ -87,34 +87,6 @@ Place PowerCenter XML exports in:
 input_xml/
 ```
 
-## Configuration
-
-Update runtime configuration in:
-
-```text
-config/config.json
-```
-
-Important sections:
-
-```json
-{
-  "database": {
-    "host": "localhost",
-    "port": 3306,
-    "username": "root",
-    "password": "change_me",
-    "database": "pc_iics_migration",
-    "driver": "mysql+mysqlconnector"
-  },
-  "paths": {
-    "xml_folder": "input_xml",
-    "output_folder": "reports",
-    "log_folder": "logs"
-  }
-}
-```
-
 ## Running The Application
 
 Run the complete enterprise processing flow:
@@ -227,9 +199,3 @@ Use `repository/verification_queries.sql` to validate table counts and inspect l
 | `sql_overrides` | SQL override text requiring migration compatibility review |
 | `connectors` | Port-to-port and component-to-component data-flow links |
 
-## Documentation
-
-- [Enterprise Architecture](docs/enterprise_architecture.md)
-- [Data Model](docs/data_model.md)
-- [Mapping Complexity Rules](docs/mapping_complexity_rules.md)
-- [Operations Runbook](docs/operations_runbook.md)
