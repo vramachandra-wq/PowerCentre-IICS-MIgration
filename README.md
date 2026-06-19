@@ -10,12 +10,10 @@ It reads PowerCenter XML exports, extracts technical metadata, builds a normaliz
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
 - [Setup](#setup)
-- [Configuration](#configuration)
 - [Running The Application](#running-the-application)
 - [Generated Outputs](#generated-outputs)
 - [Database Scripts](#database-scripts)
 - [Central Repository Tables](#central-repository-tables)
-- [Documentation](#documentation)
 
 ## Features
 
