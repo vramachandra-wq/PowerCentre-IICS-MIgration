@@ -59,7 +59,7 @@ Future IICS Comparison Layer
 project_root/
 |-- config/          Runtime configuration, paths, and database settings
 |-- docs/            Enterprise architecture and operations documentation
-|-- extractor/       Metadata enrichment and complexity calculation logic
+|-- extractor/       Metadata enrichment and complexity calculation logic & generate report
 |-- input_xml/       PowerCenter XML input files
 |-- logs/            Application logs
 |-- parser/          XML parsing components
