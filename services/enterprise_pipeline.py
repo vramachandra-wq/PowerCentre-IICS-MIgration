@@ -5,7 +5,7 @@ from typing import Any
 
 from extractor.complexity_classifier import ComplexityClassifier
 from parser.xml_parser import XMLParser
-from reports.enterprise_report_builder import EnterpriseReportBuilder
+from extractor.enterprise_report_builder import EnterpriseReportBuilder
 from repository.canonical_builder import CanonicalMetadataBuilder
 from repository.mysql_metadata_repository import MySqlMetadataRepository
 from utils.config_loader import AppConfig

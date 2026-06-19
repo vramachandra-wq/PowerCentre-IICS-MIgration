@@ -106,7 +106,7 @@ def main() -> None:
             summary["connectors"],
         )
     elif args.mode == "reports":
-        from reports.enterprise_report_builder import EnterpriseReportBuilder
+        from extractor.enterprise_report_builder import EnterpriseReportBuilder
 
         report_builder = EnterpriseReportBuilder(config=config, logger=logger)
         summary = report_builder.build_reports()
