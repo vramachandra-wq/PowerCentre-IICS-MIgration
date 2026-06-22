@@ -53,7 +53,7 @@ MySQL Metadata Repository
 Future IICS Comparison Layer
 ```
 
-## Project Structure
+## Project Structure upto enterprise level:
 
 ```text
 pc_iics_migration/
@@ -106,6 +106,8 @@ common/config/config.json
 ```
 
 ## Running The Application
+
+Make sure all your dependencies are installed
 
 Run the complete enterprise processing flow:
 
@@ -206,7 +208,7 @@ Use `data/database/mysql_workbench_full_load.sql` in MySQL Workbench to create t
 
 Use `data/database/verification_queries.sql` to validate table counts and inspect loaded data.
 
-## Central Repository Tables
+## Central Repository Tables in SQL
 
 | Table | Purpose |
 |---|---|
