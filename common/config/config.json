@@ -1,0 +1,21 @@
+{
+    "database":  {
+                     "host":  "localhost",
+                     "port":  3306,
+                     "username":  "root",
+                     "password":  "change_me",
+                     "database":  "pc_iics_migration",
+                     "driver":  "mysql+mysqlconnector"
+                 },
+    "paths":  {
+                  "xml_folder":  "input_xml",
+                  "output_folder":  "output",
+                  "log_folder":  "output/logs"
+              },
+    "logging":  {
+                    "level":  "INFO",
+                    "file_name":  "pc_iics_migration.log",
+                    "max_bytes":  5242880,
+                    "backup_count":  5
+                }
+}
