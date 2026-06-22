@@ -1,9 +1,9 @@
 {
     "database":  {
-                     "host":  "localhost",
+                     "host":  "172.30.44.162",
                      "port":  3306,
-                     "username":  "root",
-                     "password":  "change_me",
+                     "username":  "adminpc",
+                     "password":  "In4matica",
                      "database":  "pc_iics_migration",
                      "driver":  "mysql+mysqlconnector"
                  },
