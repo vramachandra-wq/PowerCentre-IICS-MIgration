@@ -13,11 +13,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["canonical", "parse", "explore", "classify", "persist", "reports", "enterprise"],
+        choices=["canonical", "parse", "explore", "classify", "persist", "reports", "enterprise", "all"],
         default="canonical",
         help=(
             "Run canonical model build, raw metadata parser, XML structure explorer, complexity classifier, "
-            "report builder, MySQL persistence, or the full enterprise pipeline."
+            "report builder, MySQL persistence, the enterprise pipeline, or all Week-1/Week-2 outputs."
         ),
     )
     parser.add_argument(
@@ -48,7 +48,10 @@ def main() -> None:
     config = ConfigLoader(Path(args.config)).load()
     logger = LoggerFactory.create_logger(config.logging, config.paths.log_folder)
 
-    if args.mode == "explore":
+    if args.mode == "all":
+        summary = run_all(config=config, logger=logger, persist_to_mysql=args.persist)
+        logger.info("Full Week-1/Week-2 run completed. %s", summary)
+    elif args.mode == "explore":
         from business.parser.xml_explorer import PowerCenterXmlExplorer
 
         explorer = PowerCenterXmlExplorer(config=config, logger=logger)
@@ -142,6 +145,77 @@ def main() -> None:
             len(canonical_repository.connectors),
             len(canonical_repository.sql_overrides),
         )
+
+
+def run_all(config, logger, persist_to_mysql: bool = False) -> dict[str, object]:
+    """Runs the complete Week-1 and Week-2 accelerator flow."""
+    from business.complexity.complexity_engine import ComplexityClassifier
+    from business.validation.batch_xml_processor import run_batch_xml_remediation
+    from business.validation.datatype_harmonization import build_datatype_mismatch_report
+    from business.validation.executive_summary import build_executive_summary_report
+    from business.validation.remediation_engine import build_remediation_report
+    from business.validation.validation_engine import build_validation_report
+    from business.parser.xml_parser import XMLParser
+    from data.repositories.metadata_repository import CanonicalMetadataBuilder
+    from reports.html_report import EnterpriseReportBuilder
+
+    logger.info("Starting full Week-1/Week-2 run.")
+
+    xml_parser = XMLParser(config=config, logger=logger)
+    parse_result = xml_parser.parse_folder()
+    parsed_files = parse_result["parsed_files"]
+    if parse_result["errors"]:
+        logger.warning("Full run continuing with %s parser error(s)", len(parse_result["errors"]))
+
+    canonical_builder = CanonicalMetadataBuilder(config=config, logger=logger)
+    canonical_repository = canonical_builder.build(parsed_files)
+    canonical_builder.write_outputs(canonical_repository)
+
+    complexity_results = ComplexityClassifier(config=config, logger=logger).classify()
+    ComplexityClassifier(config=config, logger=logger).write_report(complexity_results)
+
+    enterprise_reports = EnterpriseReportBuilder(config=config, logger=logger).build_reports()
+    persistence_summary = None
+    if persist_to_mysql:
+        from data.repositories.mapping_repository import MySqlMetadataRepository
+
+        persistence_summary = MySqlMetadataRepository(config=config, logger=logger).persist()
+
+    enterprise_summary = {
+        "xml_files": len(parsed_files),
+        "parser_errors": len(parse_result["errors"]),
+        "canonical_assets": len(canonical_repository.assets),
+        "canonical_mappings": len(canonical_repository.mappings),
+        "canonical_transformations": len(canonical_repository.transformations),
+        "canonical_columns": len(canonical_repository.columns),
+        "canonical_connectors": len(canonical_repository.connectors),
+        "canonical_sql_overrides": len(canonical_repository.sql_overrides),
+        "complexity_mappings": len(complexity_results),
+        "reports": enterprise_reports,
+        "mysql": persistence_summary,
+    }
+    datatype_findings = build_datatype_mismatch_report(config=config, logger=logger)
+    validation_issues = build_validation_report(config=config, logger=logger)
+    remediation_results, revalidation_summary = build_remediation_report(config=config, logger=logger)
+    executive_metrics = build_executive_summary_report(config=config, logger=logger)
+    xml_summary = run_batch_xml_remediation(
+        input_folder=config.paths.xml_folder,
+        output_folder=config.paths.output_folder,
+    )
+
+    return {
+        "enterprise": enterprise_summary,
+        "datatype_findings": len(datatype_findings),
+        "validation_issues": len(validation_issues),
+        "remediation_results": len(remediation_results),
+        "revalidation": {
+            "before_fix_issues": revalidation_summary.before_fix_issues,
+            "after_fix_issues": revalidation_summary.after_fix_issues,
+            "resolved_issues": revalidation_summary.resolved_issues,
+        },
+        "executive_metrics": len(executive_metrics),
+        "xml": xml_summary,
+    }
 
 
 if __name__ == "__main__":

@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "description": "Rule-driven remediation repository for PowerCenter to IDMC migration metadata.",
+  "auto_fix_rules": [
+    {"issue": "precision_mismatch", "auto_fix": true, "action": "copy_source_precision"},
+    {"issue": "scale_mismatch", "auto_fix": true, "action": "copy_source_scale"},
+    {"issue": "length_mismatch", "auto_fix": true, "action": "copy_source_length"},
+    {"issue": "truncation_risk", "auto_fix": true, "action": "expand_target_capacity"},
+    {"issue": "varchar_precision_doubling", "auto_fix": true, "action": "restore_original_length"},
+    {"issue": "varchar_vs_nvarchar", "auto_fix": true, "action": "standardize_unicode_string"},
+    {"issue": "unicode_mismatch", "auto_fix": true, "action": "standardize_unicode_string"},
+    {"issue": "native_precision_mismatch", "auto_fix": true, "action": "copy_source_precision"},
+    {"issue": "nullability_mismatch", "auto_fix": true, "action": "copy_source_nullability"},
+    {"issue": "default_value_mismatch", "auto_fix": true, "action": "copy_source_default_value"},
+    {"issue": "schema_prefix_issue", "auto_fix": true, "action": "add_schema_prefix"},
+    {"issue": "missing_alias", "auto_fix": true, "action": "add_concat_alias"},
+    {"issue": "duplicate_column_names", "auto_fix": true, "action": "deduplicate_column_names"},
+    {"issue": "target_binding_issue", "auto_fix": true, "action": "add_missing_target_binding_metadata"},
+    {"issue": "datetime_format_conversion", "auto_fix": true, "action": "convert_datetime_format"},
+    {"issue": "lookup_datatype_mismatch", "auto_fix": true, "action": "align_lookup_datatype"}
+  ],
+  "semi_automatic_rules": [
+    {"issue": "sql_override", "auto_fix": false, "approval_required": true, "action": "propose_sql_override_fix"},
+    {"issue": "oracle_curly_brace_syntax", "auto_fix": false, "approval_required": true, "action": "propose_oracle_escape_fix"},
+    {"issue": "unsupported_database_functions", "auto_fix": false, "approval_required": true, "action": "propose_function_replacement"},
+    {"issue": "post_sql_statements", "auto_fix": false, "approval_required": true, "action": "propose_post_sql_fix"},
+    {"issue": "source_query_mismatch", "auto_fix": false, "approval_required": true, "action": "propose_source_query_fix"},
+    {"issue": "target_constraint_mismatch", "auto_fix": false, "approval_required": true, "action": "propose_constraint_fix"}
+  ],
+  "manual_rules": [
+    {"issue": "stored_procedure_transformation", "manual_remediation_required": true},
+    {"issue": "java_transformation", "manual_remediation_required": true},
+    {"issue": "dll_dependency", "manual_remediation_required": true},
+    {"issue": "mapplet_nesting", "manual_remediation_required": true},
+    {"issue": "cdc", "manual_remediation_required": true},
+    {"issue": "pushdown_optimization", "manual_remediation_required": true},
+    {"issue": "os_command_task", "manual_remediation_required": true},
+    {"issue": "event_wait_task", "manual_remediation_required": true},
+    {"issue": "sap_connector", "manual_remediation_required": true},
+    {"issue": "mainframe_source", "manual_remediation_required": true}
+  ]
+}

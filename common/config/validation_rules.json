@@ -1,0 +1,484 @@
+{
+  "version": "1.0",
+  "description": "Rule-driven validation repository for PowerCenter to IDMC migration assessment.",
+  "categories": [
+    "Metadata Rules",
+    "Datatype Rules",
+    "SQL Rules",
+    "Transformation Rules",
+    "Runtime Rules"
+  ],
+  "rules": [
+    {
+      "rule_id": "VAL-001",
+      "rule_name": "Session SQL Override Precedence Issue",
+      "category": "SQL Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "session_sql_override_precedence",
+        "description": "Detect sessions and transformations that both define SQL overrides for the same mapping."
+      },
+      "recommendation": "Review override precedence and consolidate SQL override logic before IDMC conversion."
+    },
+    {
+      "rule_id": "VAL-002",
+      "rule_name": "Mapping SQL Override Precedence Issue",
+      "category": "SQL Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "mapping_sql_override_precedence",
+        "description": "Detect mappings with more than one SQL override context."
+      },
+      "recommendation": "Retain the intended mapping-level SQL override and document replacement behavior."
+    },
+    {
+      "rule_id": "VAL-003",
+      "rule_name": "Datetime Parameter Format Conversion",
+      "category": "Runtime Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "sql_pattern",
+        "tables": ["sql_overrides"],
+        "fields": ["sql_query"],
+        "patterns": ["TO_DATE\\s*\\(", "TO_TIMESTAMP\\s*\\(", "\\$\\$[A-Za-z0-9_]*(DATE|TIME)[A-Za-z0-9_]*"],
+        "case_insensitive": true
+      },
+      "recommendation": "Convert PowerCenter datetime parameter formats to IDMC-compatible parameter expressions."
+    },
+    {
+      "rule_id": "VAL-004",
+      "rule_name": "VARCHAR Precision Doubling",
+      "category": "Datatype Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "varchar_precision_doubling"
+      },
+      "recommendation": "Validate Unicode conversion sizing and avoid accidental VARCHAR length doubling."
+    },
+    {
+      "rule_id": "VAL-005",
+      "rule_name": "Post SQL Incompatibility",
+      "category": "SQL Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "sql_pattern",
+        "tables": ["sql_overrides"],
+        "fields": ["sql_query"],
+        "patterns": ["\\bTRUNCATE\\b", "\\bMERGE\\b", "\\bANALYZE\\b", "\\bEXEC\\b", "\\bCALL\\b", "\\bBEGIN\\b"],
+        "case_insensitive": true
+      },
+      "recommendation": "Review post SQL for connector support and move unsupported logic to pre/post processing tasks."
+    },
+    {
+      "rule_id": "VAL-006",
+      "rule_name": "Parameter File Conversion Issue",
+      "category": "Runtime Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "sql_pattern",
+        "tables": ["sql_overrides", "ports"],
+        "fields": ["sql_query", "expression"],
+        "patterns": ["\\$\\$[A-Za-z0-9_]+"],
+        "case_insensitive": false
+      },
+      "recommendation": "Convert PowerCenter parameter file references to IDMC parameter sets."
+    },
+    {
+      "rule_id": "VAL-007",
+      "rule_name": "Physical Connection Mandatory Issue",
+      "category": "Metadata Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "missing_physical_connection"
+      },
+      "recommendation": "Create and bind physical connections for all source, target, lookup, and task assets in IDMC."
+    },
+    {
+      "rule_id": "VAL-008",
+      "rule_name": "Lookup Datatype Mismatch",
+      "category": "Datatype Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "datatype_issue",
+        "issue_types": ["lookup_datatype_mismatch"]
+      },
+      "recommendation": "Align lookup input, condition, and return port datatypes."
+    },
+    {
+      "rule_id": "VAL-009",
+      "rule_name": "Native Precision Mismatch",
+      "category": "Datatype Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "datatype_issue",
+        "issue_types": ["native_precision_mismatch"]
+      },
+      "recommendation": "Validate native database precision against IDMC precision support."
+    },
+    {
+      "rule_id": "VAL-010",
+      "rule_name": "String Truncation Issue",
+      "category": "Datatype Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "datatype_issue",
+        "issue_types": ["truncation_risk", "length_mismatch"]
+      },
+      "recommendation": "Increase target length or add explicit truncation handling."
+    },
+    {
+      "rule_id": "VAL-011",
+      "rule_name": "Decimal Precision Mismatch",
+      "category": "Datatype Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "datatype_issue",
+        "issue_types": ["precision_mismatch", "decimal_vs_double"]
+      },
+      "recommendation": "Retain original decimal precision for financial and reconciliation-sensitive fields."
+    },
+    {
+      "rule_id": "VAL-012",
+      "rule_name": "Scale Mismatch",
+      "category": "Datatype Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "datatype_issue",
+        "issue_types": ["scale_mismatch"]
+      },
+      "recommendation": "Retain original numeric scale and review rounding behavior."
+    },
+    {
+      "rule_id": "VAL-013",
+      "rule_name": "Source Query Column Count Mismatch",
+      "category": "SQL Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "source_query_column_count_mismatch"
+      },
+      "recommendation": "Align Source Qualifier SQL select-list count with source or transformation ports."
+    },
+    {
+      "rule_id": "VAL-014",
+      "rule_name": "Source Query Column Order Mismatch",
+      "category": "SQL Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "source_query_column_order_mismatch"
+      },
+      "recommendation": "Validate Source Qualifier select-list order against downstream port order."
+    },
+    {
+      "rule_id": "VAL-015",
+      "rule_name": "Duplicate Column Names",
+      "category": "Metadata Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "duplicate_column_names"
+      },
+      "recommendation": "Resolve duplicate column names or add aliases before migration."
+    },
+    {
+      "rule_id": "VAL-016",
+      "rule_name": "Missing Schedules",
+      "category": "Runtime Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "missing_schedules"
+      },
+      "recommendation": "Recreate workflow schedules or external orchestration triggers in IDMC."
+    },
+    {
+      "rule_id": "VAL-017",
+      "rule_name": "Missing Target Table Binding",
+      "category": "Metadata Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "missing_target_table_binding"
+      },
+      "recommendation": "Bind every target instance to a physical target table in IDMC."
+    },
+    {
+      "rule_id": "VAL-018",
+      "rule_name": "Oracle Curly Brace Syntax",
+      "category": "SQL Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "sql_pattern",
+        "tables": ["sql_overrides", "ports"],
+        "fields": ["sql_query", "expression"],
+        "patterns": ["\\{[^}]+\\}"],
+        "case_insensitive": true
+      },
+      "recommendation": "Replace Oracle curly-brace escape syntax with IDMC-supported SQL."
+    },
+    {
+      "rule_id": "VAL-019",
+      "rule_name": "Name Length Greater Than 65 Characters",
+      "category": "Metadata Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "name_length",
+        "max_length": 65
+      },
+      "recommendation": "Shorten asset names to 65 characters or less while preserving traceability."
+    },
+    {
+      "rule_id": "VAL-020",
+      "rule_name": "CLOB to TEXT Conversion",
+      "category": "Datatype Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "datatype_issue",
+        "issue_types": ["clob_to_text_conversion"]
+      },
+      "recommendation": "Convert CLOB to Text and validate maximum payload size."
+    },
+    {
+      "rule_id": "VAL-021",
+      "rule_name": "Missing Alias in CONCAT Expression",
+      "category": "SQL Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "missing_alias_in_concat"
+      },
+      "recommendation": "Add explicit aliases for CONCAT-derived columns in source SQL and expressions."
+    },
+    {
+      "rule_id": "VAL-022",
+      "rule_name": "Schema Prefix Issue in Lookup",
+      "category": "Transformation Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "schema_prefix_in_lookup"
+      },
+      "recommendation": "Review lookup schema prefixes and replace hard-coded schema names with connection context or parameters."
+    },
+    {
+      "rule_id": "VAL-023",
+      "rule_name": "VARCHAR2 to NVARCHAR2 Conversion",
+      "category": "Datatype Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "datatype_issue",
+        "issue_types": ["varchar_vs_nvarchar", "unicode_mismatch"]
+      },
+      "recommendation": "Confirm Unicode requirements and standardize VARCHAR2/NVARCHAR2 conversion."
+    },
+    {
+      "rule_id": "VAL-024",
+      "rule_name": "Missing Command Task Conversion",
+      "category": "Runtime Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "metadata_pattern",
+        "tables": ["instances", "workflows"],
+        "fields": ["instance_type", "transformation_type", "workflow_name"],
+        "patterns": ["COMMAND"],
+        "case_insensitive": true
+      },
+      "recommendation": "Convert command tasks to IDMC command/taskflow steps or external orchestration."
+    },
+    {
+      "rule_id": "VAL-025",
+      "rule_name": "Stored Procedure Transformation",
+      "category": "Transformation Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "transformation_type",
+        "patterns": ["Stored Procedure"]
+      },
+      "recommendation": "Assess stored procedure logic and migrate to supported SQL, taskflow, or external procedure pattern."
+    },
+    {
+      "rule_id": "VAL-026",
+      "rule_name": "Dynamic Lookup",
+      "category": "Transformation Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "metadata_pattern",
+        "tables": ["transformations", "ports", "sql_overrides"],
+        "fields": ["transformation_type", "expression", "sql_query"],
+        "patterns": ["DYNAMIC\\s+LOOKUP", "Lookup cache dynamic"],
+        "case_insensitive": true
+      },
+      "recommendation": "Rebuild dynamic lookup behavior with IDMC-supported cache and update strategy design."
+    },
+    {
+      "rule_id": "VAL-027",
+      "rule_name": "Unconnected Lookup",
+      "category": "Transformation Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "metadata_pattern",
+        "tables": ["ports", "transformations"],
+        "fields": ["expression", "transformation_type"],
+        "patterns": [":LKP\\.", "UNC(?:ONNECTED)?\\s+LOOKUP"],
+        "case_insensitive": true
+      },
+      "recommendation": "Convert unconnected lookup calls to supported connected lookup or expression logic."
+    },
+    {
+      "rule_id": "VAL-028",
+      "rule_name": "Mapplet Nesting",
+      "category": "Transformation Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "metadata_pattern",
+        "tables": ["instances", "transformations"],
+        "fields": ["instance_type", "transformation_type", "transformation_name"],
+        "patterns": ["MAPPLET"],
+        "case_insensitive": true
+      },
+      "recommendation": "Flatten or manually recreate nested mapplet logic in IDMC."
+    },
+    {
+      "rule_id": "VAL-029",
+      "rule_name": "Sequence Generator",
+      "category": "Transformation Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "transformation_type",
+        "patterns": ["Sequence Generator"]
+      },
+      "recommendation": "Validate sequence reset, start value, and concurrency behavior in IDMC."
+    },
+    {
+      "rule_id": "VAL-030",
+      "rule_name": "CDC",
+      "category": "Runtime Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "metadata_pattern",
+        "tables": ["mappings", "sessions", "sql_overrides", "ports"],
+        "fields": ["mapping_name", "session_name", "sql_query", "expression"],
+        "patterns": ["\\bCDC\\b", "CHANGE\\s+DATA", "CAPTURE"],
+        "case_insensitive": true
+      },
+      "recommendation": "Rebuild CDC ingestion with IDMC-supported CDC connector or task pattern."
+    },
+    {
+      "rule_id": "VAL-031",
+      "rule_name": "Pushdown Optimization",
+      "category": "Runtime Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "metadata_pattern",
+        "tables": ["sessions", "sql_overrides"],
+        "fields": ["session_name", "sql_query"],
+        "patterns": ["PUSHDOWN", "PUSH\\s*DOWN"],
+        "case_insensitive": true
+      },
+      "recommendation": "Review pushdown assumptions and redesign SQL delegation for IDMC runtime."
+    },
+    {
+      "rule_id": "VAL-032",
+      "rule_name": "Java Transformation",
+      "category": "Transformation Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "transformation_type",
+        "patterns": ["Java"]
+      },
+      "recommendation": "Replace Java transformation logic with supported IDMC expression, SQL, or external service logic."
+    },
+    {
+      "rule_id": "VAL-033",
+      "rule_name": "DLL Dependency",
+      "category": "Runtime Rules",
+      "severity": "HIGH",
+      "detection_logic": {
+        "type": "metadata_pattern",
+        "tables": ["ports", "sql_overrides"],
+        "fields": ["expression", "sql_query"],
+        "patterns": ["\\.dll\\b", "LoadLibrary", "EXTERNAL\\s+PROCEDURE"],
+        "case_insensitive": true
+      },
+      "recommendation": "Remove DLL dependency or move it to an approved external service outside IDMC mapping runtime."
+    },
+    {
+      "rule_id": "VAL-034",
+      "rule_name": "Shared Folder Dependency",
+      "category": "Metadata Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "shared_folder_dependency"
+      },
+      "recommendation": "Inventory reusable shared-folder assets and migrate dependencies before dependent mappings."
+    },
+    {
+      "rule_id": "VAL-035",
+      "rule_name": "Oracle Hints",
+      "category": "SQL Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "sql_pattern",
+        "tables": ["sql_overrides"],
+        "fields": ["sql_query"],
+        "patterns": ["/\\*\\+"],
+        "case_insensitive": true
+      },
+      "recommendation": "Review Oracle optimizer hints and remove or replace unsupported hints in IDMC."
+    },
+    {
+      "rule_id": "VAL-036",
+      "rule_name": "DB2 Syntax",
+      "category": "SQL Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "sql_pattern",
+        "tables": ["sql_overrides"],
+        "fields": ["sql_query"],
+        "patterns": ["FETCH\\s+FIRST\\s+\\d+\\s+ROWS\\s+ONLY", "\\bWITH\\s+UR\\b", "\\bSYSIBM\\b"],
+        "case_insensitive": true
+      },
+      "recommendation": "Convert DB2-specific SQL syntax to target connector-supported SQL."
+    },
+    {
+      "rule_id": "VAL-037",
+      "rule_name": "Teradata Syntax",
+      "category": "SQL Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "sql_pattern",
+        "tables": ["sql_overrides"],
+        "fields": ["sql_query"],
+        "patterns": ["\\bQUALIFY\\b", "\\bSAMPLE\\b", "\\bBT\\b", "\\bET\\b"],
+        "case_insensitive": true
+      },
+      "recommendation": "Convert Teradata-specific SQL syntax to target connector-supported SQL."
+    },
+    {
+      "rule_id": "VAL-038",
+      "rule_name": "Snowflake Keyword Conflicts",
+      "category": "SQL Rules",
+      "severity": "LOW",
+      "detection_logic": {
+        "type": "snowflake_keyword_conflicts"
+      },
+      "recommendation": "Quote or rename columns that conflict with Snowflake reserved words."
+    },
+    {
+      "rule_id": "VAL-039",
+      "rule_name": "Nullability Mismatch",
+      "category": "Metadata Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "field_unavailable",
+        "required_fields": ["nullable"]
+      },
+      "recommendation": "Capture source and target nullability metadata and compare before migration."
+    },
+    {
+      "rule_id": "VAL-040",
+      "rule_name": "Constraint Mismatch",
+      "category": "Metadata Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "field_unavailable",
+        "required_fields": ["key_type", "constraint_name"]
+      },
+      "recommendation": "Capture primary key, foreign key, unique, and check constraints for source-target validation."
+    }
+  ]
+}
