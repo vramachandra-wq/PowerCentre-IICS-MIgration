@@ -1,0 +1,21 @@
+{
+    "database":  {
+                     "host":  "172.30.44.162",
+                     "port":  3306,
+                     "username":  "adminpc",
+                     "password":  "In4matica",
+                     "database":  "pc_iics_migration",
+                     "driver":  "mysql+mysqlconnector"
+                 },
+    "paths":  {
+                  "xml_folder":  "input_xml",
+                  "output_folder":  "output",
+                  "log_folder":  "output/logs"
+              },
+    "logging":  {
+                    "level":  "INFO",
+                    "file_name":  "pc_iics_migration.log",
+                    "max_bytes":  5242880,
+                    "backup_count":  5
+                }
+}

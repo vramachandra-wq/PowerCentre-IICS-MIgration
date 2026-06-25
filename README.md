@@ -10,12 +10,10 @@ It reads PowerCenter XML exports, extracts technical metadata, builds a normaliz
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
 - [Setup](#setup)
-- [Configuration](#configuration)
 - [Running The Application](#running-the-application)
 - [Generated Outputs](#generated-outputs)
 - [Database Scripts](#database-scripts)
 - [Central Repository Tables](#central-repository-tables)
-- [Documentation](#documentation)
 
 ## Features
 
@@ -55,22 +53,36 @@ MySQL Metadata Repository
 Future IICS Comparison Layer
 ```
 
-## Project Structure
+## Project Structure upto enterprise level:
 
 ```text
-project_root/
-|-- config/          Runtime configuration, paths, and database settings
-|-- docs/            Enterprise architecture and operations documentation
-|-- extractor/       Metadata enrichment and complexity calculation logic
-|-- input_xml/       PowerCenter XML input files
-|-- logs/            Application logs
-|-- parser/          XML parsing components
-|-- reports/         Generated metadata and reports
-|-- repository/      Canonical model and MySQL persistence scripts
-|-- services/        Pipeline orchestration
-|-- utils/           Common utilities
-|-- main.py          Application entry point
-|-- requirements.txt Python dependencies
+pc_iics_migration/
+|-- app.py
+|-- api/
+|   |-- routes/
+|   |-- schemas/
+|-- business/
+|   |-- parser/
+|   |-- validation/
+|   |-- complexity/
+|   |-- lineage/
+|   |-- recommendation/
+|   |-- migration/
+|-- data/
+|   |-- repositories/
+|   |-- models/
+|   |-- database/
+|-- common/
+|   |-- constants/
+|   |-- exceptions/
+|   |-- logger/
+|   |-- utils/
+|   |-- config/
+|-- reports/
+|-- tests/
+|-- input_xml/
+|-- output/
+|-- requirements.txt
 ```
 
 ## Setup
@@ -87,54 +99,62 @@ Place PowerCenter XML exports in:
 input_xml/
 ```
 
+Runtime configuration is stored in:
+
+```text
+common/config/config.json
+```
+
 ## Running The Application
+
+Make sure all your dependencies are installed
 
 Run the complete enterprise processing flow:
 
 ```bash
-python main.py --mode enterprise
+python app.py --mode enterprise
 ```
 
 Run complete processing and load results into MySQL:
 
 ```bash
-python main.py --mode enterprise --persist
+python app.py --mode enterprise --persist
 ```
 
 Generate enterprise reports from existing metadata:
 
 ```bash
-python main.py --mode reports
+python app.py --mode reports
 ```
 
 Load canonical metadata into MySQL:
 
 ```bash
-python main.py --mode persist
+python app.py --mode persist
 ```
 
 Run canonical metadata generation:
 
 ```bash
-python main.py
+python app.py
 ```
 
 Run XML parsing only:
 
 ```bash
-python main.py --mode parse
+python app.py --mode parse
 ```
 
 Run complexity classification only:
 
 ```bash
-python main.py --mode classify
+python app.py --mode classify
 ```
 
 Explore XML hierarchy:
 
 ```bash
-python main.py --mode explore --print-hierarchy
+python app.py --mode explore --print-hierarchy
 ```
 
 ## Generated Outputs
@@ -142,15 +162,15 @@ python main.py --mode explore --print-hierarchy
 ### Parsed Metadata
 
 ```text
-reports/metadata_tables/
-reports/parsed_json/
-reports/parser_batch_summary.json
+output/metadata_tables/
+output/parsed_json/
+output/parser_batch_summary.json
 ```
 
 ### Canonical Metadata
 
 ```text
-reports/canonical/
+output/canonical/
 |-- tables/
 |-- mapping_json_by_id/
 |-- canonical_mappings.json
@@ -160,7 +180,7 @@ reports/canonical/
 ### Enterprise Reports
 
 ```text
-reports/enterprise/
+output/enterprise/
 |-- asset_inventory.csv
 |-- transformation_type_summary.csv
 |-- mapping_migration_catalog.csv
@@ -171,24 +191,24 @@ reports/enterprise/
 ### Complexity Reports
 
 ```text
-reports/complexity_classification_report.csv
-reports/complexity_classification_report.md
+output/complexity_classification_report.csv
+output/complexity_classification_report.md
 ```
 
 ## Database Scripts
 
 ```text
-repository/
+data/database/
 |-- schema.sql
 |-- mysql_workbench_full_load.sql
 |-- verification_queries.sql
 ```
 
-Use `repository/mysql_workbench_full_load.sql` in MySQL Workbench to create the schema and insert metadata.
+Use `data/database/mysql_workbench_full_load.sql` in MySQL Workbench to create the schema and insert metadata.
 
-Use `repository/verification_queries.sql` to validate table counts and inspect loaded data.
+Use `data/database/verification_queries.sql` to validate table counts and inspect loaded data.
 
-## Central Repository Tables
+## Central Repository Tables in SQL
 
 | Table | Purpose |
 |---|---|
@@ -198,4 +218,3 @@ Use `repository/verification_queries.sql` to validate table counts and inspect l
 | `columns_metadata` | Source and target column metadata for datatype and rule checks |
 | `sql_overrides` | SQL override text requiring migration compatibility review |
 | `connectors` | Port-to-port and component-to-component data-flow links |
-

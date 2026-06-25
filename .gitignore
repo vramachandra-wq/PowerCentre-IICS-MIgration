@@ -3,14 +3,11 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Logs
+# Logs and generated output
+output/
 logs/
 *.log
 
 # Virtual env
 venv/
 .env
-
-#reports folder
-reports/
-docs/
