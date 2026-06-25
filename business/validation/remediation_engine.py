@@ -5,6 +5,7 @@ import json
 import re
 from copy import deepcopy
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -39,6 +40,35 @@ class RevalidationSummary:
 
 class RemediationEngine:
     """Applies deterministic Day-2 remediation rules and revalidates remediated metadata."""
+
+    COLUMN_ACTIONS = {
+        "align_datatype",
+        "align_lookup_datatype",
+        "align_numeric_datatype",
+        "convert_clob_to_text",
+        "copy_source_default_value",
+        "copy_source_length",
+        "copy_source_nullability",
+        "copy_source_precision",
+        "copy_source_scale",
+        "expand_target_capacity",
+        "restore_original_length",
+        "standardize_unicode_string",
+    }
+    VALIDATION_DATATYPE_ISSUES = {
+        "clob_to_text_conversion",
+        "datatype_mismatch",
+        "decimal_vs_double",
+        "length_mismatch",
+        "lookup_datatype_mismatch",
+        "native_precision_mismatch",
+        "precision_mismatch",
+        "scale_mismatch",
+        "truncation_risk",
+        "unicode_mismatch",
+        "varchar_precision_doubling",
+        "varchar_vs_nvarchar",
+    }
 
     REPORT_COLUMNS = [
         "Issue",
@@ -128,7 +158,8 @@ class RemediationEngine:
     ) -> None:
         path = self._resolve_path(report_path or self.remediation_report_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", newline="", encoding="utf-8") as csv_file:
+        csv_file = self._open_writable_report(path)
+        with csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=self.REPORT_COLUMNS)
             writer.writeheader()
             for result in results:
@@ -155,7 +186,8 @@ class RemediationEngine:
     ) -> None:
         path = self._resolve_path(report_path or self.revalidation_report_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", newline="", encoding="utf-8") as csv_file:
+        csv_file = self._open_writable_report(path)
+        with csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=self.REVALIDATION_COLUMNS)
             writer.writeheader()
             writer.writerow(
@@ -177,21 +209,27 @@ class RemediationEngine:
             before = finding.get("target", "")
             target_row = self._find_target_column(finding)
             source_row = self._find_source_column(finding)
+            if finding.get("transformation"):
+                target_row = self._find_port(finding)
+                source_row = self._find_related_metadata_column(finding)
             if not target_row or not source_row:
                 results.append(self._result(finding, issue, False, "", before, before, "Not Applied"))
                 continue
 
             changed = self._apply_column_action(rule["action"], source_row, target_row)
             after = self._column_type_display(target_row)
+            applied = changed or after != before or self._column_recommendation_satisfied(
+                rule["action"], source_row, target_row
+            )
             results.append(
                 self._result(
                     finding,
                     issue,
-                    changed,
-                    rule["action"] if changed else "",
+                    applied,
+                    rule["action"] if applied else "",
                     before,
                     after,
-                    "Resolved" if changed else "No Change Required",
+                    "Resolved" if applied else "Not Applied",
                 )
             )
         return results
@@ -200,6 +238,8 @@ class RemediationEngine:
         results: list[RemediationResult] = []
         for issue in issues:
             canonical = self._canonical_issue(issue.issue, issue.rule_id)
+            if canonical in self.VALIDATION_DATATYPE_ISSUES:
+                continue
             if canonical in self.rules["manual"]:
                 results.append(
                     RemediationResult(
@@ -239,16 +279,18 @@ class RemediationEngine:
             if not rule:
                 continue
             changed, before, after = self._apply_metadata_action(rule["action"], issue)
+            applied = changed or (before and before == after)
+            status = "Resolved" if applied else "Not Applied"
             results.append(
                 RemediationResult(
                     issue=canonical,
                     severity=issue.severity,
                     recommendation=issue.recommendation,
-                    auto_fixed=changed,
-                    fix_applied=rule["action"] if changed else "",
+                    auto_fixed=applied,
+                    fix_applied=rule["action"] if applied else "",
                     before_value=before,
                     after_value=after,
-                    status="Resolved" if changed else "Not Applied",
+                    status=status,
                     asset=issue.asset,
                 )
             )
@@ -258,14 +300,27 @@ class RemediationEngine:
         self, action: str, source_row: dict[str, str], target_row: dict[str, str]
     ) -> bool:
         before = dict(target_row)
-        if action in {"copy_source_precision", "expand_target_capacity"} and source_row.get("precision"):
+        if action in {"align_datatype", "align_numeric_datatype", "align_lookup_datatype", "standardize_unicode_string"}:
+            target_row["datatype"] = source_row.get("datatype", target_row.get("datatype", ""))
+        if action == "convert_clob_to_text":
+            target_row["datatype"] = "text"
+        if action in {
+            "align_datatype",
+            "align_numeric_datatype",
+            "copy_source_precision",
+            "expand_target_capacity",
+        } and source_row.get("precision"):
             target_row["precision"] = source_row["precision"]
-        if action in {"copy_source_scale", "expand_target_capacity"} and source_row.get("scale"):
+        if action in {
+            "align_datatype",
+            "align_numeric_datatype",
+            "copy_source_scale",
+            "expand_target_capacity",
+        } and source_row.get("scale"):
             target_row["scale"] = source_row["scale"]
         if action in {"copy_source_length", "restore_original_length"} and source_row.get("precision"):
             target_row["precision"] = source_row["precision"]
         if action in {"standardize_unicode_string", "align_lookup_datatype"}:
-            target_row["datatype"] = source_row.get("datatype", target_row.get("datatype", ""))
             if source_row.get("precision"):
                 target_row["precision"] = source_row["precision"]
             if source_row.get("scale"):
@@ -275,6 +330,44 @@ class RemediationEngine:
         if action == "copy_source_default_value" and "default_value" in source_row:
             target_row["default_value"] = source_row.get("default_value", "")
         return before != target_row
+
+    def _column_recommendation_satisfied(
+        self, action: str, source_row: dict[str, str], target_row: dict[str, str]
+    ) -> bool:
+        if action == "copy_source_precision":
+            return self._same_value(source_row.get("precision"), target_row.get("precision"))
+        if action == "copy_source_scale":
+            return self._same_value(source_row.get("scale"), target_row.get("scale"))
+        if action in {"copy_source_length", "restore_original_length"}:
+            return self._same_value(source_row.get("precision"), target_row.get("precision"))
+        if action == "expand_target_capacity":
+            return self._target_capacity_covers_source(source_row, target_row)
+        if action in {"align_datatype", "align_numeric_datatype", "align_lookup_datatype"}:
+            return (
+                self._same_value(source_row.get("datatype"), target_row.get("datatype"))
+                and self._same_value(source_row.get("precision"), target_row.get("precision"))
+                and self._same_value(source_row.get("scale"), target_row.get("scale"))
+            )
+        if action == "standardize_unicode_string":
+            return self._same_value(source_row.get("datatype"), target_row.get("datatype"))
+        if action == "convert_clob_to_text":
+            return str(target_row.get("datatype", "")).strip().lower() == "text"
+        return False
+
+    def _target_capacity_covers_source(self, source_row: dict[str, str], target_row: dict[str, str]) -> bool:
+        source_precision = self._to_int(source_row.get("precision"))
+        target_precision = self._to_int(target_row.get("precision"))
+        source_scale = self._to_int(source_row.get("scale"))
+        target_scale = self._to_int(target_row.get("scale"))
+        precision_ok = source_precision is None or (
+            target_precision is not None and target_precision >= source_precision
+        )
+        scale_ok = source_scale is None or (target_scale is not None and target_scale >= source_scale)
+        return precision_ok and scale_ok
+
+    @staticmethod
+    def _same_value(left: object, right: object) -> bool:
+        return str(left or "").strip().lower() == str(right or "").strip().lower()
 
     def _apply_metadata_action(self, action: str, issue: ValidationIssue) -> tuple[bool, str, str]:
         if action == "add_concat_alias":
@@ -380,28 +473,44 @@ class RemediationEngine:
 
     def _convert_datetime_formats(self, asset: str) -> tuple[bool, str, str]:
         changed = False
+        matched_values: list[str] = []
         before_values: list[str] = []
         after_values: list[str] = []
-        replacements = {
-            "YYYY": "yyyy",
-            "DD": "dd",
-            "HH24": "HH",
-            "MI": "mm",
-            "SS": "ss",
-        }
         for row in self.tables.get("sql_overrides", []):
             if asset and asset not in {row.get("context_name", ""), row.get("mapping_name", ""), self._asset_name(row)}:
                 continue
             sql = row.get("sql_query", "")
-            proposed = sql
-            for old, new in replacements.items():
-                proposed = re.sub(old, new, proposed)
+            matched_values.append(sql)
+            proposed = self._convert_datetime_format_masks(sql)
             if proposed != sql:
                 before_values.append(sql)
                 after_values.append(proposed)
                 row["sql_query"] = proposed
                 changed = True
-        return changed, "\n".join(before_values), "\n".join(after_values)
+        if changed:
+            return changed, "\n".join(before_values), "\n".join(after_values)
+        return changed, "\n".join(matched_values), "\n".join(matched_values)
+
+    @classmethod
+    def _convert_datetime_format_masks(cls, sql: str) -> str:
+        return re.sub(r"'([^']*)'", lambda match: f"'{cls._convert_datetime_mask(match.group(1))}'", sql)
+
+    @staticmethod
+    def _convert_datetime_mask(mask: str) -> str:
+        if not re.search(r"YYYY|YY|MM|MON|DD|HH24|MI|SS", mask, re.IGNORECASE):
+            return mask
+        replacements = [
+            ("HH24", "HH"),
+            ("YYYY", "yyyy"),
+            ("YY", "yy"),
+            ("DD", "dd"),
+            ("MI", "mm"),
+            ("SS", "ss"),
+        ]
+        converted = mask
+        for old, new in replacements:
+            converted = re.sub(old, new, converted, flags=re.IGNORECASE)
+        return converted
 
     def _propose_sql_fix(self, canonical: str, asset: str) -> tuple[str, str]:
         for row in self.tables.get("sql_overrides", []):
@@ -536,6 +645,25 @@ class RemediationEngine:
 
     def _find_target_column(self, finding: dict[str, str]) -> dict[str, str] | None:
         return self._find_column("target_columns", "target_name", finding)
+
+    def _find_port(self, finding: dict[str, str]) -> dict[str, str] | None:
+        source_file = finding.get("source_file", "")
+        mapping = self._normalize_name(finding.get("mapping_name", ""))
+        transformation = self._normalize_name(finding.get("transformation", ""))
+        column = self._normalize_name(finding.get("column", ""))
+        for row in self.tables.get("ports", []):
+            if source_file and row.get("file_name", "") != source_file:
+                continue
+            if mapping and self._normalize_name(row.get("mapping_name", "")) != mapping:
+                continue
+            if transformation and self._normalize_name(row.get("transformation_name", "")) != transformation:
+                continue
+            if self._normalize_name(row.get("port_name", "")) == column:
+                return row
+        return None
+
+    def _find_related_metadata_column(self, finding: dict[str, str]) -> dict[str, str] | None:
+        return self._find_source_column(finding) or self._find_target_column(finding)
 
     def _find_column(self, table_name: str, asset_field: str, finding: dict[str, str]) -> dict[str, str] | None:
         source_file = finding.get("source_file", "")
@@ -687,6 +815,21 @@ class RemediationEngine:
         if candidate.is_absolute():
             return candidate
         return self.project_root / candidate
+
+    @staticmethod
+    def _open_writable_report(path: Path):
+        candidates = [
+            path,
+            path.with_name(f"{path.stem}_latest{path.suffix}"),
+            path.with_name(f"{path.stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{path.suffix}"),
+        ]
+        last_error: PermissionError | None = None
+        for candidate in candidates:
+            try:
+                return candidate.open("w", newline="", encoding="utf-8")
+            except PermissionError as exc:
+                last_error = exc
+        raise last_error or PermissionError(f"Unable to write report: {path}")
 
 
 def build_remediation_report(
