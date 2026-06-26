@@ -153,7 +153,7 @@ def run_all(config, logger, persist_to_mysql: bool = False) -> dict[str, object]
     from business.validation.batch_xml_processor import run_batch_xml_remediation
     from business.validation.datatype_harmonization import build_datatype_mismatch_report
     from business.validation.executive_summary import build_executive_summary_report
-    from business.validation.remediation_engine import build_remediation_report
+    from business.validation.Rule_Based_Validation_Engine import build_remediation_report
     from business.validation.validation_engine import build_validation_report
     from business.parser.xml_parser import XMLParser
     from data.repositories.metadata_repository import CanonicalMetadataBuilder

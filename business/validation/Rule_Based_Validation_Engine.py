@@ -38,7 +38,7 @@ class RevalidationSummary:
     resolved_issues: int
 
 
-class RemediationEngine:
+class Rule_Based_Validation_Engine:
     """Applies deterministic Day-2 remediation rules and revalidates remediated metadata."""
 
     COLUMN_ACTIONS = {
@@ -380,6 +380,10 @@ class RemediationEngine:
             return self._add_target_binding(issue.asset)
         if action == "convert_datetime_format":
             return self._convert_datetime_formats(issue.asset)
+        if action == "propose_oracle_escape_fix":
+            return self._apply_sql_fix("oracle_curly_brace_syntax", issue.asset)
+        if action == "propose_source_query_fix":
+            return self._apply_sql_fix("source_query_mismatch", issue.asset)
         return False, issue.asset, issue.asset
 
     def _add_concat_alias(self, asset: str) -> tuple[bool, str, str]:
@@ -531,6 +535,22 @@ class RemediationEngine:
                 proposed = self._ordered_select_projection(row, proposed)
             return sql, proposed
         return "", ""
+
+    def _apply_sql_fix(self, canonical: str, asset: str) -> tuple[bool, str, str]:
+        for row in self.tables.get("sql_overrides", []):
+            if asset and asset not in {row.get("context_name", ""), row.get("mapping_name", ""), self._asset_name(row)}:
+                continue
+            sql = row.get("sql_query", "")
+            if not sql:
+                continue
+            before, proposed = self._propose_sql_fix(canonical, asset)
+            if not before:
+                return False, sql, sql
+            if proposed != before:
+                row["sql_query"] = proposed
+                return True, before, proposed
+            return False, before, proposed
+        return False, "", ""
 
     def _ordered_select_projection(self, row: dict[str, str], sql: str) -> str:
         ports = [
@@ -839,7 +859,7 @@ def build_remediation_report(
     validation_rules_path: str | Path | None = None,
     remediation_rules_path: str | Path | None = None,
 ) -> tuple[list[RemediationResult], RevalidationSummary]:
-    return RemediationEngine(
+    return Rule_Based_Validation_Engine(
         config=config,
         logger=logger,
         output_folder=output_folder,

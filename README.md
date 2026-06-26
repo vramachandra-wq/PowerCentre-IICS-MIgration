@@ -26,32 +26,7 @@ It reads PowerCenter XML exports, extracts technical metadata, builds a normaliz
 - MySQL Workbench scripts for schema creation, loading, and validation
 - CLI-based execution for individual stages and full pipeline orchestration
 
-## Architecture
 
-```text
-PowerCenter XML Files
-        |
-        v
-XML Parser
-        |
-        v
-Raw Metadata Tables
-        |
-        v
-Canonical Metadata Builder
-        |
-        v
-Complexity Classifier
-        |
-        v
-Enterprise Report Builder
-        |
-        v
-MySQL Metadata Repository
-        |
-        v
-Future IICS Comparison Layer
-```
 
 ## Project Structure upto enterprise level:
 
@@ -104,59 +79,6 @@ Runtime configuration is stored in:
 ```text
 common/config/config.json
 ```
-
-## Running The Application
-
-Make sure all your dependencies are installed
-
-Run the complete enterprise processing flow:
-
-```bash
-python app.py --mode enterprise
-```
-
-Run complete processing and load results into MySQL:
-
-```bash
-python app.py --mode enterprise --persist
-```
-
-Generate enterprise reports from existing metadata:
-
-```bash
-python app.py --mode reports
-```
-
-Load canonical metadata into MySQL:
-
-```bash
-python app.py --mode persist
-```
-
-Run canonical metadata generation:
-
-```bash
-python app.py
-```
-
-Run XML parsing only:
-
-```bash
-python app.py --mode parse
-```
-
-Run complexity classification only:
-
-```bash
-python app.py --mode classify
-```
-
-Explore XML hierarchy:
-
-```bash
-python app.py --mode explore --print-hierarchy
-```
-
 ## Generated Outputs
 
 ### Parsed Metadata
@@ -193,7 +115,7 @@ output/enterprise/
 ```text
 output/complexity_classification_report.csv
 output/complexity_classification_report.md
-```
+```git 
 
 ## Database Scripts
 

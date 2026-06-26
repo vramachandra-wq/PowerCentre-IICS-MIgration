@@ -20,14 +20,14 @@
     {"issue": "duplicate_column_names", "auto_fix": true, "action": "deduplicate_column_names"},
     {"issue": "target_binding_issue", "auto_fix": true, "action": "add_missing_target_binding_metadata"},
     {"issue": "datetime_format_conversion", "auto_fix": true, "action": "convert_datetime_format"},
-    {"issue": "lookup_datatype_mismatch", "auto_fix": true, "action": "align_lookup_datatype"}
+    {"issue": "lookup_datatype_mismatch", "auto_fix": true, "action": "align_lookup_datatype"},
+    {"issue": "oracle_curly_brace_syntax", "auto_fix": true, "action": "propose_oracle_escape_fix"},
+    {"issue": "source_query_mismatch", "auto_fix": true, "action": "propose_source_query_fix"}
   ],
   "semi_automatic_rules": [
     {"issue": "sql_override", "auto_fix": false, "approval_required": true, "action": "propose_sql_override_fix"},
-    {"issue": "oracle_curly_brace_syntax", "auto_fix": false, "approval_required": true, "action": "propose_oracle_escape_fix"},
     {"issue": "unsupported_database_functions", "auto_fix": false, "approval_required": true, "action": "propose_function_replacement"},
     {"issue": "post_sql_statements", "auto_fix": false, "approval_required": true, "action": "propose_post_sql_fix"},
-    {"issue": "source_query_mismatch", "auto_fix": false, "approval_required": true, "action": "propose_source_query_fix"},
     {"issue": "target_constraint_mismatch", "auto_fix": false, "approval_required": true, "action": "propose_constraint_fix"}
   ],
   "manual_rules": [
