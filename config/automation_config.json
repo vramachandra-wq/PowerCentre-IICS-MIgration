@@ -1,0 +1,23 @@
+{
+  "output_folder": "output",
+  "logs_folder": "logs",
+  "validation_rules_path": "common/config/validation_rules.json",
+  "features": {
+    "enable_metrics": true,
+    "enable_dashboard_export": true,
+    "enable_evaluation_dataset": true,
+    "enable_consolidated_findings": true,
+    "enable_validation_summary": true,
+    "execute_existing_modules": true
+  },
+  "exports": {
+    "reports_folder": "output/automation",
+    "evaluation_matrix_csv": true,
+    "evaluation_dataset_csv": true,
+    "evaluation_dataset_json": true,
+    "dashboard_dataset_csv": true,
+    "dashboard_dataset_json": true,
+    "consolidated_findings_json": true,
+    "validation_summary_json": true
+  }
+}
