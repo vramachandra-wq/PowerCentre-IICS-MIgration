@@ -1,0 +1,279 @@
+{
+  "version": "1.0",
+  "default_target_platform": "IDMC",
+  "defaults": {
+    "string_length": 255,
+    "number_precision": 38,
+    "number_scale": 0,
+    "timestamp_precision": 6
+  },
+  "families": {
+    "STRING": {
+      "compatible_with": ["STRING", "TEXT"],
+      "unicode_sensitive": true
+    },
+    "NUMERIC": {
+      "compatible_with": ["NUMERIC"],
+      "unicode_sensitive": false
+    },
+    "FLOATING": {
+      "compatible_with": ["FLOATING", "NUMERIC"],
+      "unicode_sensitive": false
+    },
+    "DATETIME": {
+      "compatible_with": ["DATETIME"],
+      "unicode_sensitive": false
+    },
+    "BINARY": {
+      "compatible_with": ["BINARY"],
+      "unicode_sensitive": false
+    },
+    "TEXT": {
+      "compatible_with": ["TEXT", "STRING"],
+      "unicode_sensitive": true
+    }
+  },
+  "datatypes": {
+    "VARCHAR": {
+      "canonical": "STRING",
+      "idmc_type": "String",
+      "family": "STRING",
+      "unicode": false,
+      "supports_length": true,
+      "default_length": 255,
+      "recommendation": "Map to IDMC String and retain source length."
+    },
+    "VARCHAR2": {
+      "canonical": "STRING",
+      "idmc_type": "String",
+      "family": "STRING",
+      "unicode": false,
+      "supports_length": true,
+      "default_length": 255,
+      "recommendation": "Map Oracle VARCHAR2 to IDMC String and retain source length."
+    },
+    "CHAR": {
+      "canonical": "STRING",
+      "idmc_type": "String",
+      "family": "STRING",
+      "unicode": false,
+      "supports_length": true,
+      "default_length": 1,
+      "recommendation": "Map CHAR to fixed-width String only where padding semantics matter."
+    },
+    "NCHAR": {
+      "canonical": "NSTRING",
+      "idmc_type": "String",
+      "family": "STRING",
+      "unicode": true,
+      "supports_length": true,
+      "default_length": 1,
+      "recommendation": "Map NCHAR to IDMC String and preserve Unicode handling."
+    },
+    "NVARCHAR2": {
+      "canonical": "NSTRING",
+      "idmc_type": "String",
+      "family": "STRING",
+      "unicode": true,
+      "supports_length": true,
+      "default_length": 255,
+      "recommendation": "Map NVARCHAR2 to IDMC String and preserve Unicode handling."
+    },
+    "STRING": {
+      "canonical": "STRING",
+      "idmc_type": "String",
+      "family": "STRING",
+      "unicode": false,
+      "supports_length": true,
+      "default_length": 255,
+      "recommendation": "Retain as IDMC String."
+    },
+    "NUMBER": {
+      "canonical": "DECIMAL",
+      "idmc_type": "Decimal",
+      "family": "NUMERIC",
+      "unicode": false,
+      "supports_precision": true,
+      "supports_scale": true,
+      "default_precision": 38,
+      "default_scale": 0,
+      "recommendation": "Map NUMBER to IDMC Decimal and retain original precision and scale."
+    },
+    "DECIMAL": {
+      "canonical": "DECIMAL",
+      "idmc_type": "Decimal",
+      "family": "NUMERIC",
+      "unicode": false,
+      "supports_precision": true,
+      "supports_scale": true,
+      "default_precision": 38,
+      "default_scale": 0,
+      "recommendation": "Retain original precision and scale."
+    },
+    "INTEGER": {
+      "canonical": "INTEGER",
+      "idmc_type": "Integer",
+      "family": "NUMERIC",
+      "unicode": false,
+      "supports_precision": true,
+      "supports_scale": false,
+      "default_precision": 10,
+      "default_scale": 0,
+      "recommendation": "Map to IDMC Integer when scale is zero."
+    },
+    "INT": {
+      "canonical": "INTEGER",
+      "idmc_type": "Integer",
+      "family": "NUMERIC",
+      "unicode": false,
+      "supports_precision": true,
+      "supports_scale": false,
+      "default_precision": 10,
+      "default_scale": 0,
+      "recommendation": "Map to IDMC Integer when scale is zero."
+    },
+    "SMALLINT": {
+      "canonical": "SMALLINT",
+      "idmc_type": "Small Integer",
+      "family": "NUMERIC",
+      "unicode": false,
+      "supports_precision": true,
+      "supports_scale": false,
+      "default_precision": 5,
+      "default_scale": 0,
+      "recommendation": "Map to IDMC Small Integer when scale is zero."
+    },
+    "BIGINT": {
+      "canonical": "BIGINT",
+      "idmc_type": "Bigint",
+      "family": "NUMERIC",
+      "unicode": false,
+      "supports_precision": true,
+      "supports_scale": false,
+      "default_precision": 19,
+      "default_scale": 0,
+      "recommendation": "Map to IDMC Bigint when scale is zero."
+    },
+    "FLOAT": {
+      "canonical": "DOUBLE",
+      "idmc_type": "Double",
+      "family": "FLOATING",
+      "unicode": false,
+      "supports_precision": true,
+      "supports_scale": true,
+      "default_precision": 15,
+      "default_scale": 0,
+      "recommendation": "Map FLOAT to IDMC Double; review decimal precision-sensitive logic."
+    },
+    "DOUBLE": {
+      "canonical": "DOUBLE",
+      "idmc_type": "Double",
+      "family": "FLOATING",
+      "unicode": false,
+      "supports_precision": true,
+      "supports_scale": true,
+      "default_precision": 15,
+      "default_scale": 0,
+      "recommendation": "Retain as IDMC Double; review precision-sensitive calculations."
+    },
+    "DATE": {
+      "canonical": "DATE",
+      "idmc_type": "Date/Time",
+      "family": "DATETIME",
+      "unicode": false,
+      "supports_precision": false,
+      "supports_scale": false,
+      "recommendation": "Map DATE to IDMC Date/Time and validate time component expectations."
+    },
+    "TIMESTAMP": {
+      "canonical": "TIMESTAMP",
+      "idmc_type": "Date/Time",
+      "family": "DATETIME",
+      "unicode": false,
+      "supports_precision": true,
+      "supports_scale": false,
+      "default_precision": 6,
+      "recommendation": "Map TIMESTAMP to IDMC Date/Time and retain fractional seconds precision."
+    },
+    "CLOB": {
+      "canonical": "TEXT",
+      "idmc_type": "Text",
+      "family": "TEXT",
+      "unicode": true,
+      "supports_length": false,
+      "conversion_risk": "CLOB_TO_TEXT",
+      "recommendation": "Convert CLOB to IDMC Text and validate maximum payload size."
+    },
+    "BLOB": {
+      "canonical": "BINARY",
+      "idmc_type": "Binary",
+      "family": "BINARY",
+      "unicode": false,
+      "supports_length": false,
+      "recommendation": "Map BLOB to IDMC Binary and validate connector support."
+    }
+  },
+  "aliases": {
+    "VARCHAR()": "VARCHAR",
+    "VARCHAR2()": "VARCHAR2",
+    "NVARCHAR2()": "NVARCHAR2",
+    "CHARACTER": "CHAR",
+    "CHARACTER VARYING": "VARCHAR",
+    "NUMERIC": "NUMBER",
+    "NUMBER()": "NUMBER",
+    "NUMBER(P,S)": "NUMBER",
+    "DEC": "DECIMAL",
+    "INTEGER": "INTEGER",
+    "INT": "INT",
+    "LONG": "BIGINT",
+    "REAL": "FLOAT",
+    "DOUBLE PRECISION": "DOUBLE",
+    "DATETIME": "TIMESTAMP"
+  },
+  "issue_rules": {
+    "datatype_mismatch": {
+      "severity": "HIGH",
+      "recommendation": "Align source, transformation, and target datatype family before migration."
+    },
+    "precision_mismatch": {
+      "severity": "HIGH",
+      "recommendation": "Retain original precision and scale."
+    },
+    "scale_mismatch": {
+      "severity": "HIGH",
+      "recommendation": "Retain original precision and scale."
+    },
+    "length_mismatch": {
+      "severity": "MEDIUM",
+      "recommendation": "Set target length greater than or equal to source length."
+    },
+    "unicode_mismatch": {
+      "severity": "MEDIUM",
+      "recommendation": "Use Unicode-capable string datatype for multilingual data."
+    },
+    "varchar_vs_nvarchar": {
+      "severity": "MEDIUM",
+      "recommendation": "Confirm character-set requirements and standardize on Unicode where required."
+    },
+    "decimal_vs_double": {
+      "severity": "HIGH",
+      "recommendation": "Use Decimal for financial or precision-sensitive values."
+    },
+    "lookup_datatype_mismatch": {
+      "severity": "HIGH",
+      "recommendation": "Align lookup input and return port datatypes with connected source/target columns."
+    },
+    "native_precision_mismatch": {
+      "severity": "MEDIUM",
+      "recommendation": "Validate native database precision against IDMC supported precision."
+    },
+    "truncation_risk": {
+      "severity": "HIGH",
+      "recommendation": "Increase target length or add explicit truncation/rounding rules."
+    },
+    "clob_to_text_conversion": {
+      "severity": "MEDIUM",
+      "recommendation": "Convert CLOB to Text and validate maximum payload size and connector support."
+    }
+  }
+}

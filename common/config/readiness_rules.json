@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "description": "Config-driven scoring rules for migration readiness and residual risk reporting.",
+  "base_score": 100,
+  "severity_penalties": {
+    "CRITICAL": 18,
+    "HIGH": 10,
+    "MEDIUM": 5,
+    "LOW": 2
+  },
+  "category_penalty_multipliers": {
+    "datatype": 1.0,
+    "sql": 1.2,
+    "runtime": 1.1,
+    "transformation": 1.3,
+    "manual": 1.5,
+    "metadata": 0.8
+  },
+  "readiness_categories": [
+    {"min": 90, "max": 100, "category": "READY"},
+    {"min": 70, "max": 89, "category": "LOW RISK"},
+    {"min": 50, "max": 69, "category": "MEDIUM RISK"},
+    {"min": 0, "max": 49, "category": "HIGH RISK"}
+  ],
+  "risk_levels": [
+    {"min": 0, "max": 25, "level": "LOW"},
+    {"min": 26, "max": 50, "level": "MEDIUM"},
+    {"min": 51, "max": 75, "level": "HIGH"},
+    {"min": 76, "max": 999999, "level": "CRITICAL"}
+  ],
+  "risk_factors": {
+    "precision_mismatch": {"score": 10, "category": "datatype"},
+    "scale_mismatch": {"score": 10, "category": "datatype"},
+    "lookup_datatype_mismatch": {"score": 15, "category": "datatype"},
+    "native_precision_mismatch": {"score": 15, "category": "datatype"},
+    "unicode_mismatch": {"score": 10, "category": "datatype"},
+    "varchar_vs_nvarchar": {"score": 10, "category": "datatype"},
+    "truncation_risk": {"score": 20, "category": "datatype"},
+    "unsupported_sql": {"score": 20, "category": "sql"},
+    "oracle_curly_brace_syntax": {"score": 20, "category": "sql"},
+    "sql_override_conflict": {"score": 15, "category": "sql"},
+    "sql_override": {"score": 15, "category": "sql"},
+    "unsupported_function": {"score": 15, "category": "sql"},
+    "unsupported_database_functions": {"score": 15, "category": "sql"},
+    "stored_procedure": {"score": 25, "category": "transformation"},
+    "stored_procedure_transformation": {"score": 25, "category": "transformation"},
+    "dynamic_lookup": {"score": 15, "category": "transformation"},
+    "mapplet_nesting": {"score": 20, "category": "transformation"},
+    "java_transformation": {"score": 25, "category": "transformation"},
+    "sequence_generator": {"score": 10, "category": "transformation"},
+    "missing_connection": {"score": 15, "category": "runtime"},
+    "missing_parameter_file": {"score": 15, "category": "runtime"},
+    "parameter_file_issue": {"score": 15, "category": "runtime"},
+    "missing_target_binding": {"score": 15, "category": "runtime"},
+    "target_binding_issue": {"score": 15, "category": "runtime"},
+    "invalid_schema": {"score": 10, "category": "runtime"},
+    "schema_prefix_issue": {"score": 10, "category": "runtime"},
+    "cdc_mapping": {"score": 25, "category": "manual"},
+    "cdc": {"score": 25, "category": "manual"},
+    "pushdown_optimization": {"score": 20, "category": "manual"},
+    "dll_dependency": {"score": 25, "category": "manual"},
+    "sap_connector": {"score": 25, "category": "manual"},
+    "mainframe_source": {"score": 30, "category": "manual"}
+  },
+  "default_risk_score": {
+    "CRITICAL": 25,
+    "HIGH": 15,
+    "MEDIUM": 8,
+    "LOW": 3
+  }
+}
