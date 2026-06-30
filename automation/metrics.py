@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections import Counter
 from typing import Iterable, Mapping
 
@@ -68,3 +69,7 @@ class MetricsCalculator:
             return float(str(value or "0").strip())
         except ValueError:
             return 0.0
+
+    @staticmethod
+    def normalize_text(value: object) -> str:
+        return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())

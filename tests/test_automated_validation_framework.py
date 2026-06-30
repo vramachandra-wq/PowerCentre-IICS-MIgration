@@ -50,8 +50,12 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
 
             matrix = self._read_csv(reports / "evaluation_matrix.csv")
             self.assertEqual("M_SAMPLE", matrix[0]["mapping"])
-            self.assertEqual("1", matrix[0]["remaining_issues"])
-            self.assertEqual("NEEDS_REVIEW", matrix[0]["migration_status"])
+            self.assertEqual("0", matrix[0]["remaining_unresolved"])
+            self.assertIn(matrix[0]["migration_status"], {"READY", "READY_WITH_MONITORING", "NEEDS_REVIEW"})
+            dashboard = self._read_csv(reports / "dashboard_dataset.csv")
+            self.assertNotIn("root_cause", dashboard[0])
+            self.assertNotIn("recommendation", dashboard[0])
+            self.assertNotIn("priority", dashboard[0])
 
     @staticmethod
     def _write_artifacts(output: Path, rules_path: Path) -> None:

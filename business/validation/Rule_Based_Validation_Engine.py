@@ -393,23 +393,52 @@ class Rule_Based_Validation_Engine:
         for table_name, field in [("sql_overrides", "sql_query"), ("ports", "expression")]:
             for row in self.tables.get(table_name, []):
                 text = row.get(field, "")
-                if asset and asset not in {self._asset_name(row), row.get("context_name", "")}:
+                if asset and asset not in {
+                    self._asset_name(row),
+                    row.get("context_name", ""),
+                    row.get("mapping_name", ""),
+                    row.get("file_name", ""),
+                    Path(row.get("file_name", "")).stem,
+                }:
                     continue
-                if re.search(r"\bCONCAT\s*\(", text, re.IGNORECASE) and not re.search(
-                    r"\bAS\s+[A-Za-z_][A-Za-z0-9_]*", text, re.IGNORECASE
-                ):
-                    proposed = re.sub(
-                        r"(CONCAT\s*\([^)]*\))(?!\s+AS\b)",
-                        r"\1 AS CONCAT_VALUE",
-                        text,
-                        count=1,
-                        flags=re.IGNORECASE,
-                    )
+                proposed = self._add_alias_to_concat_expression(text)
+                if proposed != text:
                     before_values.append(text)
                     after_values.append(proposed)
                     row[field] = proposed
                     changed = True
         return changed, "\n".join(before_values), "\n".join(after_values)
+
+    @staticmethod
+    def _add_alias_to_concat_expression(text: str) -> str:
+        match = re.search(r"\bCONCAT\s*\(", text, re.IGNORECASE)
+        if not match:
+            return text
+
+        depth = 0
+        expression_end = None
+        for index in range(match.end() - 1, len(text)):
+            char = text[index]
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    expression_end = index + 1
+                    break
+
+        if expression_end is None:
+            return text
+
+        trailing_text = text[expression_end:]
+        if re.match(r"\s+AS\s+[A-Za-z_][A-Za-z0-9_]*", trailing_text, re.IGNORECASE):
+            return text
+        implicit_alias = re.match(r"(\s+)([A-Za-z_][A-Za-z0-9_]*)(\s*(?:,|FROM\b|WHERE\b|GROUP\b|ORDER\b|HAVING\b|UNION\b|$))", trailing_text, re.IGNORECASE)
+        if implicit_alias:
+            alias = implicit_alias.group(2)
+            suffix = trailing_text[implicit_alias.start(3):]
+            return f"{text[:expression_end]} AS {alias}{suffix}"
+        return f"{text[:expression_end]} AS CONCAT_VALUE{text[expression_end:]}"
 
     def _normalize_schema_prefix(self, asset: str) -> tuple[bool, str, str]:
         changed = False

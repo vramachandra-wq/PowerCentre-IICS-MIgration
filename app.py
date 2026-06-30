@@ -13,11 +13,22 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["canonical", "parse", "explore", "classify", "persist", "reports", "enterprise", "all"],
+        choices=[
+            "canonical",
+            "parse",
+            "explore",
+            "classify",
+            "persist",
+            "reports",
+            "enterprise",
+            "automation",
+            "all",
+        ],
         default="canonical",
         help=(
             "Run canonical model build, raw metadata parser, XML structure explorer, complexity classifier, "
-            "report builder, MySQL persistence, the enterprise pipeline, or all Week-1/Week-2 outputs."
+            "report builder, MySQL persistence, the enterprise pipeline, automated validation, "
+            "or all Week-1/Week-2/automation outputs."
         ),
     )
     parser.add_argument(
@@ -40,6 +51,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="With --mode enterprise, also load the central MySQL metadata repository.",
     )
+    parser.add_argument(
+        "--automation-config",
+        default="config/automation_config.json",
+        help="Path to Automated Validation Framework configuration file.",
+    )
     return parser.parse_args()
 
 
@@ -49,8 +65,13 @@ def main() -> None:
     logger = LoggerFactory.create_logger(config.logging, config.paths.log_folder)
 
     if args.mode == "all":
-        summary = run_all(config=config, logger=logger, persist_to_mysql=args.persist)
-        logger.info("Full Week-1/Week-2 run completed. %s", summary)
+        summary = run_all(
+            config=config,
+            logger=logger,
+            persist_to_mysql=args.persist,
+            automation_config=args.automation_config,
+        )
+        logger.info("Full Week-1/Week-2/automation run completed. %s", summary)
     elif args.mode == "explore":
         from business.parser.xml_explorer import PowerCenterXmlExplorer
 
@@ -120,6 +141,11 @@ def main() -> None:
         pipeline = EnterpriseMigrationPipeline(config=config, logger=logger)
         summary = pipeline.run(persist_to_mysql=args.persist)
         logger.info("Enterprise pipeline run completed. %s", summary)
+    elif args.mode == "automation":
+        from automation.automated_validation_framework import AutomatedValidationFramework
+
+        summary = AutomatedValidationFramework(config_path=args.automation_config).run()
+        logger.info("Automated validation framework completed. %s", summary)
     else:
         from business.parser.xml_parser import XMLParser
         from data.repositories.metadata_repository import CanonicalMetadataBuilder
@@ -147,8 +173,13 @@ def main() -> None:
         )
 
 
-def run_all(config, logger, persist_to_mysql: bool = False) -> dict[str, object]:
-    """Runs the complete Week-1 and Week-2 accelerator flow."""
+def run_all(
+    config,
+    logger,
+    persist_to_mysql: bool = False,
+    automation_config: str | Path = "config/automation_config.json",
+) -> dict[str, object]:
+    """Runs the complete Week-1, Week-2, and automated validation flow."""
     from business.complexity.complexity_engine import ComplexityClassifier
     from business.validation.batch_xml_processor import run_batch_xml_remediation
     from business.validation.datatype_harmonization import build_datatype_mismatch_report
@@ -158,6 +189,7 @@ def run_all(config, logger, persist_to_mysql: bool = False) -> dict[str, object]
     from business.parser.xml_parser import XMLParser
     from data.repositories.metadata_repository import CanonicalMetadataBuilder
     from reports.html_report import EnterpriseReportBuilder
+    from automation.automated_validation_framework import AutomatedValidationFramework
 
     logger.info("Starting full Week-1/Week-2 run.")
 
@@ -202,6 +234,7 @@ def run_all(config, logger, persist_to_mysql: bool = False) -> dict[str, object]
         input_folder=config.paths.xml_folder,
         output_folder=config.paths.output_folder,
     )
+    automation_summary = AutomatedValidationFramework(config_path=automation_config).run()
 
     return {
         "enterprise": enterprise_summary,
@@ -215,6 +248,7 @@ def run_all(config, logger, persist_to_mysql: bool = False) -> dict[str, object]
         },
         "executive_metrics": len(executive_metrics),
         "xml": xml_summary,
+        "automation": automation_summary,
     }
 
 

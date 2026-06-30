@@ -11,21 +11,17 @@ class DashboardDatasetBuilder:
     """Creates Power BI friendly dashboard extracts."""
 
     FIELDNAMES = [
-        "xml_name",
+        "workflow",
         "mapping_name",
-        "complexity_category",
-        "complexity_score",
+        "failures",
         "readiness_before",
         "readiness_after",
-        "readiness_improvement",
-        "risk_category",
-        "risk_score",
-        "validation_failed",
-        "auto_fixed",
-        "remaining_issues",
-        "manual_review",
-        "manual_remediation",
+        "risk_before",
+        "risk_after",
+        "overall_health_score",
         "auto_fix_success_rate",
+        "manual_review_count",
+        "manual_remediation_count",
         "migration_status",
     ]
 
@@ -38,23 +34,17 @@ class DashboardDatasetBuilder:
         for record in records:
             dataset.append(
                 {
-                    "xml_name": record.xml_name,
+                    "workflow": record.workflow,
                     "mapping_name": record.mapping,
-                    "complexity_category": record.complexity_category,
-                    "complexity_score": record.complexity_score,
+                    "failures": record.validation_failed,
                     "readiness_before": record.readiness_before,
                     "readiness_after": record.readiness_after,
-                    "readiness_improvement": self.metrics.readiness_improvement(
-                        record.readiness_before, record.readiness_after
-                    ),
-                    "risk_category": record.risk_category,
-                    "risk_score": record.risk_score,
-                    "validation_failed": record.validation_failed,
-                    "auto_fixed": record.auto_fixed,
-                    "remaining_issues": record.remaining_issues,
-                    "manual_review": record.manual_review,
-                    "manual_remediation": record.manual_remediation,
+                    "risk_before": record.risk_before,
+                    "risk_after": record.risk_after,
+                    "overall_health_score": record.overall_health_score,
                     "auto_fix_success_rate": record.auto_fix_success_rate,
+                    "manual_review_count": record.manual_review,
+                    "manual_remediation_count": record.manual_remediation,
                     "migration_status": record.migration_status,
                 }
             )

@@ -33,7 +33,7 @@ class AutomationConfig:
 
 class AutomatedValidationFramework:
     """
-    Orchestrates Week-1 and Week-2 outputs into Week-3 AI-ready reports.
+    Orchestrates Week-1 and Week-2 outputs into rule-based Week-3 reports.
 
     This class does not reimplement validation, datatype, remediation, readiness,
     or risk logic. It consumes existing artifacts and normalizes them into a
@@ -150,6 +150,7 @@ class AutomatedValidationFramework:
     def _execute_existing_modules(self) -> list[str]:
         """Runs existing Week-2 report builders without duplicating their logic."""
         from business.validation.Rule_Based_Validation_Engine import build_remediation_report
+        from business.validation.batch_xml_processor import run_batch_xml_remediation
         from business.validation.datatype_harmonization import build_datatype_mismatch_report
         from business.validation.readiness_engine import build_migration_readiness_report
         from business.validation.remediation_effectiveness import build_remediation_effectiveness_report
@@ -160,6 +161,7 @@ class AutomatedValidationFramework:
             ("datatype_harmonization", build_datatype_mismatch_report),
             ("validation", build_validation_report),
             ("rule_based_remediation", build_remediation_report),
+            ("updated_xml_generation", run_batch_xml_remediation),
             ("migration_readiness", build_migration_readiness_report),
             ("risk_assessment", build_risk_assessment_report),
             ("remediation_effectiveness", build_remediation_effectiveness_report),
@@ -167,9 +169,34 @@ class AutomatedValidationFramework:
         executed: list[str] = []
         for name, builder in modules:
             self.logger.info("Executing existing module: %s", name)
-            builder(output_folder=self.config.output_folder)
+            try:
+                if name == "updated_xml_generation":
+                    self._sync_latest_remediation_report()
+                    builder(output_folder=self.config.output_folder)
+                else:
+                    builder(output_folder=self.config.output_folder)
+            except PermissionError as exc:
+                self.logger.warning(
+                    "Skipping existing module %s because an output file is locked. Existing artifact will be used. %s",
+                    name,
+                    exc,
+                )
             executed.append(name)
         return executed
+
+    def _sync_latest_remediation_report(self) -> None:
+        latest = self.config.output_folder / "remediation_report_latest.csv"
+        target = self.config.output_folder / "remediation_report.csv"
+        if not latest.exists():
+            return
+        if target.exists() and latest.stat().st_mtime < target.stat().st_mtime:
+            return
+        try:
+            target.write_bytes(latest.read_bytes())
+        except PermissionError:
+            self.logger.warning(
+                "Unable to replace locked remediation_report.csv with remediation_report_latest.csv before XML generation."
+            )
 
     def _create_logger(self) -> logging.Logger:
         self.config.logs_folder.mkdir(parents=True, exist_ok=True)
