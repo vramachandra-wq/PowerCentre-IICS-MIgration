@@ -4,7 +4,7 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
-from business.validation.readiness_engine import Day3ReportLoader, IssueRecord
+from business.validation.readiness_engine import IssueRecord, RemediationReportLoader
 from common.config.config import AppConfig
 
 
@@ -34,7 +34,7 @@ class RiskAssessmentEngine:
         configured_output = output_folder or (config.paths.output_folder if config else "output")
         self.output_folder = self._resolve_path(configured_output)
         self.report_path = self.output_folder / "risk_assessment_report.csv"
-        self.loader = Day3ReportLoader(
+        self.loader = RemediationReportLoader(
             self.output_folder,
             scoring_rules_path or Path("common/config/readiness_rules.json"),
         )

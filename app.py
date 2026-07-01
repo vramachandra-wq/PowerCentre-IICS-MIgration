@@ -28,7 +28,7 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Run canonical model build, raw metadata parser, XML structure explorer, complexity classifier, "
             "report builder, MySQL persistence, the enterprise pipeline, automated validation, "
-            "or all Week-1/Week-2/automation outputs."
+            "or all metadata, validation, remediation, and automation outputs."
         ),
     )
     parser.add_argument(
@@ -71,7 +71,7 @@ def main() -> None:
             persist_to_mysql=args.persist,
             automation_config=args.automation_config,
         )
-        logger.info("Full Week-1/Week-2/automation run completed. %s", summary)
+        logger.info("Full metadata, validation, remediation, and automation run completed. %s", summary)
     elif args.mode == "explore":
         from business.parser.xml_explorer import PowerCenterXmlExplorer
 
@@ -179,11 +179,10 @@ def run_all(
     persist_to_mysql: bool = False,
     automation_config: str | Path = "config/automation_config.json",
 ) -> dict[str, object]:
-    """Runs the complete Week-1, Week-2, and automated validation flow."""
+    """Runs the complete metadata, validation, remediation, and automated validation flow."""
     from business.complexity.complexity_engine import ComplexityClassifier
     from business.validation.batch_xml_processor import run_batch_xml_remediation
     from business.validation.datatype_harmonization import build_datatype_mismatch_report
-    from business.validation.executive_summary import build_executive_summary_report
     from business.validation.Rule_Based_Validation_Engine import build_remediation_report
     from business.validation.validation_engine import build_validation_report
     from business.parser.xml_parser import XMLParser
@@ -191,7 +190,7 @@ def run_all(
     from reports.html_report import EnterpriseReportBuilder
     from automation.automated_validation_framework import AutomatedValidationFramework
 
-    logger.info("Starting full Week-1/Week-2 run.")
+    logger.info("Starting full metadata, validation, and remediation run.")
 
     xml_parser = XMLParser(config=config, logger=logger)
     parse_result = xml_parser.parse_folder()
@@ -229,7 +228,6 @@ def run_all(
     datatype_findings = build_datatype_mismatch_report(config=config, logger=logger)
     validation_issues = build_validation_report(config=config, logger=logger)
     remediation_results, revalidation_summary = build_remediation_report(config=config, logger=logger)
-    executive_metrics = build_executive_summary_report(config=config, logger=logger)
     xml_summary = run_batch_xml_remediation(
         input_folder=config.paths.xml_folder,
         output_folder=config.paths.output_folder,
@@ -246,7 +244,6 @@ def run_all(
             "after_fix_issues": revalidation_summary.after_fix_issues,
             "resolved_issues": revalidation_summary.resolved_issues,
         },
-        "executive_metrics": len(executive_metrics),
         "xml": xml_summary,
         "automation": automation_summary,
     }

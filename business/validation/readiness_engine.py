@@ -34,8 +34,8 @@ class ReadinessRecord:
     readiness_category: str
 
 
-class Day3ReportLoader:
-    """Loads Day-1/Day-2 CSV artifacts into normalized issue records."""
+class RemediationReportLoader:
+    """Loads validation and remediation CSV artifacts into normalized issue records."""
 
     def __init__(
         self,
@@ -79,8 +79,16 @@ class Day3ReportLoader:
         return records
 
     def unresolved_issues(self) -> list[IssueRecord]:
-        before = self.load_before_issues()
         remediation = self.load_remediation_issues()
+        remaining_from_remediation = [
+            issue
+            for issue in remediation
+            if not issue.auto_fixed and issue.status.lower() not in {"resolved", "suppressed"}
+        ]
+        if remediation:
+            return self._deduplicate_issues(remaining_from_remediation)
+
+        before = self.load_before_issues()
         auto_fixed_counts: dict[tuple[str, str], int] = {}
         for issue in remediation:
             if issue.auto_fixed or issue.status.lower() == "resolved":
@@ -94,7 +102,19 @@ class Day3ReportLoader:
                 auto_fixed_counts[key] -= 1
                 continue
             remaining.append(issue)
-        return remaining
+        return self._deduplicate_issues(remaining)
+
+    @staticmethod
+    def _deduplicate_issues(issues: Iterable[IssueRecord]) -> list[IssueRecord]:
+        deduped: list[IssueRecord] = []
+        seen: set[tuple[str, str, str]] = set()
+        for issue in issues:
+            key = (issue.mapping_name, issue.issue, issue.source)
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(issue)
+        return deduped
 
     def issue_category(self, issue: str) -> str:
         risk_factor = self.rules.get("risk_factors", {}).get(issue)
@@ -364,38 +384,38 @@ class MigrationReadinessEngine:
         configured_output = output_folder or (config.paths.output_folder if config else "output")
         self.project_root = Path.cwd()
         self.output_folder = self._resolve_path(configured_output)
-        self.report_path = self.output_folder / "migration_readiness_report.csv"
-        self.loader = Day3ReportLoader(
+        self.report_path = self.output_folder / "post_remediation_migration_readiness_report.csv"
+        self.loader = RemediationReportLoader(
             self.output_folder,
             scoring_rules_path or Path("common/config/readiness_rules.json"),
         )
 
     def build_report(self) -> list[ReadinessRecord]:
-        before = self.loader.load_before_issues()
         remaining = self.loader.unresolved_issues()
         remediation = self.loader.load_remediation_issues()
         mappings = sorted(
-            self.loader.mapping_names
-            or {issue.mapping_name for issue in [*before, *remaining, *remediation]}
+            {issue.mapping_name for issue in [*remaining, *remediation]}
+            or self.loader.mapping_names
             or {"UNMAPPED_ASSET"}
         )
 
         records: list[ReadinessRecord] = []
         for mapping in mappings:
-            before_for_mapping = [issue for issue in before if issue.mapping_name == mapping]
             remaining_for_mapping = [issue for issue in remaining if issue.mapping_name == mapping]
+            remediation_for_mapping = [issue for issue in remediation if issue.mapping_name == mapping]
             auto_fixed = [
                 issue
-                for issue in remediation
+                for issue in remediation_for_mapping
                 if issue.mapping_name == mapping and (issue.auto_fixed or issue.status.lower() == "resolved")
             ]
-            readiness_before = self.loader.score_readiness(before_for_mapping)
+            auto_fixed_count = min(len(auto_fixed), len(remediation_for_mapping))
+            readiness_before = self.loader.score_readiness(remediation_for_mapping)
             readiness_after = self.loader.score_readiness(remaining_for_mapping)
             records.append(
                 ReadinessRecord(
                     mapping_name=mapping,
-                    issues_found=len(before_for_mapping),
-                    issues_auto_fixed=len(auto_fixed),
+                    issues_found=len(remediation_for_mapping),
+                    issues_auto_fixed=auto_fixed_count,
                     issues_remaining=len(remaining_for_mapping),
                     readiness_before=readiness_before,
                     readiness_after=readiness_after,

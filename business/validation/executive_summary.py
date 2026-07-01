@@ -20,7 +20,7 @@ class ExecutiveMetric:
 
 
 class ExecutiveSummaryEngine:
-    """Builds stakeholder-friendly summary metrics from Day-3 analytical reports."""
+    """Builds stakeholder-friendly summary metrics from post-remediation analytical reports."""
 
     REPORT_COLUMNS = ["metric", "value"]
 
@@ -36,7 +36,7 @@ class ExecutiveSummaryEngine:
         self.project_root = Path.cwd()
         configured_output = output_folder or (config.paths.output_folder if config else "output")
         self.output_folder = self._resolve_path(configured_output)
-        self.report_path = self.output_folder / "executive_summary_report.csv"
+        self.report_path = self.output_folder / "post_remediation_executive_summary_report.csv"
         self.scoring_rules_path = scoring_rules_path
 
     def build_report(self) -> list[ExecutiveMetric]:

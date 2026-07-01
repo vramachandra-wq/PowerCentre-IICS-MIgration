@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -18,6 +19,7 @@ class BatchXmlProcessor:
         self.reports_folder = self.output_folder / "reports"
         self.remediation_engine = XmlRemediationEngine(input_folder=self.input_folder, output_folder=self.output_folder)
         self.comparison_engine = XmlComparisonEngine(output_folder=self.output_folder)
+        self.risk_rules = self._load_risk_rules()
 
     def run(self) -> dict[str, int]:
         changes = self.remediation_engine.remediate_all()
@@ -34,8 +36,10 @@ class BatchXmlProcessor:
 
     def _write_xml_remediation_report(self, changes: list[XmlChange]) -> None:
         remediation = self._read_csv(self.output_folder / "remediation_report.csv")
-        readiness = {row.get("mapping_name", ""): row for row in self._read_csv(self.output_folder / "migration_readiness_report.csv")}
-        risk = {row.get("mapping_name", ""): row for row in self._read_csv(self.output_folder / "risk_assessment_report.csv")}
+        readiness = {
+            row.get("mapping_name", ""): row
+            for row in self._read_csv(self.output_folder / "post_remediation_migration_readiness_report.csv")
+        }
         mapping_to_xml = self._mapping_to_xml()
         asset_to_mapping = self._asset_to_mapping(mapping_to_xml)
         rows: list[dict[str, object]] = []
@@ -49,32 +53,38 @@ class BatchXmlProcessor:
         for mapping, items in sorted(by_mapping.items()):
             xml_file = mapping_to_xml.get(mapping, "")
             ready = readiness.get(mapping, {})
-            risk_row = risk.get(mapping, {})
             auto_fixed = len([row for row in items if self._truthy(row.get("Auto Fixed")) or row.get("Status", "").lower() == "resolved"])
             manual_review = len([row for row in items if self._truthy(row.get("Approval Required"))])
             manual_remediation = len([row for row in items if self._truthy(row.get("Manual Remediation Required"))])
+            unresolved = [
+                row
+                for row in items
+                if not self._truthy(row.get("Auto Fixed")) and row.get("Status", "").lower() not in {"resolved", "suppressed"}
+            ]
             issues_before = len(items)
             rows.append(
                 {
                     "xml_file": xml_file,
                     "mapping_name": mapping,
                     "issues_before": issues_before,
-                    "issues_after": max(0, issues_before - auto_fixed),
+                    "issues_after": len(unresolved),
                     "issues_resolved": auto_fixed,
                     "auto_fixed": auto_fixed,
                     "manual_review": manual_review,
                     "manual_remediation": manual_remediation,
                     "readiness_before": ready.get("readiness_before", ""),
                     "readiness_after": ready.get("readiness_after", ""),
-                    "risk_before": risk_row.get("risk_score", ""),
-                    "risk_after": risk_row.get("risk_score", ""),
+                    "risk_before": sum(self._risk_score(row) for row in items),
+                    "risk_after": sum(self._risk_score(row) for row in unresolved),
                 }
             )
         self._write_csv(self.reports_folder / "xml_remediation_report.csv", rows)
 
     def _write_migration_improvement_report(self, changes: list[XmlChange]) -> None:
-        readiness = self._read_csv(self.output_folder / "migration_readiness_report.csv")
-        risk = {row.get("mapping_name", ""): row for row in self._read_csv(self.output_folder / "risk_assessment_report.csv")}
+        readiness = self._read_csv(self.output_folder / "post_remediation_migration_readiness_report.csv")
+        xml_remediation = {
+            row.get("mapping_name", ""): row for row in self._read_csv(self.reports_folder / "xml_remediation_report.csv")
+        }
         mapping_to_xml = self._mapping_to_xml()
         rows: list[dict[str, object]] = []
         for row in readiness:
@@ -83,15 +93,15 @@ class BatchXmlProcessor:
             after = self._to_float(row.get("readiness_after"))
             issues_before = self._to_int(row.get("issues_found"))
             issues_after = self._to_int(row.get("issues_remaining"))
-            risk_score = self._to_int(risk.get(mapping, {}).get("risk_score"))
+            remediation_row = xml_remediation.get(mapping, {})
             rows.append(
                 {
                     "mapping_name": mapping,
                     "xml_file": mapping_to_xml.get(mapping, ""),
                     "readiness_before": before,
                     "readiness_after": after,
-                    "risk_before": risk_score,
-                    "risk_after": risk_score,
+                    "risk_before": self._to_int(remediation_row.get("risk_before")),
+                    "risk_after": self._to_int(remediation_row.get("risk_after")),
                     "issues_before": issues_before,
                     "issues_after": issues_after,
                     "improvement_percentage": round(after - before, 2),
@@ -200,6 +210,9 @@ class BatchXmlProcessor:
 
     @staticmethod
     def _read_csv(path: Path) -> list[dict[str, str]]:
+        latest = path.with_name(f"{path.stem}_latest{path.suffix}")
+        if latest.exists() and (not path.exists() or latest.stat().st_mtime >= path.stat().st_mtime):
+            path = latest
         if not path.exists():
             return []
         with path.open("r", newline="", encoding="utf-8-sig") as csv_file:
@@ -226,6 +239,22 @@ class BatchXmlProcessor:
     @staticmethod
     def _avg(values: list[float]) -> float:
         return round(sum(values) / len(values), 2) if values else 0.0
+
+    def _risk_score(self, row: dict[str, str]) -> int:
+        issue = str(row.get("Issue", "")).strip()
+        severity = str(row.get("Severity", "MEDIUM")).upper()
+        factors = self.risk_rules.get("risk_factors", {})
+        if issue in factors:
+            return int(factors[issue].get("score", 0))
+        defaults = self.risk_rules.get("default_risk_score", {})
+        return int(defaults.get(severity, 8))
+
+    def _load_risk_rules(self) -> dict[str, object]:
+        path = self.project_root / "common/config/readiness_rules.json"
+        if not path.exists():
+            return {}
+        with path.open("r", encoding="utf-8") as rules_file:
+            return json.load(rules_file)
 
     @staticmethod
     def _normalize(value: str) -> str:

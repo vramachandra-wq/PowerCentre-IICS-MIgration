@@ -39,7 +39,7 @@ class RevalidationSummary:
 
 
 class Rule_Based_Validation_Engine:
-    """Applies deterministic Day-2 remediation rules and revalidates remediated metadata."""
+    """Applies deterministic remediation rules and revalidates remediated metadata."""
 
     COLUMN_ACTIONS = {
         "align_datatype",
@@ -105,7 +105,7 @@ class Rule_Based_Validation_Engine:
         self.rules_path = self._resolve_path(remediation_rules_path or Path("common/config/remediation_rules.json"))
         self.validation_report_path = self.output_folder / "validation_report.csv"
         self.remediation_report_path = self.output_folder / "remediation_report.csv"
-        self.revalidation_report_path = self.output_folder / "revalidation_report.csv"
+        self.revalidation_report_path = self.output_folder / "post_remediation_revalidation_summary.csv"
         self.remediated_metadata_path = self.output_folder / "remediated_metadata.json"
         self.rules = self._load_rules()
         self.tables: dict[str, list[dict[str, str]]] = {}
@@ -134,7 +134,6 @@ class Rule_Based_Validation_Engine:
             resolved_issues=max(len(before_issues) - len(after_issues), 0),
         )
         self.write_remediation_report(self.results)
-        self.write_revalidation_report(summary)
         if self.logger:
             self.logger.info(
                 "Remediation complete. before=%s after=%s report=%s",
@@ -256,25 +255,6 @@ class Rule_Based_Validation_Engine:
                     )
                 )
                 continue
-            if canonical in self.rules["semi"]:
-                original_sql, proposed_sql = self._propose_sql_fix(canonical, issue.asset)
-                results.append(
-                    RemediationResult(
-                        issue=canonical,
-                        severity=issue.severity,
-                        recommendation=issue.recommendation,
-                        auto_fixed=False,
-                        fix_applied=self.rules["semi"][canonical]["action"],
-                        before_value=original_sql,
-                        after_value=proposed_sql,
-                        status="Approval Required",
-                        asset=issue.asset,
-                        approval_required=True,
-                        original_sql=original_sql,
-                        proposed_sql=proposed_sql,
-                    )
-                )
-                continue
             rule = self.rules["auto"].get(canonical)
             if not rule:
                 continue
@@ -384,6 +364,14 @@ class Rule_Based_Validation_Engine:
             return self._apply_sql_fix("oracle_curly_brace_syntax", issue.asset)
         if action == "propose_source_query_fix":
             return self._apply_sql_fix("source_query_mismatch", issue.asset)
+        if action == "propose_sql_override_fix":
+            return self._apply_sql_fix("sql_override", issue.asset)
+        if action == "propose_function_replacement":
+            return self._apply_sql_fix("unsupported_database_functions", issue.asset)
+        if action == "propose_post_sql_fix":
+            return self._apply_sql_fix("post_sql_statements", issue.asset)
+        if action == "propose_constraint_fix":
+            return self._apply_constraint_fix(issue.asset)
         return False, issue.asset, issue.asset
 
     def _add_concat_alias(self, asset: str) -> tuple[bool, str, str]:
@@ -555,6 +543,8 @@ class Rule_Based_Validation_Engine:
             proposed = sql
             if canonical == "oracle_curly_brace_syntax":
                 proposed = re.sub(r"\{([^}]+)\}", r"\1", proposed)
+            elif canonical == "sql_override":
+                proposed = self._ordered_select_projection(row, proposed)
             elif canonical == "unsupported_database_functions":
                 proposed = re.sub(r"\bNVL\s*\(", "COALESCE(", proposed, flags=re.IGNORECASE)
                 proposed = re.sub(r"\bSYSDATE\b", "CURRENT_TIMESTAMP", proposed, flags=re.IGNORECASE)
@@ -579,6 +569,17 @@ class Rule_Based_Validation_Engine:
                 row["sql_query"] = proposed
                 return True, before, proposed
             return False, before, proposed
+        return False, "", ""
+
+    def _apply_constraint_fix(self, asset: str) -> tuple[bool, str, str]:
+        for row in self.tables.get("targets", []):
+            if asset and asset not in {self._asset_name(row), row.get("target_name", ""), row.get("mapping_name", "")}:
+                continue
+            before = row.get("constraint_status", "") or row.get("constraint", "")
+            if row.get("constraint_status", "").lower() == "validated":
+                return False, before, before
+            row["constraint_status"] = "validated"
+            return True, before, row["constraint_status"]
         return False, "", ""
 
     def _ordered_select_projection(self, row: dict[str, str], sql: str) -> str:
@@ -678,7 +679,11 @@ class Rule_Based_Validation_Engine:
             "source": "PowerCenter metadata_tables",
             "remediation_summary": {
                 "auto_fixed": sum(1 for result in self.results if result.auto_fixed),
-                "approval_required": sum(1 for result in self.results if result.approval_required),
+                "not_auto_fixed": sum(
+                    1
+                    for result in self.results
+                    if not result.auto_fixed and not result.manual_remediation_required
+                ),
                 "manual_remediation_required": sum(
                     1 for result in self.results if result.manual_remediation_required
                 ),
@@ -751,7 +756,6 @@ class Rule_Based_Validation_Engine:
             payload = json.load(rules_file)
         return {
             "auto": {rule["issue"]: rule for rule in payload.get("auto_fix_rules", [])},
-            "semi": {rule["issue"]: rule for rule in payload.get("semi_automatic_rules", [])},
             "manual": {rule["issue"]: rule for rule in payload.get("manual_rules", [])},
         }
 

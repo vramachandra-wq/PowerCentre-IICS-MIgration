@@ -10,7 +10,7 @@ from business.validation.risk_assessment import RiskAssessmentEngine
 from business.validation.validation_engine import ValidationEngine
 
 
-class Week2TaskTests(unittest.TestCase):
+class DatatypeValidationTests(unittest.TestCase):
     def test_datatype_mapping_rules_map_aliases_and_recommend_decimal_scale(self) -> None:
         engine = DatatypeMappingEngine()
 
@@ -30,7 +30,7 @@ class Week2TaskTests(unittest.TestCase):
             engine.suggest_datatype_fix("NUMBER", precision=18, scale=6),
         )
 
-    def test_datatype_harmonization_detects_core_week2_mismatches(self) -> None:
+    def test_datatype_harmonization_detects_core_mismatches(self) -> None:
         engine = DatatypeHarmonizationEngine(output_folder=Path("output"))
         source_columns = [
             MetadataColumn(
@@ -169,32 +169,32 @@ class Week2TaskTests(unittest.TestCase):
     def test_readiness_scorecard_and_risk_report_use_remaining_issues_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)
-            self._write_week2_reports(output)
+            self._write_remediation_reports(output)
 
             readiness = MigrationReadinessEngine(output_folder=output).build_report()
             risk = RiskAssessmentEngine(output_folder=output).build_report()
 
-            record = next(item for item in readiness if item.mapping_name == "SDE_WEEK2")
-            risk_record = next(item for item in risk if item.mapping_name == "SDE_WEEK2")
+            record = next(item for item in readiness if item.mapping_name == "SDE_REMEDIATION")
+            risk_record = next(item for item in risk if item.mapping_name == "SDE_REMEDIATION")
 
             self.assertEqual(3, record.issues_found)
             self.assertEqual(2, record.issues_auto_fixed)
             self.assertEqual(1, record.issues_remaining)
             self.assertGreater(record.readiness_after, record.readiness_before)
-            self.assertEqual("truncation_risk", risk_record.top_risk_factor)
+            self.assertEqual("mapplet_nesting", risk_record.top_risk_factor)
             self.assertEqual(20, risk_record.risk_score)
             self.assertEqual("LOW", risk_record.risk_level)
 
     @staticmethod
-    def _write_week2_reports(output: Path) -> None:
+    def _write_remediation_reports(output: Path) -> None:
         metadata = output / "metadata_tables"
         metadata.mkdir(parents=True, exist_ok=True)
-        Week2TaskTests._write_csv(
+        DatatypeValidationTests._write_csv(
             output / "complexity_classification_report.csv",
             ["Mapping", "XML"],
-            [{"Mapping": "SDE_WEEK2", "XML": "week2.XML"}],
+            [{"Mapping": "SDE_REMEDIATION", "XML": "remediation.XML"}],
         )
-        Week2TaskTests._write_csv(
+        DatatypeValidationTests._write_csv(
             output / "datatype_mismatch_report.csv",
             [
                 "column",
@@ -214,8 +214,8 @@ class Week2TaskTests(unittest.TestCase):
                     "severity": "HIGH",
                     "recommendation": "Retain original precision and scale.",
                     "issue_type": "scale_mismatch",
-                    "mapping_name": "SDE_WEEK2",
-                    "source_file": "week2.XML",
+                    "mapping_name": "SDE_REMEDIATION",
+                    "source_file": "remediation.XML",
                 },
                 {
                     "column": "CUSTOMER_ID",
@@ -224,8 +224,8 @@ class Week2TaskTests(unittest.TestCase):
                     "severity": "HIGH",
                     "recommendation": "Align lookup datatype.",
                     "issue_type": "lookup_datatype_mismatch",
-                    "mapping_name": "SDE_WEEK2",
-                    "source_file": "week2.XML",
+                    "mapping_name": "SDE_REMEDIATION",
+                    "source_file": "remediation.XML",
                 },
                 {
                     "column": "DESCRIPTION",
@@ -234,12 +234,12 @@ class Week2TaskTests(unittest.TestCase):
                     "severity": "HIGH",
                     "recommendation": "Increase target length.",
                     "issue_type": "truncation_risk",
-                    "mapping_name": "SDE_WEEK2",
-                    "source_file": "week2.XML",
+                    "mapping_name": "SDE_REMEDIATION",
+                    "source_file": "remediation.XML",
                 },
             ],
         )
-        Week2TaskTests._write_csv(
+        DatatypeValidationTests._write_csv(
             output / "validation_report.csv",
             [
                 "Issue",
@@ -253,9 +253,22 @@ class Week2TaskTests(unittest.TestCase):
                 "Asset",
                 "Source File",
             ],
-            [],
+            [
+                {
+                    "Issue": "Mapplet Nesting Detected",
+                    "Severity": "HIGH",
+                    "Recommendation": "Flatten nested mapplet logic.",
+                    "Auto Fixed": "False",
+                    "Fix Applied": "",
+                    "Before Value": "SDE_REMEDIATION",
+                    "After Value": "SDE_REMEDIATION",
+                    "Status": "Open",
+                    "Asset": "SDE_REMEDIATION",
+                    "Source File": "remediation.XML",
+                }
+            ],
         )
-        Week2TaskTests._write_csv(
+        DatatypeValidationTests._write_csv(
             output / "remediation_report.csv",
             [
                 "Issue",
@@ -280,7 +293,7 @@ class Week2TaskTests(unittest.TestCase):
                     "Before Value": "DECIMAL(18,0)",
                     "After Value": "DECIMAL(18,6)",
                     "Status": "Resolved",
-                    "Asset": "SDE_WEEK2",
+                    "Asset": "SDE_REMEDIATION",
                     "Approval Required": "False",
                     "Manual Remediation Required": "False",
                 },
@@ -293,9 +306,22 @@ class Week2TaskTests(unittest.TestCase):
                     "Before Value": "VARCHAR2(18)",
                     "After Value": "NUMBER(18,0)",
                     "Status": "Resolved",
-                    "Asset": "SDE_WEEK2",
+                    "Asset": "SDE_REMEDIATION",
                     "Approval Required": "False",
                     "Manual Remediation Required": "False",
+                },
+                {
+                    "Issue": "mapplet_nesting",
+                    "Severity": "HIGH",
+                    "Recommendation": "Flatten nested mapplet logic.",
+                    "Auto Fixed": "False",
+                    "Fix Applied": "",
+                    "Before Value": "SDE_REMEDIATION",
+                    "After Value": "SDE_REMEDIATION",
+                    "Status": "Manual Remediation Required",
+                    "Asset": "SDE_REMEDIATION",
+                    "Approval Required": "False",
+                    "Manual Remediation Required": "True",
                 },
             ],
         )
