@@ -152,7 +152,7 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
             [{"Issue": "scale_mismatch", "Auto Fixed": "True", "Asset": "M_SAMPLE", "Manual Remediation Required": "False", "Approval Required": "False"}],
         )
         AutomatedValidationFrameworkTests._write_csv(
-            output / "migration_readiness_report.csv",
+            output / "post_remediation_migration_readiness_report.csv",
             [
                 "mapping_name",
                 "issues_found",
@@ -180,7 +180,7 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
             [{"mapping_name": "M_SAMPLE", "risk_score": "20", "risk_level": "LOW", "top_risk_factor": "scale_mismatch"}],
         )
         AutomatedValidationFrameworkTests._write_csv(
-            output / "remediation_effectiveness_report.csv",
+            output / "post_remediation_auto_fix_effectiveness_report.csv",
             ["mapping_name", "issues_found", "auto_fixed", "manual_review", "manual_remediation", "auto_fix_percentage"],
             [
                 {

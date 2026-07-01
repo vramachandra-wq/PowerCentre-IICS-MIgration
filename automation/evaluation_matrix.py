@@ -9,12 +9,12 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from automation.metrics import MetricsCalculator
-from business.validation.readiness_engine import Day3ReportLoader
+from business.validation.readiness_engine import RemediationReportLoader
 
 
 @dataclass(frozen=True)
 class CanonicalEvaluationObject:
-    """Normalized mapping-level object consumed by Week-3 rule-based evaluation."""
+    """Normalized mapping-level object consumed by rule-based evaluation."""
 
     xml_name: str
     workflow: str
@@ -79,7 +79,7 @@ class EvaluationMatrixRecord:
 
 
 class ReportRepository:
-    """File repository for existing Week-1/Week-2 artifacts and Week-3 outputs."""
+    """File repository for generated validation, remediation, and automation artifacts."""
 
     def __init__(self, output_folder: str | Path = "output", reports_folder: str | Path = "output/automation") -> None:
         self.output_folder = Path(output_folder)
@@ -118,10 +118,9 @@ class ReportRepository:
 
     @staticmethod
     def _preferred_existing_path(path: Path) -> Path:
-        if path.name == "remediation_report.csv":
-            latest = path.with_name("remediation_report_latest.csv")
-            if latest.exists() and (not path.exists() or latest.stat().st_mtime >= path.stat().st_mtime):
-                return latest
+        latest = path.with_name(f"{path.stem}_latest{path.suffix}")
+        if latest.exists() and (not path.exists() or latest.stat().st_mtime >= path.stat().st_mtime):
+            return latest
         return path
 
     @staticmethod
@@ -189,14 +188,18 @@ class EvaluationMatrixBuilder:
         self.repository = repository or ReportRepository()
         self.validation_rules_path = Path(validation_rules_path or "common/config/validation_rules.json")
         self.metrics = MetricsCalculator()
-        self.day3_loader = Day3ReportLoader(self.repository.output_folder)
-        self.risk_rules = self.day3_loader.rules
+        self.report_loader = RemediationReportLoader(self.repository.output_folder)
+        self.risk_rules = self.report_loader.rules
 
     def build(self) -> list[EvaluationMatrixRecord]:
         mappings = self.repository.read_csv("metadata_tables/mappings.csv")
         complexity = self._index(self.repository.read_csv("complexity_classification_report.csv"), "Mapping")
-        readiness = self._index(self.repository.read_csv("migration_readiness_report.csv"), "mapping_name")
-        effectiveness = self._index(self.repository.read_csv("remediation_effectiveness_report.csv"), "mapping_name")
+        readiness = self._index(
+            self.repository.read_csv("post_remediation_migration_readiness_report.csv"), "mapping_name"
+        )
+        effectiveness = self._index(
+            self.repository.read_csv("post_remediation_auto_fix_effectiveness_report.csv"), "mapping_name"
+        )
         validation = self._group_by_mapping(self.repository.read_csv("validation_report.csv"), "Asset", "Source File")
         datatype = self._group_by_mapping(self.repository.read_csv("datatype_mismatch_report.csv"), "mapping_name", "source_file")
         remediation = self._group_remediation_by_mapping(self.repository.read_csv("remediation_report.csv"))
@@ -389,7 +392,7 @@ class EvaluationMatrixBuilder:
     def _group_remediation_by_mapping(self, rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
         grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
         for row in rows:
-            mapping = self.day3_loader._mapping_from_row(row)
+            mapping = self.report_loader._mapping_from_row(row)
             if mapping:
                 grouped[mapping].append(row)
         return grouped
@@ -469,7 +472,7 @@ class EvaluationMatrixBuilder:
     ) -> list[dict[str, str]]:
         records: list[dict[str, str]] = []
         for row in validation_rows:
-            issue = self.day3_loader.canonical_issue(row.get("Issue", ""))
+            issue = self.report_loader.canonical_issue(row.get("Issue", ""))
             records.append(
                 {
                     "mapping": mapping,
@@ -480,7 +483,7 @@ class EvaluationMatrixBuilder:
                 }
             )
         for row in datatype_rows:
-            issue = self.day3_loader.canonical_issue(row.get("issue_type", "datatype_mismatch"))
+            issue = self.report_loader.canonical_issue(row.get("issue_type", "datatype_mismatch"))
             records.append(
                 {
                     "mapping": mapping,
@@ -514,8 +517,8 @@ class EvaluationMatrixBuilder:
             status = row.get("Status", "").strip().lower()
             if row.get("Auto Fixed", "").strip().lower() == "true" or status in {"resolved", "suppressed"}:
                 issue = {
-                    "mapping": self.day3_loader._mapping_from_row(row),
-                    "issue": self.day3_loader.canonical_issue(row.get("Issue", "")),
+                    "mapping": self.report_loader._mapping_from_row(row),
+                    "issue": self.report_loader.canonical_issue(row.get("Issue", "")),
                     "asset": row.get("Asset", ""),
                     "source_file": "",
                     "severity": row.get("Severity", "MEDIUM").upper(),

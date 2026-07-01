@@ -4,7 +4,7 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
-from business.validation.readiness_engine import Day3ReportLoader
+from business.validation.readiness_engine import RemediationReportLoader
 from common.config.config import AppConfig
 
 
@@ -19,7 +19,7 @@ class RemediationEffectivenessRecord:
 
 
 class RemediationEffectivenessEngine:
-    """Calculates measurable automation lift from Day-2 remediation outputs."""
+    """Calculates measurable automation lift from remediation outputs."""
 
     REPORT_COLUMNS = [
         "mapping_name",
@@ -42,38 +42,39 @@ class RemediationEffectivenessEngine:
         self.project_root = Path.cwd()
         configured_output = output_folder or (config.paths.output_folder if config else "output")
         self.output_folder = self._resolve_path(configured_output)
-        self.report_path = self.output_folder / "remediation_effectiveness_report.csv"
-        self.loader = Day3ReportLoader(
+        self.report_path = self.output_folder / "post_remediation_auto_fix_effectiveness_report.csv"
+        self.loader = RemediationReportLoader(
             self.output_folder,
             scoring_rules_path or Path("common/config/readiness_rules.json"),
         )
 
     def build_report(self) -> list[RemediationEffectivenessRecord]:
-        before = self.loader.load_before_issues()
         remediation = self.loader.load_remediation_issues()
         mappings = sorted(
-            self.loader.mapping_names
-            or {issue.mapping_name for issue in [*before, *remediation]}
+            {issue.mapping_name for issue in remediation}
+            or self.loader.mapping_names
             or {"UNMAPPED_ASSET"}
         )
         records: list[RemediationEffectivenessRecord] = []
         for mapping in mappings:
-            found = len([issue for issue in before if issue.mapping_name == mapping])
+            remediation_for_mapping = [issue for issue in remediation if issue.mapping_name == mapping]
+            found = len(remediation_for_mapping)
             auto_fixed = len(
                 [
                     issue
-                    for issue in remediation
+                    for issue in remediation_for_mapping
                     if issue.mapping_name == mapping and (issue.auto_fixed or issue.status.lower() == "resolved")
                 ]
             )
+            auto_fixed = min(auto_fixed, found)
             manual_review = len(
-                [issue for issue in remediation if issue.mapping_name == mapping and issue.approval_required]
+                [issue for issue in remediation_for_mapping if issue.approval_required]
             )
             manual_remediation = len(
                 [
                     issue
-                    for issue in remediation
-                    if issue.mapping_name == mapping and issue.manual_remediation_required
+                    for issue in remediation_for_mapping
+                    if issue.manual_remediation_required
                 ]
             )
             records.append(

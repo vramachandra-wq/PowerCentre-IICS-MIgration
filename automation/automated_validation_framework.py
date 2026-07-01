@@ -33,7 +33,7 @@ class AutomationConfig:
 
 class AutomatedValidationFramework:
     """
-    Orchestrates Week-1 and Week-2 outputs into rule-based Week-3 reports.
+    Orchestrates generated metadata, validation, remediation, and readiness outputs into rule-based reports.
 
     This class does not reimplement validation, datatype, remediation, readiness,
     or risk logic. It consumes existing artifacts and normalizes them into a
@@ -117,9 +117,6 @@ class AutomatedValidationFramework:
             self.config.output_folder / "complexity_classification_report.csv",
             self.config.output_folder / "validation_report.csv",
             self.config.output_folder / "datatype_mismatch_report.csv",
-            self.config.output_folder / "migration_readiness_report.csv",
-            self.config.output_folder / "risk_assessment_report.csv",
-            self.config.output_folder / "remediation_effectiveness_report.csv",
         ]
         missing = [str(path) for path in required if not path.exists()]
         if missing:
@@ -148,7 +145,7 @@ class AutomatedValidationFramework:
         )
 
     def _execute_existing_modules(self) -> list[str]:
-        """Runs existing Week-2 report builders without duplicating their logic."""
+        """Runs existing report builders without duplicating their logic."""
         from business.validation.Rule_Based_Validation_Engine import build_remediation_report
         from business.validation.batch_xml_processor import run_batch_xml_remediation
         from business.validation.datatype_harmonization import build_datatype_mismatch_report
@@ -161,10 +158,10 @@ class AutomatedValidationFramework:
             ("datatype_harmonization", build_datatype_mismatch_report),
             ("validation", build_validation_report),
             ("rule_based_remediation", build_remediation_report),
-            ("updated_xml_generation", run_batch_xml_remediation),
             ("migration_readiness", build_migration_readiness_report),
             ("risk_assessment", build_risk_assessment_report),
             ("remediation_effectiveness", build_remediation_effectiveness_report),
+            ("updated_xml_generation", run_batch_xml_remediation),
         ]
         executed: list[str] = []
         for name, builder in modules:
@@ -223,7 +220,7 @@ class AutomatedValidationFramework:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate Week-3 automated validation evaluation artifacts.")
+    parser = argparse.ArgumentParser(description="Generate automated validation evaluation artifacts.")
     parser.add_argument(
         "--config",
         default=str(AutomatedValidationFramework.DEFAULT_CONFIG_PATH),

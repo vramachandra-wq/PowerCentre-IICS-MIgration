@@ -1,3 +1,3 @@
-from tests.unit_test import Week2TaskTests
+from tests.unit_test import DatatypeValidationTests
 
-__all__ = ["Week2TaskTests"]
+__all__ = ["DatatypeValidationTests"]

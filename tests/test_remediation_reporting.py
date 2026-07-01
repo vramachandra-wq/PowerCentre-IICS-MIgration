@@ -9,7 +9,7 @@ from business.validation.remediation_effectiveness import RemediationEffectivene
 from business.validation.risk_assessment import RiskAssessmentEngine
 
 
-class Day3ReportingTests(unittest.TestCase):
+class RemediationReportingTests(unittest.TestCase):
     def test_readiness_improves_after_auto_fix(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)
@@ -19,8 +19,8 @@ class Day3ReportingTests(unittest.TestCase):
             finance = next(record for record in records if record.mapping_name == "SDE_FINANCE")
 
             self.assertEqual(3, finance.issues_found)
-            self.assertEqual(1, finance.issues_auto_fixed)
-            self.assertEqual(2, finance.issues_remaining)
+            self.assertEqual(2, finance.issues_auto_fixed)
+            self.assertEqual(1, finance.issues_remaining)
             self.assertGreater(finance.readiness_after, finance.readiness_before)
 
     def test_risk_scores_only_remaining_issues(self) -> None:
@@ -31,8 +31,8 @@ class Day3ReportingTests(unittest.TestCase):
             records = RiskAssessmentEngine(output_folder=output).build_report()
             finance = next(record for record in records if record.mapping_name == "SDE_FINANCE")
 
-            self.assertEqual(40, finance.risk_score)
-            self.assertEqual("truncation_risk", finance.top_risk_factor)
+            self.assertEqual(20, finance.risk_score)
+            self.assertEqual("mapplet_nesting", finance.top_risk_factor)
 
     def test_effectiveness_and_executive_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -41,17 +41,17 @@ class Day3ReportingTests(unittest.TestCase):
 
             effectiveness = RemediationEffectivenessEngine(output_folder=output).build_report()
             finance = next(record for record in effectiveness if record.mapping_name == "SDE_FINANCE")
-            self.assertEqual(33.33, finance.auto_fix_percentage)
+            self.assertEqual(66.67, finance.auto_fix_percentage)
 
             metrics = ExecutiveSummaryEngine(output_folder=output).build_report()
             metric_map = {metric.metric: metric.value for metric in metrics}
             self.assertEqual("3", metric_map["Total Issues Found"])
-            self.assertEqual("1", metric_map["Total Issues Auto Fixed"])
-            self.assertEqual("33.33%", metric_map["Auto Fix Rate"])
+            self.assertEqual("2", metric_map["Total Issues Auto Fixed"])
+            self.assertEqual("66.67%", metric_map["Auto Fix Rate"])
 
     @staticmethod
     def _write_sample_reports(output: Path) -> None:
-        Day3ReportingTests._write_csv(
+        RemediationReportingTests._write_csv(
             output / "datatype_mismatch_report.csv",
             ["column", "source", "target", "severity", "recommendation", "issue_type", "mapping_name", "source_file"],
             [
@@ -77,7 +77,7 @@ class Day3ReportingTests(unittest.TestCase):
                 },
             ],
         )
-        Day3ReportingTests._write_csv(
+        RemediationReportingTests._write_csv(
             output / "validation_report.csv",
             ["Issue", "Severity", "Recommendation", "Auto Fixed", "Fix Applied", "Before Value", "After Value", "Status", "Asset"],
             [
@@ -91,12 +91,35 @@ class Day3ReportingTests(unittest.TestCase):
                     "After Value": "SDE_FINANCE",
                     "Status": "Open",
                     "Asset": "SDE_FINANCE",
+                },
+                {
+                    "Issue": "Mapplet Nesting Detected",
+                    "Severity": "HIGH",
+                    "Recommendation": "Flatten nested mapplet logic.",
+                    "Auto Fixed": "False",
+                    "Fix Applied": "",
+                    "Before Value": "SDE_FINANCE",
+                    "After Value": "SDE_FINANCE",
+                    "Status": "Open",
+                    "Asset": "SDE_FINANCE",
                 }
             ],
         )
-        Day3ReportingTests._write_csv(
+        RemediationReportingTests._write_csv(
             output / "remediation_report.csv",
-            ["Issue", "Severity", "Recommendation", "Auto Fixed", "Fix Applied", "Before Value", "After Value", "Status", "Asset", "Approval Required"],
+            [
+                "Issue",
+                "Severity",
+                "Recommendation",
+                "Auto Fixed",
+                "Fix Applied",
+                "Before Value",
+                "After Value",
+                "Status",
+                "Asset",
+                "Approval Required",
+                "Manual Remediation Required",
+            ],
             [
                 {
                     "Issue": "scale_mismatch",
@@ -109,18 +132,33 @@ class Day3ReportingTests(unittest.TestCase):
                     "Status": "Resolved",
                     "Asset": "SDE_FINANCE",
                     "Approval Required": "False",
+                    "Manual Remediation Required": "False",
                 },
                 {
                     "Issue": "oracle_curly_brace_syntax",
                     "Severity": "MEDIUM",
                     "Recommendation": "Replace Oracle escape syntax.",
-                    "Auto Fixed": "False",
+                    "Auto Fixed": "True",
                     "Fix Applied": "propose_oracle_escape_fix",
                     "Before Value": "{fn NOW()}",
                     "After Value": "NOW()",
-                    "Status": "Approval Required",
+                    "Status": "Resolved",
                     "Asset": "SDE_FINANCE",
-                    "Approval Required": "True",
+                    "Approval Required": "False",
+                    "Manual Remediation Required": "False",
+                },
+                {
+                    "Issue": "mapplet_nesting",
+                    "Severity": "HIGH",
+                    "Recommendation": "Flatten nested mapplet logic.",
+                    "Auto Fixed": "False",
+                    "Fix Applied": "",
+                    "Before Value": "SDE_FINANCE",
+                    "After Value": "SDE_FINANCE",
+                    "Status": "Manual Remediation Required",
+                    "Asset": "SDE_FINANCE",
+                    "Approval Required": "False",
+                    "Manual Remediation Required": "True",
                 },
             ],
         )

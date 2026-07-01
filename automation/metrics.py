@@ -12,7 +12,8 @@ class MetricsCalculator:
     def percentage(numerator: int | float, denominator: int | float) -> float:
         if not denominator:
             return 0.0
-        return round((float(numerator) / float(denominator)) * 100, 2)
+        value = (float(numerator) / float(denominator)) * 100
+        return round(max(0.0, min(value, 100.0)), 2)
 
     @staticmethod
     def average(values: Iterable[int | float]) -> float:
