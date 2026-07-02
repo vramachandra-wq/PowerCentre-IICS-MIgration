@@ -28,6 +28,7 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
                             "enable_evaluation_dataset": True,
                             "enable_consolidated_findings": True,
                             "enable_validation_summary": True,
+                            "enable_ai_evaluation": False,
                             "execute_existing_modules": False,
                         },
                         "exports": {"reports_folder": str(reports)},

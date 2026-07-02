@@ -8,7 +8,8 @@
     "enable_evaluation_dataset": true,
     "enable_consolidated_findings": true,
     "enable_validation_summary": true,
-    "execute_existing_modules": true
+    "execute_existing_modules": true,
+    "enable_ai_evaluation": true
   },
   "exports": {
     "reports_folder": "output/automation",
@@ -18,6 +19,20 @@
     "dashboard_dataset_csv": true,
     "dashboard_dataset_json": true,
     "consolidated_findings_json": true,
-    "validation_summary_json": true
+    "validation_summary_json": true,
+    "ai_evaluation_dataset_csv": true,
+    "ai_evaluation_matrix_csv": true,
+    "ai_dashboard_dataset_csv": true,
+    "ai_evaluation_summary_json": true
+  },
+  "ai_validation": {
+    "model_name": "Qwen/Qwen3-8B",
+    "hf_token_env": "HF_TOKEN",
+    "max_records": 200,
+    "max_new_tokens": 256,
+    "temperature": 0.0,
+    "timeout_seconds": 60,
+    "high_confidence_threshold": 90,
+    "provider": "auto"
   }
 }
