@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -13,6 +13,8 @@ from automation.dashboard_dataset import DashboardDatasetBuilder
 from automation.evaluation_dataset import EvaluationDatasetBuilder
 from automation.evaluation_matrix import EvaluationMatrixBuilder, ReportRepository
 from automation.validation_summary import ValidationSummaryBuilder
+from business.validation.ai_evaluation import AIEvaluationBuilder
+from business.validation.ai_validation_engine import AIValidationConfig, AIValidationEngine
 
 
 @dataclass(frozen=True)
@@ -28,7 +30,9 @@ class AutomationConfig:
     enable_evaluation_dataset: bool = True
     enable_consolidated_findings: bool = True
     enable_validation_summary: bool = True
+    enable_ai_evaluation: bool = True
     execute_existing_modules: bool = True
+    ai_validation: AIValidationConfig = field(default_factory=AIValidationConfig)
 
 
 class AutomatedValidationFramework:
@@ -93,6 +97,25 @@ class AutomatedValidationFramework:
                 outputs["dashboard_dataset"] = {key: str(path) for key, path in builder.write(dashboard).items()}
                 self.logger.info("Dashboard dataset generated. rows=%s", len(dashboard))
 
+            if self.config.enable_ai_evaluation:
+                validation_engine = AIValidationEngine(self.repository, self.config.ai_validation)
+                ai_results = validation_engine.validate()
+                ai_builder = AIEvaluationBuilder(
+                    self.repository,
+                    high_confidence_threshold=self.config.ai_validation.high_confidence_threshold,
+                )
+                ai_dataset = ai_builder.build_dataset(ai_results)
+                ai_summary = ai_builder.summarize(ai_results, ai_dataset)
+                outputs["ai_evaluation"] = {key: str(path) for key, path in ai_builder.write(ai_dataset, ai_summary).items()}
+                error_rows = [row for row in ai_dataset if row.get("ai_decision") == "ERROR"]
+                if error_rows:
+                    self.logger.warning(
+                        "AI evaluation generated %s error rows. First error=%s",
+                        len(error_rows),
+                        error_rows[0].get("error", ""),
+                    )
+                self.logger.info("AI evaluation generated. rows=%s accuracy=%s", len(ai_dataset), ai_summary.accuracy)
+
             end_time = datetime.now(UTC)
             self.logger.info(
                 "Automated validation framework completed at %s. files_processed=%s outputs=%s",
@@ -141,7 +164,23 @@ class AutomatedValidationFramework:
             enable_evaluation_dataset=bool(features.get("enable_evaluation_dataset", True)),
             enable_consolidated_findings=bool(features.get("enable_consolidated_findings", True)),
             enable_validation_summary=bool(features.get("enable_validation_summary", True)),
+            enable_ai_evaluation=bool(features.get("enable_ai_evaluation", True)),
             execute_existing_modules=bool(features.get("execute_existing_modules", True)),
+            ai_validation=self._load_ai_validation_config(payload.get("ai_validation", {})),
+        )
+
+
+    @staticmethod
+    def _load_ai_validation_config(payload: dict[str, Any]) -> AIValidationConfig:
+        return AIValidationConfig(
+            model_name=str(payload.get("model_name", "Qwen/Qwen3-8B")),
+            hf_token_env=str(payload.get("hf_token_env", "HF_TOKEN")),
+            max_records=int(payload.get("max_records", 200)),
+            max_new_tokens=int(payload.get("max_new_tokens", 256)),
+            temperature=float(payload.get("temperature", 0.0)),
+            timeout_seconds=int(payload.get("timeout_seconds", 60)),
+            high_confidence_threshold=int(payload.get("high_confidence_threshold", 90)),
+            provider=str(payload.get("provider", "auto")),
         )
 
     def _execute_existing_modules(self) -> list[str]:
