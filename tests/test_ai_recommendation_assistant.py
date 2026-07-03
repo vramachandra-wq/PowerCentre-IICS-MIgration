@@ -34,6 +34,10 @@ class AIRecommendationAssistantTests(unittest.TestCase):
         self.assertIn("Return STRICT JSON only", prompt)
         self.assertIn('"mapping": "M_CUSTOMER"', prompt)
         self.assertIn('"failure_type": "mapplet_nesting"', prompt)
+        self.assertIn("Recommendation writing requirements", prompt)
+        self.assertIn("implementation-oriented", prompt)
+        self.assertIn("stakeholder-ready", prompt)
+        self.assertIn("Never use the words or phrases: Manual", prompt)
 
     def test_response_parser_validates_json_and_priority(self) -> None:
         parsed = RecommendationResponseParser.parse(
@@ -42,6 +46,17 @@ class AIRecommendationAssistantTests(unittest.TestCase):
 
         self.assertEqual("High", parsed.priority)
         self.assertEqual(100, parsed.confidence)
+        sanitized = RecommendationResponseParser.parse(
+            {
+                "root_cause": "x",
+                "recommendation": "Manual fix required.",
+                "priority": "High",
+                "summary": "Manual intervention is required for this mapping.",
+            }
+        )
+        self.assertNotIn("Manual", sanitized.recommendation)
+        self.assertNotIn("Manual", sanitized.summary)
+        self.assertEqual("Recreate nested mapplet logic.", RecommendationResponseParser._sanitize_text("Manually recreate nested mapplet logic."))
         with self.assertRaises(ValueError):
             RecommendationResponseParser.parse(
                 {"root_cause": "x", "recommendation": "y", "priority": "urgent", "summary": "z"}
@@ -96,7 +111,11 @@ class AIRecommendationAssistantTests(unittest.TestCase):
 
         self.assertEqual("model timeout", results[0].error)
         rows = self._read_csv(report)
-        self.assertIn("Manual migration review is required", rows[0]["AI Summary"])
+        self.assertIn("migration assessment indicates", rows[0]["AI Summary"])
+        self.assertNotIn("Manual", rows[0]["AI Summary"])
+        self.assertIn("migration assistance is recommended", rows[0]["AI Recommendation"])
+        self.assertIn("readiness posture", rows[0]["AI Recommendation"])
+        self.assertNotIn("Manual", rows[0]["AI Recommendation"])
         self.assertEqual("model timeout", rows[0]["Error"])
 
     @staticmethod
@@ -109,7 +128,7 @@ class AIRecommendationAssistantTests(unittest.TestCase):
             "failure_type": "mapplet_nesting",
             "validation_rule": "VAL-028",
             "validation_message": "Mapplet nesting detected.",
-            "auto_fix_status": "Manual Remediation Required",
+            "auto_fix_status": "Needs Migration Review",
             "severity": "HIGH",
             "error_details": "",
             "root_cause": "",
@@ -220,6 +239,27 @@ class AIRecommendationAssistantTests(unittest.TestCase):
                     "Approval Required": "False",
                 },
             ],
+        )
+        automation = output / "automation"
+        AIRecommendationAssistantTests._write_csv(
+            automation / "evaluation_matrix.csv",
+            ["mapping", "migration_status", "readiness_after", "risk_after", "risk_category", "manual_remediation"],
+            [
+                {
+                    "mapping": "M_CUSTOMER",
+                    "migration_status": "READY",
+                    "readiness_after": "96",
+                    "risk_after": "5",
+                    "risk_category": "LOW",
+                    "manual_remediation": "1",
+                }
+            ],
+        )
+        (automation / "validation_summary.json").write_text('{"overall_readiness": 96}', encoding="utf-8")
+        (automation / "consolidated_findings.json").write_text('{"total_validation_failures": 1}', encoding="utf-8")
+        (automation / "ai_evaluation_summary.json").write_text(
+            '{"matrix": {"Valid Prediction Accuracy": 100, "Total Rules": 1}}',
+            encoding="utf-8",
         )
 
     @staticmethod

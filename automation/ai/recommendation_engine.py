@@ -112,6 +112,7 @@ class RecommendationEngine:
         asset = row.get("Asset") or row.get("Asset Name") or row.get("Before Value") or mapping
         validation_match = self._matching_validation_row(row, validation_rows)
         transformation = self._transformation_name(mapping, asset)
+        migration_context = self._migration_context()
         return FailureRecord(
             workflow=context.get("workflow", "") or Path(row.get("Source File", "")).stem or mapping,
             mapping=mapping,
@@ -126,6 +127,7 @@ class RecommendationEngine:
             root_cause=row.get("Root Cause") or row.get("root_cause") or "",
             rule_based_recommendation=row.get("Recommendation") or validation_match.get("Recommendation", ""),
             source_file=row.get("Source File") or validation_match.get("Source File", ""),
+            migration_context=migration_context,
         )
 
     def _metadata_context(self) -> dict[str, dict[str, str]]:
@@ -181,9 +183,11 @@ class RecommendationEngine:
             return "Auto Fixed"
         status = row.get("Status", "").strip()
         if status:
+            if "manual" in status.lower():
+                return "Needs Migration Review"
             return status
         if str(row.get("Manual Remediation Required", "")).strip().lower() == "true":
-            return "Manual Remediation Required"
+            return "Needs Migration Review"
         return "Not Auto Fixed"
 
     @staticmethod
@@ -204,14 +208,8 @@ class RecommendationEngine:
     def _fallback_result(self, failure: FailureRecord, exc: Exception, elapsed_ms: int) -> RecommendationResult:
         priority = self.assign_priority(failure)
         root_cause = failure.root_cause or self.infer_root_cause(failure)
-        recommendation = failure.rule_based_recommendation or (
-            "Review the unsupported or unresolved migration behavior in IDMC, redesign the affected object with "
-            "supported services or transformation settings, and re-run validation after the manual change."
-        )
-        summary = (
-            "Manual migration review is required because this issue remains unresolved after rule-based validation "
-            "and auto-fix processing."
-        )
+        recommendation = RecommendationResponseParser._sanitize_text(self._consultant_recommendation(failure, priority))
+        summary = self._executive_summary(failure, priority)
         return RecommendationResult(
             failure=failure,
             recommendation=Recommendation(root_cause, recommendation, priority, summary, confidence=0),
@@ -260,8 +258,162 @@ class RecommendationEngine:
         elif "connection" in text:
             limitation = "missing or incompatible connection metadata for IDMC"
         elif "mapplet" in text:
-            limitation = "mapplet nesting or reusable logic that requires manual IDMC design"
+            limitation = "mapplet nesting or reusable logic that requires IDMC design review"
         return f"{object_name} failed validation for {issue} due to {limitation}."
+
+    @classmethod
+    def _consultant_recommendation(cls, failure: FailureRecord, priority: str) -> str:
+        issue = failure.failure_type.replace("_", " ")
+        object_name = failure.object_name or failure.mapping
+        context = failure.migration_context
+        readiness = cls._number(context.get("estimated_migration_readiness"))
+        success_rate = cls._number(context.get("migration_success_rate"))
+        base_guidance = failure.rule_based_recommendation.strip()
+
+        if "mapplet" in failure.failure_type.lower():
+            action = (
+                "Rework the reusable logic into an IDMC-supported mapping design, validating port alignment, "
+                "execution order, and reusable component behavior before deployment."
+            )
+        elif any(token in failure.failure_type.lower() for token in ["datatype", "precision", "scale", "truncation"]):
+            action = (
+                "Align the affected source, transformation, and target metadata with IDMC-supported datatype, "
+                "precision, scale, and length handling, then validate row counts and representative data samples."
+            )
+        elif "lookup" in failure.failure_type.lower():
+            action = (
+                "Review the lookup configuration against IDMC transformation capabilities, replace unsupported "
+                "PowerCenter-specific behavior with supported lookup settings, and validate cache and match behavior."
+            )
+        elif any(token in failure.failure_type.lower() for token in ["sql", "query", "schema"]):
+            action = (
+                "Refactor the SQL or schema-dependent logic for the target IDMC runtime and database connector, "
+                "then validate generated queries, pushdown behavior, and expected result sets."
+            )
+        elif "connection" in failure.failure_type.lower():
+            action = (
+                "Update the IDMC connection configuration and object bindings, confirm credential and connector "
+                "compatibility, and validate runtime execution through the associated mapping task."
+            )
+        else:
+            action = (
+                "Assess the unresolved construct against IDMC-supported design patterns, apply the appropriate "
+                "configuration update, and validate the migrated behavior through mapping task execution."
+            )
+
+        rule_context = f" Existing rule guidance should be incorporated: {base_guidance}" if base_guidance else ""
+        return (
+            f"{priority} priority migration assistance is recommended for {object_name} because the {issue} finding "
+            f"remains outside automated conversion coverage. {action}{rule_context} "
+            f"This recommendation supports a readiness posture of {readiness:g}% and a conversion success rate of "
+            f"{success_rate:g}%, while reducing deployment risk through focused functional validation."
+        )
+
+    def _migration_context(self) -> dict[str, object]:
+        matrix_rows = self.repository.read_csv("automation/evaluation_matrix.csv")
+        validation_summary = self.repository.read_json("automation/validation_summary.json")
+        consolidated = self.repository.read_json("automation/consolidated_findings.json")
+        ai_summary = self.repository.read_json("automation/ai_evaluation_summary.json")
+        ai_matrix = ai_summary.get("matrix", {}) if isinstance(ai_summary, dict) else {}
+
+        total_mappings = len(matrix_rows)
+        successful_conversions = sum(
+            1
+            for row in matrix_rows
+            if row.get("migration_status", "").upper() in {"READY", "READY_WITH_MONITORING"}
+        )
+        success_rate = self._percentage(successful_conversions, total_mappings)
+        average_readiness = self._average(row.get("readiness_after") for row in matrix_rows)
+        average_risk = self._average(row.get("risk_after") for row in matrix_rows)
+        high_risk_mappings = sum(
+            1 for row in matrix_rows if row.get("risk_category", "").upper() in {"HIGH", "CRITICAL"}
+        )
+        unsupported_objects = sum(1 for row in matrix_rows if self._to_int(row.get("manual_remediation")) > 0)
+        readiness = 0.0
+        if isinstance(validation_summary, dict):
+            readiness = self._number(validation_summary.get("overall_readiness"))
+        return {
+            "migration_success_rate": success_rate,
+            "successful_conversions": successful_conversions,
+            "total_mappings": total_mappings,
+            "validation_accuracy": self._number(ai_matrix.get("Valid Prediction Accuracy") or ai_matrix.get("Accuracy")),
+            "rule_engine_findings": consolidated.get("total_validation_failures", 0)
+            if isinstance(consolidated, dict)
+            else 0,
+            "ai_assisted_recommendations": self._to_int(ai_matrix.get("Total Rules")),
+            "unsupported_object_count": unsupported_objects,
+            "high_risk_mapping_count": high_risk_mappings,
+            "average_risk_score": average_risk,
+            "estimated_migration_readiness": readiness or average_readiness,
+        }
+
+    @classmethod
+    def _executive_summary(cls, failure: FailureRecord, priority: str) -> str:
+        context = failure.migration_context
+        success_rate = cls._number(context.get("migration_success_rate"))
+        successful = cls._to_int(context.get("successful_conversions"))
+        total = cls._to_int(context.get("total_mappings"))
+        validation_accuracy = cls._number(context.get("validation_accuracy"))
+        readiness = cls._number(context.get("estimated_migration_readiness"))
+        findings = cls._to_int(context.get("rule_engine_findings"))
+        ai_recommendations = cls._to_int(context.get("ai_assisted_recommendations"))
+        unsupported = cls._to_int(context.get("unsupported_object_count"))
+        high_risk = cls._to_int(context.get("high_risk_mapping_count"))
+
+        if success_rate > 95:
+            posture = "excellent migration readiness with minimal post-conversion review effort"
+        elif success_rate >= 80:
+            posture = "strong migration readiness with focused AI-assisted validation recommendations"
+        else:
+            posture = "moderate migration complexity that benefits from phased remediation before deployment"
+
+        return (
+            f"The migration assessment indicates {posture}. "
+            f"{successful} of {total} mappings are currently tracking as successful conversions, with an estimated "
+            f"readiness score of {readiness:g}% and validation accuracy of {validation_accuracy:g}%. "
+            f"The rule engine identified {findings} validation findings, while {ai_recommendations} AI-assisted "
+            f"recommendations highlight platform-specific behavior, unsupported constructs, or configuration areas "
+            f"that need migration review. The current item is classified as {priority} priority, with {unsupported} "
+            f"unsupported or complex objects and {high_risk} high-risk mappings visible in the assessment baseline. "
+            "Addressing these recommendations is expected to improve conversion quality, strengthen functional "
+            "validation, and reduce deployment risk. Overall, the migration remains technically feasible when the "
+            "identified recommendations are incorporated into the readiness plan."
+        )
+
+    @staticmethod
+    def _percentage(numerator: int, denominator: int) -> float:
+        if denominator <= 0:
+            return 0.0
+        return round((numerator / denominator) * 100, 2)
+
+    @classmethod
+    def _average(cls, values: Iterable[object]) -> float:
+        numbers = [cls._number(value) for value in values if cls._is_number(value)]
+        if not numbers:
+            return 0.0
+        return round(sum(numbers) / len(numbers), 2)
+
+    @staticmethod
+    def _number(value: object) -> float:
+        try:
+            return float(str(value))
+        except (TypeError, ValueError):
+            return 0.0
+
+    @staticmethod
+    def _to_int(value: object) -> int:
+        try:
+            return int(float(str(value)))
+        except (TypeError, ValueError):
+            return 0
+
+    @staticmethod
+    def _is_number(value: object) -> bool:
+        try:
+            float(str(value))
+        except (TypeError, ValueError):
+            return False
+        return True
 
     def _log_warning(self, message: str, *args: object) -> None:
         if self.logger:

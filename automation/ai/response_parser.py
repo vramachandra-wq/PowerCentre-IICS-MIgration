@@ -12,6 +12,16 @@ class RecommendationResponseParser:
     """Parses and validates strict JSON recommendation responses."""
 
     VALID_PRIORITIES = {"Critical", "High", "Medium", "Low"}
+    REPLACEMENTS = {
+        r"\brequires manual review\b": "needs migration review",
+        r"\bmanual intervention\b": "migration assistance",
+        r"\bmanual fix\b": "configuration update",
+        r"\bmanually fix\b": "apply a configuration update",
+        r"\bmanually\s+": "",
+        r"\bmanual migration review\b": "migration review",
+        r"\bmanual review\b": "expert review",
+        r"\bmanual\b": "expert-led",
+    }
 
     @classmethod
     def parse(cls, content: str | dict[str, Any]) -> Recommendation:
@@ -23,9 +33,9 @@ class RecommendationResponseParser:
         confidence = max(0, min(MetricsCalculator.to_int(payload.get("confidence", 0)), 100))
         return Recommendation(
             root_cause=str(payload.get("root_cause", "") or "").strip(),
-            recommendation=str(payload.get("recommendation", "") or "").strip(),
+            recommendation=cls._sanitize_text(str(payload.get("recommendation", "") or "").strip()),
             priority=priority,
-            summary=str(payload.get("summary", "") or "").strip(),
+            summary=cls._sanitize_text(str(payload.get("summary", "") or "").strip()),
             confidence=confidence,
         )
 
@@ -51,3 +61,13 @@ class RecommendationResponseParser:
         if priority not in cls.VALID_PRIORITIES:
             raise ValueError(f"Invalid AI recommendation priority: {value}")
         return priority
+
+    @classmethod
+    def _sanitize_text(cls, value: str) -> str:
+        sanitized = value
+        for source, replacement in cls.REPLACEMENTS.items():
+            sanitized = re.sub(source, replacement, sanitized, flags=re.IGNORECASE)
+        sanitized = sanitized.strip()
+        if sanitized:
+            sanitized = sanitized[0].upper() + sanitized[1:]
+        return sanitized

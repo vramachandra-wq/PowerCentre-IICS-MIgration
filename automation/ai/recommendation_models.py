@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -34,6 +34,7 @@ class FailureRecord:
     root_cause: str = ""
     rule_based_recommendation: str = ""
     source_file: str = ""
+    migration_context: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
