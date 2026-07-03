@@ -22,8 +22,8 @@ class EvaluationDatasetBuilder:
         "remaining_unresolved",
         "top_risk_factor",
         "blocking_issue_count",
-        "manual_review",
-        "manual_remediation",
+        "ai_recommendation",
+        "ai_assistance",
         "overall_health_score",
         "migration_status",
     ]
@@ -48,8 +48,8 @@ class EvaluationDatasetBuilder:
                     "remaining_unresolved": record.remaining_unresolved,
                     "top_risk_factor": record.top_risk_factor,
                     "blocking_issue_count": record.blocking_issues,
-                    "manual_review": record.manual_review,
-                    "manual_remediation": record.manual_remediation,
+                    "ai_recommendation": record.ai_recommendation,
+                    "ai_assistance": record.ai_assistance,
                     "overall_health_score": record.overall_health_score,
                     "migration_status": record.migration_status,
                 }
@@ -71,8 +71,8 @@ class EvaluationDatasetBuilder:
                 "remaining_unresolved": item.remediation.get("remaining", 0),
                 "top_risk_factor": item.risk.get("top_factor", "none"),
                 "blocking_issue_count": item.remediation.get("remaining", 0),
-                "manual_review": item.remediation.get("manual_review", 0),
-                "manual_remediation": item.remediation.get("manual_remediation", 0),
+                "ai_recommendation": item.remediation.get("ai_recommendation", 0),
+                "ai_assistance": item.remediation.get("ai_assistance", 0),
                 "overall_health_score": item.risk.get("overall_health_score", 0),
                 "migration_status": "",
             }

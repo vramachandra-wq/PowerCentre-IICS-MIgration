@@ -19,7 +19,7 @@ class IssueRecord:
     status: str
     auto_fixed: bool = False
     approval_required: bool = False
-    manual_remediation_required: bool = False
+    ai_assistance_required: bool = False
     source: str = ""
 
 
@@ -71,8 +71,8 @@ class RemediationReportLoader:
                     status=status,
                     auto_fixed=self._truthy(row.get("Auto Fixed")),
                     approval_required=self._truthy(row.get("Approval Required")) or status.lower() == "approval required",
-                    manual_remediation_required=self._truthy(row.get("Manual Remediation Required"))
-                    or "manual" in status.lower(),
+                    ai_assistance_required=self._truthy(row.get("AI Assistance Required"))
+                    or "ai assistance" in status.lower(),
                     source="remediation_report",
                 )
             )
@@ -129,7 +129,7 @@ class RemediationReportLoader:
         if any(token in issue for token in ["transformation", "lookup", "mapplet", "sequence", "java"]):
             return "transformation"
         if any(token in issue for token in ["cdc", "pushdown", "dll", "sap", "mainframe"]):
-            return "manual"
+            return "ai_assistance"
         return "metadata"
 
     def score_readiness(self, issues: Iterable[IssueRecord]) -> int:

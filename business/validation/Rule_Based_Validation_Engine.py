@@ -25,7 +25,7 @@ class RemediationResult:
     after_value: str
     status: str
     asset: str = ""
-    manual_remediation_required: bool = False
+    ai_assistance_required: bool = False
     approval_required: bool = False
     original_sql: str = ""
     proposed_sql: str = ""
@@ -80,7 +80,7 @@ class Rule_Based_Validation_Engine:
         "After Value",
         "Status",
         "Asset",
-        "Manual Remediation Required",
+        "AI Assistance Required",
         "Approval Required",
         "Original SQL",
         "Proposed SQL",
@@ -173,7 +173,7 @@ class Rule_Based_Validation_Engine:
                         "After Value": result.after_value,
                         "Status": result.status,
                         "Asset": result.asset,
-                        "Manual Remediation Required": str(result.manual_remediation_required),
+                        "AI Assistance Required": str(result.ai_assistance_required),
                         "Approval Required": str(result.approval_required),
                         "Original SQL": result.original_sql,
                         "Proposed SQL": result.proposed_sql,
@@ -239,7 +239,7 @@ class Rule_Based_Validation_Engine:
             canonical = self._canonical_issue(issue.issue, issue.rule_id)
             if canonical in self.VALIDATION_DATATYPE_ISSUES:
                 continue
-            if canonical in self.rules["manual"]:
+            if canonical in self.rules["ai_assistance"]:
                 results.append(
                     RemediationResult(
                         issue=canonical,
@@ -249,9 +249,9 @@ class Rule_Based_Validation_Engine:
                         fix_applied="",
                         before_value=issue.asset,
                         after_value=issue.asset,
-                        status="Manual Remediation Required",
+                        status="AI Assistance Required",
                         asset=issue.asset,
-                        manual_remediation_required=True,
+                        ai_assistance_required=True,
                     )
                 )
                 continue
@@ -682,10 +682,10 @@ class Rule_Based_Validation_Engine:
                 "not_auto_fixed": sum(
                     1
                     for result in self.results
-                    if not result.auto_fixed and not result.manual_remediation_required
+                    if not result.auto_fixed and not result.ai_assistance_required
                 ),
-                "manual_remediation_required": sum(
-                    1 for result in self.results if result.manual_remediation_required
+                "ai_assistance_required": sum(
+                    1 for result in self.results if result.ai_assistance_required
                 ),
             },
             "metadata_tables": self.tables,
@@ -756,7 +756,7 @@ class Rule_Based_Validation_Engine:
             payload = json.load(rules_file)
         return {
             "auto": {rule["issue"]: rule for rule in payload.get("auto_fix_rules", [])},
-            "manual": {rule["issue"]: rule for rule in payload.get("manual_rules", [])},
+            "ai_assistance": {rule["issue"]: rule for rule in payload.get("ai_assistance_rules", [])},
         }
 
     @staticmethod

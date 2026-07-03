@@ -95,15 +95,15 @@ class ExecutiveSummaryEngine:
         highest_risk = max(risk, key=lambda record: record.risk_score, default=None)
         lowest_readiness = min(readiness, key=lambda record: record.readiness_after, default=None)
         ready_count = len([record for record in readiness if record.readiness_category == "READY"])
-        manual_count = len(
+        ai_assistance_count = len(
             [
                 record
                 for record in effectiveness
-                if record.manual_review > 0 or record.manual_remediation > 0
+                if record.ai_recommendation > 0 or record.ai_assistance > 0
             ]
         )
         auto_fix_rate = round((total_auto_fixed / total_found) * 100, 2) if total_found else 0.0
-        manual_effort_reduction = auto_fix_rate
+        ai_assistance_effort_reduction = auto_fix_rate
 
         return [
             ExecutiveMetric("Total Mappings Analyzed", str(len(readiness))),
@@ -125,8 +125,8 @@ class ExecutiveSummaryEngine:
                 else "",
             ),
             ExecutiveMetric("Mappings Ready for Migration", str(ready_count)),
-            ExecutiveMetric("Mappings Requiring Manual Intervention", str(manual_count)),
-            ExecutiveMetric("Estimated Manual Effort Reduction", f"{manual_effort_reduction}%"),
+            ExecutiveMetric("Mappings Requiring AI Assistance", str(ai_assistance_count)),
+            ExecutiveMetric("Estimated AI Assistance Effort Reduction", f"{ai_assistance_effort_reduction}%"),
         ]
 
     def _resolve_path(self, path: str | Path) -> Path:

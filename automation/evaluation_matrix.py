@@ -53,8 +53,8 @@ class EvaluationMatrixRecord:
     auto_fixable_issues: int
     auto_fixed: int
     remaining_unresolved: int
-    manual_review: int
-    manual_remediation: int
+    ai_recommendation: int
+    ai_assistance: int
     readiness_before: int
     readiness_after: int
     readiness_improvement: float
@@ -144,7 +144,7 @@ class ReportRepository:
 class EvaluationMatrixBuilder:
     """Builds the validation matrix by consuming existing report artifacts."""
 
-    MANUAL_UNRESOLVED_ISSUES = {"mapplet_nesting"}
+    AI_ASSISTANCE_UNRESOLVED_ISSUES = {"mapplet_nesting"}
 
     FIELDNAMES = [
         "xml_name",
@@ -167,8 +167,8 @@ class EvaluationMatrixBuilder:
         "auto_fixable_issues",
         "auto_fixed",
         "remaining_unresolved",
-        "manual_review",
-        "manual_remediation",
+        "ai_recommendation",
+        "ai_assistance",
         "readiness_before",
         "readiness_after",
         "readiness_improvement",
@@ -230,16 +230,16 @@ class EvaluationMatrixBuilder:
             validation_passed = max(validation_issues - validation_failed, 0)
             auto_fixed = self._auto_fixed(remediation_rows) or self._first_int(effectiveness_row, "auto_fixed")
             remaining_unresolved = len(unresolved_issues)
-            manual_review = self._manual_count(
+            ai_recommendation = self._ai_flag_count(
                 remediation_rows, "Approval Required"
-            ) or self._first_int(effectiveness_row, "manual_review")
-            manual_remediation = self._manual_count(
-                remediation_rows, "Manual Remediation Required"
-            ) or self._first_int(effectiveness_row, "manual_remediation")
+            ) or self._first_int(effectiveness_row, "ai_recommendation")
+            ai_assistance = self._ai_flag_count(
+                remediation_rows, "AI Assistance Required"
+            ) or self._first_int(effectiveness_row, "ai_assistance")
             auto_fixable_issues = self._auto_fixable_count(remediation_rows)
             if not auto_fixable_issues:
                 auto_fixable_issues = max(
-                    self._first_int(effectiveness_row, "issues_found") - manual_review - manual_remediation,
+                    self._first_int(effectiveness_row, "issues_found") - ai_recommendation - ai_assistance,
                     auto_fixed,
                     0,
                 )
@@ -276,8 +276,8 @@ class EvaluationMatrixBuilder:
                     auto_fixable_issues=auto_fixable_issues,
                     auto_fixed=auto_fixed,
                     remaining_unresolved=remaining_unresolved,
-                    manual_review=manual_review,
-                    manual_remediation=manual_remediation,
+                    ai_recommendation=ai_recommendation,
+                    ai_assistance=ai_assistance,
                     readiness_before=readiness_before,
                     readiness_after=readiness_after,
                     readiness_improvement=readiness_improvement,
@@ -290,7 +290,7 @@ class EvaluationMatrixBuilder:
                     auto_fix_success_rate=auto_fix_success_rate,
                     blocking_issues=blocking_issues,
                     migration_status=self._migration_status(
-                        readiness_after, risk_category, remaining_unresolved, manual_remediation
+                        readiness_after, risk_category, remaining_unresolved, ai_assistance
                     ),
                     overall_health_score=overall_health_score,
                 )
@@ -329,8 +329,8 @@ class EvaluationMatrixBuilder:
                         "auto_fixable_issues": record.auto_fixable_issues,
                         "auto_fixed": record.auto_fixed,
                         "remaining": record.remaining_unresolved,
-                        "manual_review": record.manual_review,
-                        "manual_remediation": record.manual_remediation,
+                        "ai_recommendation": record.ai_recommendation,
+                        "ai_assistance": record.ai_assistance,
                         "auto_fix_success_rate": record.auto_fix_success_rate,
                     },
                     readiness={
@@ -426,14 +426,14 @@ class EvaluationMatrixBuilder:
     def _auto_fixable_count(rows: Iterable[dict[str, str]]) -> int:
         count = 0
         for row in rows:
-            manual_review = str(row.get("Approval Required", "")).strip().lower() == "true"
-            manual_remediation = str(row.get("Manual Remediation Required", "")).strip().lower() == "true"
-            if not manual_review and not manual_remediation:
+            ai_recommendation = str(row.get("Approval Required", "")).strip().lower() == "true"
+            ai_assistance = str(row.get("AI Assistance Required", "")).strip().lower() == "true"
+            if not ai_recommendation and not ai_assistance:
                 count += 1
         return count
 
     @staticmethod
-    def _manual_count(rows: Iterable[dict[str, str]], field: str) -> int:
+    def _ai_flag_count(rows: Iterable[dict[str, str]], field: str) -> int:
         return sum(1 for row in rows if str(row.get(field, "")).lower() == "true")
 
     @staticmethod
@@ -455,12 +455,12 @@ class EvaluationMatrixBuilder:
         return 0
 
     @staticmethod
-    def _migration_status(readiness_after: int, risk_category: str, remaining: int, manual_remediation: int) -> str:
+    def _migration_status(readiness_after: int, risk_category: str, remaining: int, ai_assistance: int) -> str:
         if readiness_after >= 80 and risk_category.upper() == "LOW" and remaining == 0:
             return "READY"
         if risk_category.upper() in {"HIGH", "CRITICAL"} or readiness_after < 50:
             return "HIGH_RISK"
-        if manual_remediation or remaining:
+        if ai_assistance or remaining:
             return "NEEDS_REVIEW"
         return "READY_WITH_MONITORING"
 
@@ -530,7 +530,7 @@ class EvaluationMatrixBuilder:
 
         remaining: list[dict[str, str]] = []
         for issue in before_issues:
-            if issue["issue"] not in self.MANUAL_UNRESOLVED_ISSUES:
+            if issue["issue"] not in self.AI_ASSISTANCE_UNRESOLVED_ISSUES:
                 continue
             key = self._issue_key(issue)
             if resolved_counts.get(key, 0) > 0:

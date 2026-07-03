@@ -13,8 +13,8 @@ class RemediationEffectivenessRecord:
     mapping_name: str
     issues_found: int
     auto_fixed: int
-    manual_review: int
-    manual_remediation: int
+    ai_recommendation: int
+    ai_assistance: int
     auto_fix_percentage: float
 
 
@@ -25,8 +25,8 @@ class RemediationEffectivenessEngine:
         "mapping_name",
         "issues_found",
         "auto_fixed",
-        "manual_review",
-        "manual_remediation",
+        "ai_recommendation",
+        "ai_assistance",
         "auto_fix_percentage",
     ]
 
@@ -67,14 +67,14 @@ class RemediationEffectivenessEngine:
                 ]
             )
             auto_fixed = min(auto_fixed, found)
-            manual_review = len(
+            ai_recommendation = len(
                 [issue for issue in remediation_for_mapping if issue.approval_required]
             )
-            manual_remediation = len(
+            ai_assistance = len(
                 [
                     issue
                     for issue in remediation_for_mapping
-                    if issue.manual_remediation_required
+                    if issue.ai_assistance_required
                 ]
             )
             records.append(
@@ -82,8 +82,8 @@ class RemediationEffectivenessEngine:
                     mapping_name=mapping,
                     issues_found=found,
                     auto_fixed=auto_fixed,
-                    manual_review=manual_review,
-                    manual_remediation=manual_remediation,
+                    ai_recommendation=ai_recommendation,
+                    ai_assistance=ai_assistance,
                     auto_fix_percentage=round((auto_fixed / found) * 100, 2) if found else 0.0,
                 )
             )

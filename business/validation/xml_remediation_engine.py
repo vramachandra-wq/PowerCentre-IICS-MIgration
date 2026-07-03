@@ -40,7 +40,7 @@ class XmlRemediationEngine:
         "lookup_datatype_mismatch",
     }
 
-    MANUAL_PATTERNS = [
+    AI_ASSISTANCE_PATTERNS = [
         "STORED PROCEDURE",
         "JAVA",
         "DLL",
@@ -88,10 +88,10 @@ class XmlRemediationEngine:
         root = tree.getroot()
         changes: list[XmlChange] = []
 
-        if self._manual_only(root):
+        if self._ai_assistance_only(root):
             self._write_xml(tree, output_path)
             return [
-                self._change(xml_path.name, "XML", xml_path.stem, "MANUAL_REMEDIATION_REQUIRED", "", "true", "manual_exclusion", "MANUAL_REMEDIATION_REQUIRED")
+                self._change(xml_path.name, "XML", xml_path.stem, "AI_ASSISTANCE_REQUIRED", "", "true", "ai_assistance_exclusion", "AI_ASSISTANCE_REQUIRED")
             ]
 
         for elem in root.iter("TARGETFIELD"):
@@ -102,17 +102,17 @@ class XmlRemediationEngine:
         for transformation in root.iter("TRANSFORMATION"):
             transformation_name = transformation.get("NAME", "")
             transformation_key = self._normalize(transformation_name)
-            if self._manual_transformation(transformation):
+            if self._ai_assistance_transformation(transformation):
                 changes.append(
                     self._change(
                         xml_path.name,
                         "TRANSFORMATION",
                         transformation_name,
-                        "MANUAL_REMEDIATION_REQUIRED",
+                        "AI_ASSISTANCE_REQUIRED",
                         "",
                         "true",
-                        "manual_exclusion",
-                        "MANUAL_REMEDIATION_REQUIRED",
+                        "ai_assistance_exclusion",
+                        "AI_ASSISTANCE_REQUIRED",
                     )
                 )
                 continue
@@ -233,13 +233,13 @@ class XmlRemediationEngine:
 
         return std_etree.tostring(tree.getroot(), encoding="unicode")
 
-    def _manual_only(self, root) -> bool:
+    def _ai_assistance_only(self, root) -> bool:
         text = " ".join(str(value).upper() for elem in root.iter() for value in [elem.tag, *elem.attrib.values()])
         return any(pattern in text for pattern in ["SAP CONNECTOR", "MAINFRAME", "COBOL SOURCE", "MQ SOURCE"])
 
-    def _manual_transformation(self, elem) -> bool:
+    def _ai_assistance_transformation(self, elem) -> bool:
         text = " ".join(str(value).upper() for value in [elem.get("NAME", ""), elem.get("TYPE", ""), *elem.attrib.values()])
-        return any(pattern in text for pattern in self.MANUAL_PATTERNS)
+        return any(pattern in text for pattern in self.AI_ASSISTANCE_PATTERNS)
 
     @staticmethod
     def _string_datatype(elem) -> bool:

@@ -20,8 +20,8 @@ class DashboardDatasetBuilder:
         "risk_after",
         "overall_health_score",
         "auto_fix_success_rate",
-        "manual_review_count",
-        "manual_remediation_count",
+        "ai_recommendation_count",
+        "ai_assistance_count",
         "migration_status",
     ]
 
@@ -43,8 +43,8 @@ class DashboardDatasetBuilder:
                     "risk_after": record.risk_after,
                     "overall_health_score": record.overall_health_score,
                     "auto_fix_success_rate": record.auto_fix_success_rate,
-                    "manual_review_count": record.manual_review,
-                    "manual_remediation_count": record.manual_remediation,
+                    "ai_recommendation_count": record.ai_recommendation,
+                    "ai_assistance_count": record.ai_assistance,
                     "migration_status": record.migration_status,
                 }
             )
