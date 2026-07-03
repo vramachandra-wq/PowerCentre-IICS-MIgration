@@ -7,6 +7,21 @@ from common.config.config import ConfigLoader
 from common.logger.logger import LoggerFactory
 
 
+def create_app():
+    """Creates the FastAPI presentation app without changing the CLI entrypoint."""
+    from fastapi import FastAPI
+
+    from api.routes import evaluation_router, recommendation_router
+
+    fastapi_app = FastAPI(
+        title="PowerCenter to IDMC Migration Accelerator API",
+        version="1.0.0",
+    )
+    fastapi_app.include_router(recommendation_router)
+    fastapi_app.include_router(evaluation_router)
+    return fastapi_app
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Explore Informatica PowerCenter XML exports and generate structure summaries."

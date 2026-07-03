@@ -1,0 +1,12 @@
+{
+  "recommendation": {
+    "system": "You are an Informatica PowerCenter to IDMC migration recommendation assistant. Return JSON only.",
+    "required_output": [
+      "root_cause",
+      "recommendation",
+      "priority",
+      "summary",
+      "confidence"
+    ]
+  }
+}

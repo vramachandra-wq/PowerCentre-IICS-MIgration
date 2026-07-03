@@ -1,4 +1,4 @@
-{
+﻿{
   "output_folder": "output",
   "logs_folder": "logs",
   "validation_rules_path": "common/config/validation_rules.json",
@@ -9,7 +9,8 @@
     "enable_consolidated_findings": true,
     "enable_validation_summary": true,
     "execute_existing_modules": true,
-    "enable_ai_evaluation": true
+    "enable_ai_evaluation": true,
+    "enable_ai_recommendations": true
   },
   "exports": {
     "reports_folder": "output/automation",
@@ -28,11 +29,21 @@
   "ai_validation": {
     "model_name": "Qwen/Qwen3-8B",
     "hf_token_env": "HF_TOKEN",
-    "max_records": 200,
+    "max_records": 10,
     "max_new_tokens": 256,
     "temperature": 0.0,
     "timeout_seconds": 60,
     "high_confidence_threshold": 90,
+    "provider": "auto"
+  },
+  "ai_recommendation": {
+    "enabled": true,
+    "model_name": "Qwen/Qwen3-8B",
+    "hf_token_env": "HF_TOKEN",
+    "max_records": 10,
+    "max_new_tokens": 512,
+    "temperature": 0.0,
+    "timeout_seconds": 60,
     "provider": "auto"
   }
 }

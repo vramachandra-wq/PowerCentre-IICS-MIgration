@@ -7,6 +7,7 @@ __pycache__/
 output/
 logs/
 *.log
+.test_tmp/
 
 # Virtual env
 venv/

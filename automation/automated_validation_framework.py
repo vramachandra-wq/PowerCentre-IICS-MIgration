@@ -13,6 +13,7 @@ from automation.dashboard_dataset import DashboardDatasetBuilder
 from automation.evaluation_dataset import EvaluationDatasetBuilder
 from automation.evaluation_matrix import EvaluationMatrixBuilder, ReportRepository
 from automation.validation_summary import ValidationSummaryBuilder
+from automation.ai import AIRecommendationConfig, AIRecommendationService
 from business.validation.ai_evaluation import AIEvaluationBuilder
 from business.validation.ai_validation_engine import AIValidationConfig, AIValidationEngine
 
@@ -31,8 +32,10 @@ class AutomationConfig:
     enable_consolidated_findings: bool = True
     enable_validation_summary: bool = True
     enable_ai_evaluation: bool = True
+    enable_ai_recommendations: bool = True
     execute_existing_modules: bool = True
     ai_validation: AIValidationConfig = field(default_factory=AIValidationConfig)
+    ai_recommendation: AIRecommendationConfig = field(default_factory=AIRecommendationConfig)
 
 
 class AutomatedValidationFramework:
@@ -116,6 +119,23 @@ class AutomatedValidationFramework:
                     )
                 self.logger.info("AI evaluation generated. rows=%s accuracy=%s", len(ai_dataset), ai_summary.accuracy)
 
+            if self.config.enable_ai_recommendations:
+                ai_service = AIRecommendationService(
+                    self.repository,
+                    self.config.ai_recommendation,
+                    logger=self.logger,
+                )
+                recommendation_results, recommendation_report = ai_service.run()
+                outputs["ai_recommendations"] = str(recommendation_report)
+                error_rows = [result for result in recommendation_results if result.error]
+                if error_rows:
+                    self.logger.warning(
+                        "AI recommendation report generated with %s model fallback row(s). First error=%s",
+                        len(error_rows),
+                        error_rows[0].error,
+                    )
+                self.logger.info("AI recommendation report generated. rows=%s", len(recommendation_results))
+
             end_time = datetime.now(UTC)
             self.logger.info(
                 "Automated validation framework completed at %s. files_processed=%s outputs=%s",
@@ -165,8 +185,10 @@ class AutomatedValidationFramework:
             enable_consolidated_findings=bool(features.get("enable_consolidated_findings", True)),
             enable_validation_summary=bool(features.get("enable_validation_summary", True)),
             enable_ai_evaluation=bool(features.get("enable_ai_evaluation", True)),
+            enable_ai_recommendations=bool(features.get("enable_ai_recommendations", True)),
             execute_existing_modules=bool(features.get("execute_existing_modules", True)),
             ai_validation=self._load_ai_validation_config(payload.get("ai_validation", {})),
+            ai_recommendation=self._load_ai_recommendation_config(payload.get("ai_recommendation", {})),
         )
 
 
@@ -181,6 +203,19 @@ class AutomatedValidationFramework:
             timeout_seconds=int(payload.get("timeout_seconds", 60)),
             high_confidence_threshold=int(payload.get("high_confidence_threshold", 90)),
             provider=str(payload.get("provider", "auto")),
+        )
+
+    @staticmethod
+    def _load_ai_recommendation_config(payload: dict[str, Any]) -> AIRecommendationConfig:
+        return AIRecommendationConfig(
+            model_name=str(payload.get("model_name", "Qwen/Qwen3-8B")),
+            hf_token_env=str(payload.get("hf_token_env", "HF_TOKEN")),
+            max_records=int(payload.get("max_records", 200)),
+            max_new_tokens=int(payload.get("max_new_tokens", 512)),
+            temperature=float(payload.get("temperature", 0.0)),
+            timeout_seconds=int(payload.get("timeout_seconds", 60)),
+            provider=str(payload.get("provider", "auto")),
+            enabled=bool(payload.get("enabled", True)),
         )
 
     def _execute_existing_modules(self) -> list[str]:
