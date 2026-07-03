@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import unittest
 
 
@@ -74,11 +74,11 @@ class AIAPIRoutesTests(unittest.TestCase):
                     "matrix": {
                         "Average Confidence": 80,
                         "F1 Score": 70,
-                        "Accuracy": 90,
-                        "Precision": 85,
-                        "Model Call Success Rate": 100,
+                        "ML Accuracy": 90,
+                        "ML Precision": 85,
+                        "Model Success Rate": 100,
                         "Recall": 60,
-                        "Total Rules": 4,
+                        "Total Evaluations": 4,
                     }
                 }
             ),
@@ -116,3 +116,5 @@ class AIAPIRoutesTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+

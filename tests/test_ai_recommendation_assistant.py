@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import unittest
 from uuid import uuid4
 from pathlib import Path
@@ -258,7 +258,7 @@ class AIRecommendationAssistantTests(unittest.TestCase):
         (automation / "validation_summary.json").write_text('{"overall_readiness": 96}', encoding="utf-8")
         (automation / "consolidated_findings.json").write_text('{"total_validation_failures": 1}', encoding="utf-8")
         (automation / "ai_evaluation_summary.json").write_text(
-            '{"matrix": {"Valid Prediction Accuracy": 100, "Total Rules": 1}}',
+            '{"matrix": {"ML Accuracy": 100, "Total Evaluations": 1}}',
             encoding="utf-8",
         )
 
@@ -278,3 +278,4 @@ class AIRecommendationAssistantTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

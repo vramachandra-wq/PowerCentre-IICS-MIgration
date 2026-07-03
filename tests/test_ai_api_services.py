@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import json
 import unittest
 from pathlib import Path
@@ -62,11 +62,11 @@ class AIAPIServicesTests(unittest.TestCase):
                     "matrix": {
                         "Average Confidence": 92.5,
                         "F1 Score": 77.2,
-                        "Accuracy": 91.0,
-                        "Precision": 88.0,
-                        "Model Call Success Rate": 96.0,
+                        "ML Accuracy": 91.0,
+                        "ML Precision": 88.0,
+                        "Model Success Rate": 96.0,
                         "Recall": 75.0,
-                        "Total Rules": 12,
+                        "Total Evaluations": 12,
                         "Agreement Rate": 1,
                     }
                 }
@@ -98,10 +98,10 @@ class AIAPIServicesTests(unittest.TestCase):
         reports.mkdir(parents=True)
         self._write_csv(
             reports / "ai_evaluation_dataset.csv",
-            ["ground_truth", "ai_decision", "confidence"],
+            ["ground_truth", "ml_decision", "confidence"],
             [
-                {"ground_truth": "FAIL", "ai_decision": "FAIL", "confidence": "90"},
-                {"ground_truth": "FAIL", "ai_decision": "FAIL", "confidence": "95"},
+                {"ground_truth": "FAIL", "ml_decision": "FAIL", "confidence": "90"},
+                {"ground_truth": "FAIL", "ml_decision": "FAIL", "confidence": "95"},
             ],
         )
         (reports / "ai_evaluation_summary.json").write_text(
@@ -112,9 +112,9 @@ class AIAPIServicesTests(unittest.TestCase):
                         "F1 Score": 0,
                         "Accuracy": 100,
                         "Precision": 0,
-                        "Model Call Success Rate": 100,
+                        "Model Success Rate": 100,
                         "Recall": 0,
-                        "Total Rules": 2,
+                        "Total Evaluations": 2,
                     }
                 }
             ),
@@ -228,3 +228,5 @@ class AIAPIServicesTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+

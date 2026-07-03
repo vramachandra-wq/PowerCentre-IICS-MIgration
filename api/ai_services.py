@@ -1,15 +1,77 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import csv
+import json
 import logging
 import time
 from pathlib import Path
 from typing import Any
 
 from automation.ai import AIRecommendationConfig, AIRecommendationService
+from automation.automated_validation_framework import AutomatedValidationFramework
 from automation.ai.llm_client import RecommendationModelClient
 from automation.evaluation_matrix import ReportRepository
 
+
+
+class AutomationConfigReader:
+    """Reads API-relevant automation settings from automation_config.json."""
+
+    DEFAULT_CONFIG_PATH = Path("config/automation_config.json")
+
+    def __init__(self, config_path: str | Path | None = None) -> None:
+        self.config_path = Path(config_path or self.DEFAULT_CONFIG_PATH)
+
+    def load(self) -> dict[str, Any]:
+        if not self.config_path.exists():
+            return {}
+        with self.config_path.open("r", encoding="utf-8-sig") as config_file:
+            payload = json.load(config_file)
+        return payload if isinstance(payload, dict) else {}
+
+    def ai_validation_max_records(self) -> int | None:
+        return self._max_records("ai_validation")
+
+    def ai_recommendation_config(self) -> AIRecommendationConfig:
+        payload = self.load().get("ai_recommendation", {})
+        if not isinstance(payload, dict):
+            payload = {}
+        defaults = AIRecommendationConfig()
+        return AIRecommendationConfig(
+            model_name=str(payload.get("model_name", defaults.model_name)),
+            hf_token_env=str(payload.get("hf_token_env", defaults.hf_token_env)),
+            max_records=int(payload.get("max_records", defaults.max_records)),
+            max_new_tokens=int(payload.get("max_new_tokens", defaults.max_new_tokens)),
+            temperature=float(payload.get("temperature", defaults.temperature)),
+            timeout_seconds=int(payload.get("timeout_seconds", defaults.timeout_seconds)),
+            provider=str(payload.get("provider", defaults.provider)),
+            enabled=bool(payload.get("enabled", defaults.enabled)),
+        )
+
+    def output_folder(self) -> Path:
+        value = self.load().get("output_folder", "output")
+        return self._resolve(value)
+
+    def reports_folder(self) -> Path:
+        payload = self.load()
+        exports = payload.get("exports", {}) if isinstance(payload, dict) else {}
+        value = exports.get("reports_folder", "output/automation") if isinstance(exports, dict) else "output/automation"
+        return self._resolve(value)
+
+    def _max_records(self, section: str) -> int | None:
+        payload = self.load().get(section, {})
+        if not isinstance(payload, dict):
+            return None
+        try:
+            return int(payload.get("max_records"))
+        except (TypeError, ValueError):
+            return None
+
+    def _resolve(self, path: object) -> Path:
+        candidate = Path(str(path))
+        if candidate.is_absolute():
+            return candidate
+        return Path.cwd() / candidate
 
 class APIReportError(ValueError):
     """Raised when an API report source is missing or invalid."""
@@ -31,9 +93,11 @@ class AIRecommendationAPIService:
         config: AIRecommendationConfig | None = None,
         client: RecommendationModelClient | None = None,
         logger: logging.Logger | None = None,
+        config_reader: AutomationConfigReader | None = None,
     ) -> None:
         self.repository = repository or ReportRepository()
-        self.config = config or AIRecommendationConfig()
+        self.config_reader = config_reader or AutomationConfigReader()
+        self.config = config or self.config_reader.ai_recommendation_config()
         self.client = client
         self.logger = logger
 
@@ -115,11 +179,18 @@ class AIEvaluationAPIService:
         "Total Evaluations",
     ]
 
-    def __init__(self, repository: ReportRepository | None = None, logger: logging.Logger | None = None) -> None:
+    def __init__(
+        self,
+        repository: ReportRepository | None = None,
+        logger: logging.Logger | None = None,
+        config_reader: AutomationConfigReader | None = None,
+    ) -> None:
         self.repository = repository or ReportRepository()
         self.logger = logger
+        self.config_reader = config_reader or AutomationConfigReader()
 
-    def evaluation(self) -> dict[str, dict[str, Any]]:
+    def evaluation(self, refresh: bool = False) -> dict[str, dict[str, Any]]:
+        self._refresh_automation_outputs_if_needed(force=refresh)
         dataset_response = self._evaluation_from_dataset()
         if dataset_response:
             return dataset_response
@@ -141,11 +212,11 @@ class AIEvaluationAPIService:
             "matrix": {
                 "Average Confidence": self._number(matrix.get("Average Confidence")),
                 "F1 Score": self._number(matrix.get("F1 Score")),
-                "ML Accuracy": self._number(matrix.get("Accuracy")),
-                "ML Precision": self._number(matrix.get("Precision")),
-                "Model Success Rate": self._number(matrix.get("Model Call Success Rate")),
+                "ML Accuracy": self._number(matrix.get("ML Accuracy", matrix.get("Accuracy"))),
+                "ML Precision": self._number(matrix.get("ML Precision", matrix.get("Precision"))),
+                "Model Success Rate": self._number(matrix.get("Model Success Rate")),
                 "Recall": self._number(matrix.get("Recall")),
-                "Total Evaluations": self._number(matrix.get("Total Rules")),
+                "Total Evaluations": self._number(matrix.get("Total Evaluations")),
             }
         }
         if self.logger:
@@ -165,7 +236,7 @@ class AIEvaluationAPIService:
             row
             for row in rows
             if self._decision(row.get("ground_truth")) in {"PASS", "FAIL"}
-            and self._decision(row.get("ai_decision")) in {"PASS", "FAIL"}
+            and self._decision(row.get("ml_decision")) in {"PASS", "FAIL"}
         ]
         if not valid_rows:
             return {
@@ -183,7 +254,7 @@ class AIEvaluationAPIService:
         tp = tn = fp = fn = 0
         for row in valid_rows:
             expected = self._decision(row.get("ground_truth"))
-            predicted = self._decision(row.get("ai_decision"))
+            predicted = self._decision(row.get("ml_decision"))
             if expected == "FAIL" and predicted == "FAIL":
                 tp += 1
             elif expected == "PASS" and predicted == "PASS":
@@ -211,6 +282,36 @@ class AIEvaluationAPIService:
             self.logger.info("AI evaluation API completed from %s", path)
         return response
 
+    def _refresh_automation_outputs_if_needed(self, force: bool = False) -> None:
+        if not self._uses_configured_repository():
+            return
+        expected_records = self.config_reader.ai_validation_max_records()
+        if not force and (expected_records is None or self._dataset_row_count() == expected_records):
+            return
+        self._log_info(
+            "Refreshing automation outputs from FastAPI. expected_ai_validation_records=%s current_records=%s force=%s",
+            expected_records,
+            self._dataset_row_count(),
+            force,
+        )
+        AutomatedValidationFramework(config_path=self.config_reader.config_path).run()
+
+    def _uses_configured_repository(self) -> bool:
+        return (
+            self.repository.output_folder.resolve() == self.config_reader.output_folder().resolve()
+            and self.repository.reports_folder.resolve() == self.config_reader.reports_folder().resolve()
+        )
+
+    def _dataset_row_count(self) -> int:
+        path = self._dataset_path()
+        if not path.exists():
+            return 0
+        with path.open("r", newline="", encoding="utf-8-sig") as csv_file:
+            return sum(1 for _ in csv.DictReader(csv_file))
+
+    def _log_info(self, message: str, *args: object) -> None:
+        if self.logger:
+            self.logger.info(message, *args)
     def _summary_path(self) -> Path:
         candidates = [
             self.repository.reports_folder / "ai_evaluation_summary.json",
@@ -272,3 +373,9 @@ class AIEvaluationAPIService:
         except (TypeError, ValueError):
             return False
         return True
+
+
+
+
+
+

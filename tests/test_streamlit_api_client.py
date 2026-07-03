@@ -1,4 +1,4 @@
-import json
+﻿import json
 import unittest
 from unittest.mock import patch
 
@@ -39,6 +39,16 @@ class StreamlitAPIClientTests(unittest.TestCase):
         self.assertEqual("http://api.local/api/v1/ai/recommendation", request.full_url)
         self.assertEqual(b'{"Max Records": 5}', request.data)
 
+
+    def test_recommendations_uses_config_when_no_limit_is_sent(self) -> None:
+        payload = []
+        with patch("api.client.urlopen", return_value=FakeHTTPResponse(payload)) as mocked:
+            rows = AIAPIClient("http://api.local").recommendations()
+
+        self.assertEqual(payload, rows)
+        request = mocked.call_args.args[0]
+        self.assertEqual("http://api.local/api/v1/ai/recommendation", request.full_url)
+        self.assertEqual(b"{}", request.data)
     def test_evaluation_requires_matrix_shape(self) -> None:
         with patch("api.client.urlopen", return_value=FakeHTTPResponse({"not_matrix": {}})):
             with self.assertRaises(FastAPIClientError):
@@ -47,3 +57,4 @@ class StreamlitAPIClientTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

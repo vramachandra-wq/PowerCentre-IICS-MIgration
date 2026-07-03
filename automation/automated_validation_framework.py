@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -110,14 +110,14 @@ class AutomatedValidationFramework:
                 ai_dataset = ai_builder.build_dataset(ai_results)
                 ai_summary = ai_builder.summarize(ai_results, ai_dataset)
                 outputs["ai_evaluation"] = {key: str(path) for key, path in ai_builder.write(ai_dataset, ai_summary).items()}
-                error_rows = [row for row in ai_dataset if row.get("ai_decision") == "ERROR"]
+                error_rows = [row for row in ai_dataset if row.get("ml_decision") == "ERROR"]
                 if error_rows:
                     self.logger.warning(
                         "AI evaluation generated %s error rows. First error=%s",
                         len(error_rows),
                         error_rows[0].get("error", ""),
                     )
-                self.logger.info("AI evaluation generated. rows=%s accuracy=%s", len(ai_dataset), ai_summary.accuracy)
+                self.logger.info("AI evaluation generated. rows=%s accuracy=%s", len(ai_dataset), ai_summary.ml_accuracy)
 
             if self.config.enable_ai_recommendations:
                 ai_service = AIRecommendationService(
@@ -170,7 +170,7 @@ class AutomatedValidationFramework:
     def _load_config(self, path: Path) -> AutomationConfig:
         if not path.exists():
             raise FileNotFoundError(f"Automation config not found: {path}")
-        with path.open("r", encoding="utf-8") as config_file:
+        with path.open("r", encoding="utf-8-sig") as config_file:
             payload = json.load(config_file)
         exports = payload.get("exports", {})
         features = payload.get("features", {})
@@ -307,3 +307,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+

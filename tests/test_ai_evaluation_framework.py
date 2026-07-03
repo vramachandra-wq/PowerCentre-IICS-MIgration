@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import json
 import tempfile
 import unittest
@@ -69,21 +69,21 @@ class AIEvaluationFrameworkTests(unittest.TestCase):
             paths = builder.write(dataset, summary)
 
             self.assertEqual(2, len(dataset))
-            self.assertEqual(100.0, summary.accuracy)
-            self.assertEqual(100.0, summary.agreement_rate)
-            self.assertEqual(100.0, summary.recommendation_accuracy)
-            self.assertEqual(100.0, summary.readiness_accuracy)
-            self.assertEqual(100.0, summary.risk_accuracy)
+            self.assertEqual(100.0, summary.ml_accuracy)
+            self.assertEqual(100.0, summary.model_success_rate)
             self.assertTrue(paths["dataset"].exists())
             self.assertTrue(paths["matrix"].exists())
             self.assertTrue(paths["dashboard"].exists())
             self.assertTrue(paths["extended_dashboard"].exists())
 
             matrix = self._read_csv(paths["matrix"])[0]
-            self.assertEqual("2", matrix["Total Rules"])
-            self.assertEqual("100.0", matrix["Accuracy"])
+            self.assertEqual("2", matrix["Total Evaluations"])
+            self.assertEqual("100.0", matrix["ML Accuracy"])
+            self.assertNotIn("Prompt Tokens", matrix)
+            self.assertNotIn("Average Processing Time", matrix)
             dashboard = self._read_csv(paths["extended_dashboard"])[0]
-            self.assertIn("AI Accuracy", dashboard)
+            self.assertIn("ML Accuracy", dashboard)
+            self.assertNotIn("AI Accuracy", dashboard)
 
     @staticmethod
     def _write_ground_truth(output: Path) -> None:
@@ -165,3 +165,5 @@ class AIEvaluationFrameworkTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+

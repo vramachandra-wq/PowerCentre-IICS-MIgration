@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Iterable
@@ -8,7 +8,7 @@ from automation.metrics import MetricsCalculator
 
 @dataclass(frozen=True)
 class BinaryConfusionMatrix:
-    """Confusion matrix for PASS/FAIL AI decisions against rule-engine ground truth."""
+    """Confusion matrix for PASS/FAIL model decisions against rule-engine ground truth."""
 
     tp: int = 0
     tn: int = 0
@@ -34,16 +34,16 @@ class AIMetricsCalculator:
     @staticmethod
     def confusion_counts(pairs: Iterable[tuple[str, str]]) -> BinaryConfusionMatrix:
         tp = tn = fp = fn = 0
-        for ground_truth, ai_decision in pairs:
+        for ground_truth, predicted_decision in pairs:
             expected = AIMetricsCalculator.normalize_decision(ground_truth)
-            predicted = AIMetricsCalculator.normalize_decision(ai_decision)
-            if expected == "PASS" and predicted == "PASS":
+            predicted = AIMetricsCalculator.normalize_decision(predicted_decision)
+            if expected == "FAIL" and predicted == "FAIL":
                 tp += 1
-            elif expected == "FAIL" and predicted == "FAIL":
+            elif expected == "PASS" and predicted == "PASS":
                 tn += 1
-            elif expected == "FAIL" and predicted == "PASS":
-                fp += 1
             elif expected == "PASS" and predicted == "FAIL":
+                fp += 1
+            elif expected == "FAIL" and predicted == "PASS":
                 fn += 1
         return BinaryConfusionMatrix(tp=tp, tn=tn, fp=fp, fn=fn)
 
@@ -105,3 +105,6 @@ class AIMetricsCalculator:
     @staticmethod
     def normalize_label(value: object) -> str:
         return str(value or "").strip().upper().replace(" ", "_").replace("-", "_")
+
+
+

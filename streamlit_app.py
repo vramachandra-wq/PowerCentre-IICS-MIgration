@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 
@@ -30,7 +30,6 @@ def main() -> None:
             "Base URL",
             value=os.getenv("PC_IICS_API_BASE_URL", "http://127.0.0.1:8000"),
         )
-        max_records = st.number_input("Recommendation limit", min_value=1, max_value=500, value=50, step=10)
         refresh = st.button("Refresh", type="primary", use_container_width=True)
 
     client = AIAPIClient(base_url=base_url)
@@ -43,7 +42,7 @@ def main() -> None:
         render_evaluation(client)
 
     with recommendation_tab:
-        render_recommendations(client, int(max_records))
+        render_recommendations(client)
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -52,8 +51,8 @@ def load_evaluation(base_url: str) -> dict[str, object]:
 
 
 @st.cache_data(ttl=60, show_spinner=False)
-def load_recommendations(base_url: str, max_records: int) -> list[dict[str, object]]:
-    return AIAPIClient(base_url=base_url).recommendations(max_records=max_records)
+def load_recommendations(base_url: str) -> list[dict[str, object]]:
+    return AIAPIClient(base_url=base_url).recommendations()
 
 
 def render_evaluation(client: AIAPIClient) -> None:
@@ -77,10 +76,10 @@ def render_evaluation(client: AIAPIClient) -> None:
     st.dataframe(pd.DataFrame([values]), use_container_width=True, hide_index=True)
 
 
-def render_recommendations(client: AIAPIClient, max_records: int) -> None:
+def render_recommendations(client: AIAPIClient) -> None:
     st.subheader("AI Recommendation Report")
     try:
-        rows = load_recommendations(client.base_url, max_records)
+        rows = load_recommendations(client.base_url)
     except FastAPIClientError as exc:
         st.error(str(exc))
         return
@@ -123,3 +122,5 @@ def render_recommendations(client: AIAPIClient, max_records: int) -> None:
 
 if __name__ == "__main__":
     main()
+
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import logging
@@ -336,11 +336,11 @@ class RecommendationEngine:
             "migration_success_rate": success_rate,
             "successful_conversions": successful_conversions,
             "total_mappings": total_mappings,
-            "validation_accuracy": self._number(ai_matrix.get("Valid Prediction Accuracy") or ai_matrix.get("Accuracy")),
+            "validation_accuracy": self._number(ai_matrix.get("ML Accuracy") or ai_matrix.get("Accuracy")),
             "rule_engine_findings": consolidated.get("total_validation_failures", 0)
             if isinstance(consolidated, dict)
             else 0,
-            "ai_assisted_recommendations": self._to_int(ai_matrix.get("Total Rules")),
+            "ai_assisted_recommendations": self._to_int(ai_matrix.get("Total Evaluations")),
             "unsupported_object_count": unsupported_objects,
             "high_risk_mapping_count": high_risk_mappings,
             "average_risk_score": average_risk,
@@ -418,3 +418,5 @@ class RecommendationEngine:
     def _log_warning(self, message: str, *args: object) -> None:
         if self.logger:
             self.logger.warning(message, *args)
+
+

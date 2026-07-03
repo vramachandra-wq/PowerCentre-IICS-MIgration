@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import time
 
@@ -20,16 +20,15 @@ def get_evaluation(
 ) -> dict[str, object]:
     started = time.perf_counter()
     logger.info("API request started: POST /api/v1/ai/evaluation")
-    if request_body and request_body.refresh:
-        raise HTTPException(
-            status_code=400,
-            detail="AI evaluation endpoint reuses existing evaluation reports and does not regenerate them.",
-        )
     try:
-        response = AIEvaluationAPIService(repository=repository, logger=logger).evaluation()
+        response = AIEvaluationAPIService(repository=repository, logger=logger).evaluation(
+            refresh=bool(request_body.refresh) if request_body else False
+        )
     except APIReportError as exc:
         logger.error("AI evaluation API request failed: %s", exc)
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
     elapsed = int((time.perf_counter() - started) * 1000)
     logger.info("API request completed: POST /api/v1/ai/evaluation elapsed_ms=%s", elapsed)
     return response
+
+
