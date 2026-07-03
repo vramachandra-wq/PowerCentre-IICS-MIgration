@@ -114,7 +114,7 @@ class AutomatedValidationFramework:
                         len(error_rows),
                         error_rows[0].get("error", ""),
                     )
-                self.logger.info("AI evaluation generated. rows=%s accuracy=%s", len(ai_dataset), ai_summary.accuracy)
+                self.logger.info("AI evaluation generated. rows=%s accuracy=%s", len(ai_dataset), ai_summary.ml_accuracy)
 
             end_time = datetime.now(UTC)
             self.logger.info(

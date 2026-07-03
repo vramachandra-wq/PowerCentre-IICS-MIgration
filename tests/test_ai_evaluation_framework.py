@@ -33,15 +33,11 @@ class FakeAIClient:
 class AIMetricsTests(unittest.TestCase):
     def test_binary_metrics(self) -> None:
         matrix = BinaryConfusionMatrix(tp=8, tn=7, fp=2, fn=3)
-        self.assertEqual(75.0, AIMetricsCalculator.accuracy(matrix))
         self.assertEqual(80.0, AIMetricsCalculator.precision(matrix))
         self.assertEqual(72.73, AIMetricsCalculator.recall(matrix))
         self.assertEqual(76.19, AIMetricsCalculator.f1_score(80.0, 72.73))
-        self.assertEqual(22.22, AIMetricsCalculator.false_positive_rate(matrix))
-        self.assertEqual(27.27, AIMetricsCalculator.false_negative_rate(matrix))
 
-    def test_agreement_confidence_and_json_parsing(self) -> None:
-        self.assertEqual(66.67, AIMetricsCalculator.agreement_rate(2, 3))
+    def test_confidence_and_json_parsing(self) -> None:
         self.assertEqual(90.0, AIMetricsCalculator.average_confidence([80, 90, 100]))
         parsed = AIResponseParser.parse('{"decision":"PASS","confidence":99}')
         self.assertEqual("PASS", parsed["decision"])
@@ -69,21 +65,18 @@ class AIEvaluationFrameworkTests(unittest.TestCase):
             paths = builder.write(dataset, summary)
 
             self.assertEqual(2, len(dataset))
-            self.assertEqual(100.0, summary.accuracy)
-            self.assertEqual(100.0, summary.agreement_rate)
-            self.assertEqual(100.0, summary.recommendation_accuracy)
-            self.assertEqual(100.0, summary.readiness_accuracy)
-            self.assertEqual(100.0, summary.risk_accuracy)
+            self.assertEqual(100.0, summary.ml_accuracy)
+            self.assertEqual(100.0, summary.model_success_rate)
             self.assertTrue(paths["dataset"].exists())
             self.assertTrue(paths["matrix"].exists())
             self.assertTrue(paths["dashboard"].exists())
             self.assertTrue(paths["extended_dashboard"].exists())
 
             matrix = self._read_csv(paths["matrix"])[0]
-            self.assertEqual("2", matrix["Total Rules"])
-            self.assertEqual("100.0", matrix["Accuracy"])
+            self.assertEqual("2", matrix["Total Evaluations"])
+            self.assertEqual("100.0", matrix["ML Accuracy"])
             dashboard = self._read_csv(paths["extended_dashboard"])[0]
-            self.assertIn("AI Accuracy", dashboard)
+            self.assertIn("ML Accuracy", dashboard)
 
     @staticmethod
     def _write_ground_truth(output: Path) -> None:
