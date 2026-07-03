@@ -30,15 +30,15 @@ class ValidationSummaryBuilder:
             "total_remediation_items": len(remediation_rows),
             "total_not_auto_fixed": not_remediated,
             "remaining_issues": sum(row.remaining_issues for row in rows),
-            "manual_review": sum(row.manual_review for row in rows),
-            "manual_remediation": sum(row.manual_remediation for row in rows),
+            "ai_recommendation": sum(row.ai_recommendation for row in rows),
+            "ai_assistance": sum(row.ai_assistance for row in rows),
             "validation_pass_rate": self.metrics.pass_rate(passed, failed),
             "validation_failure_rate": self.metrics.failure_rate(passed, failed),
             "auto_fix_percentage": self.metrics.percentage(remediated, len(remediation_rows)),
             "auto_fix_accuracy": self.metrics.percentage(remediated, len(remediation_rows)),
-            "manual_review_percentage": self.metrics.percentage(sum(row.manual_review for row in rows), failed),
-            "manual_remediation_percentage": self.metrics.percentage(
-                sum(row.manual_remediation for row in rows), failed
+            "ai_recommendation_percentage": self.metrics.percentage(sum(row.ai_recommendation for row in rows), failed),
+            "ai_assistance_percentage": self.metrics.percentage(
+                sum(row.ai_assistance for row in rows), failed
             ),
             "average_readiness_improvement": self.metrics.average(
                 self.metrics.readiness_improvement(row.readiness_before, row.readiness_after) for row in rows

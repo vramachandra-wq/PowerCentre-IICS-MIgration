@@ -118,7 +118,7 @@ class RemediationReportingTests(unittest.TestCase):
                 "Status",
                 "Asset",
                 "Approval Required",
-                "Manual Remediation Required",
+                "AI Assistance Required",
             ],
             [
                 {
@@ -132,7 +132,7 @@ class RemediationReportingTests(unittest.TestCase):
                     "Status": "Resolved",
                     "Asset": "SDE_FINANCE",
                     "Approval Required": "False",
-                    "Manual Remediation Required": "False",
+                    "AI Assistance Required": "False",
                 },
                 {
                     "Issue": "oracle_curly_brace_syntax",
@@ -145,7 +145,7 @@ class RemediationReportingTests(unittest.TestCase):
                     "Status": "Resolved",
                     "Asset": "SDE_FINANCE",
                     "Approval Required": "False",
-                    "Manual Remediation Required": "False",
+                    "AI Assistance Required": "False",
                 },
                 {
                     "Issue": "mapplet_nesting",
@@ -155,10 +155,10 @@ class RemediationReportingTests(unittest.TestCase):
                     "Fix Applied": "",
                     "Before Value": "SDE_FINANCE",
                     "After Value": "SDE_FINANCE",
-                    "Status": "Manual Remediation Required",
+                    "Status": "AI Assistance Required",
                     "Asset": "SDE_FINANCE",
                     "Approval Required": "False",
-                    "Manual Remediation Required": "True",
+                    "AI Assistance Required": "True",
                 },
             ],
         )

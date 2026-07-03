@@ -28,16 +28,16 @@
     {"issue": "post_sql_statements", "auto_fix": true, "action": "propose_post_sql_fix"},
     {"issue": "target_constraint_mismatch", "auto_fix": true, "action": "propose_constraint_fix"}
   ],
-  "manual_rules": [
-    {"issue": "stored_procedure_transformation", "manual_remediation_required": true},
-    {"issue": "java_transformation", "manual_remediation_required": true},
-    {"issue": "dll_dependency", "manual_remediation_required": true},
-    {"issue": "mapplet_nesting", "manual_remediation_required": true},
-    {"issue": "cdc", "manual_remediation_required": true},
-    {"issue": "pushdown_optimization", "manual_remediation_required": true},
-    {"issue": "os_command_task", "manual_remediation_required": true},
-    {"issue": "event_wait_task", "manual_remediation_required": true},
-    {"issue": "sap_connector", "manual_remediation_required": true},
-    {"issue": "mainframe_source", "manual_remediation_required": true}
+  "ai_assistance_rules": [
+    {"issue": "stored_procedure_transformation", "ai_assistance_required": true},
+    {"issue": "java_transformation", "ai_assistance_required": true},
+    {"issue": "dll_dependency", "ai_assistance_required": true},
+    {"issue": "mapplet_nesting", "ai_assistance_required": true},
+    {"issue": "cdc", "ai_assistance_required": true},
+    {"issue": "pushdown_optimization", "ai_assistance_required": true},
+    {"issue": "os_command_task", "ai_assistance_required": true},
+    {"issue": "event_wait_task", "ai_assistance_required": true},
+    {"issue": "sap_connector", "ai_assistance_required": true},
+    {"issue": "mainframe_source", "ai_assistance_required": true}
   ]
 }
