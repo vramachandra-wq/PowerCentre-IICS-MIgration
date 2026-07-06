@@ -12,7 +12,6 @@ from automation.evaluation_matrix import ReportRepository
 from automation.metrics import MetricsCalculator
 from business.validation.readiness_engine import RemediationReportLoader
 
-
 class AIModelClient(Protocol):
     """Swappable LLM client used by the AI validation layer."""
 
@@ -77,6 +76,7 @@ class HuggingFaceQwenClient:
         except ImportError:
             self._load_env_file(Path(".env"))
         token = os.getenv(config.hf_token_env)
+    
         if not token:
             raise ValueError(f"Missing Hugging Face token in environment variable {config.hf_token_env}")
         self.config = config

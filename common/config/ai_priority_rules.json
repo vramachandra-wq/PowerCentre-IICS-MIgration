@@ -1,0 +1,27 @@
+{
+  "Critical": [
+    "migration blocker",
+    "unsupported transformation",
+    "xml corruption",
+    "missing object",
+    "repository inconsistency"
+  ],
+  "High": [
+    "manual intervention required",
+    "unsupported functionality",
+    "data loss risk",
+    "truncation",
+    "not applied"
+  ],
+  "Medium": [
+    "configuration mismatch",
+    "mapping adjustment required",
+    "datatype mismatch",
+    "schema"
+  ],
+  "Low": [
+    "naming issue",
+    "documentation",
+    "cosmetic"
+  ]
+}

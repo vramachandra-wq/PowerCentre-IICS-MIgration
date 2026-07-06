@@ -1,11 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
 from automation.evaluation_matrix import ReportRepository
-from automation.metrics import MetricsCalculator
 from business.validation.ai_metrics import AIMetricsCalculator
 from business.validation.ai_validation_engine import AIValidationResult
 
