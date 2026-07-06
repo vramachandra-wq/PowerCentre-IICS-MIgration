@@ -248,6 +248,11 @@ class XMLParser:
                     "is_valid": workflow.is_valid,
                     "is_enabled": workflow.is_enabled,
                     "server_name": workflow.server_name,
+                    "schedule_type": workflow.schedule_type,
+                    "schedule_interval": workflow.schedule_interval,
+                    "schedule_timezone": workflow.schedule_timezone,
+                    "schedule_start_time": workflow.schedule_start_time,
+                    "schedule_recurrence": workflow.schedule_recurrence,
                     "task_instance_count": len(workflow.task_instances),
                     "workflow_link_count": len(workflow.workflow_links),
                 }

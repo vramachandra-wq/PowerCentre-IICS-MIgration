@@ -119,6 +119,7 @@ class ValidationEngine:
             "shared_folder_dependency": self._shared_folder_dependency,
             "snowflake_keyword_conflicts": self._snowflake_keyword_conflicts,
             "field_unavailable": self._field_unavailable,
+            "oracle_to_oracle_char_padding": self._oracle_to_oracle_char_padding,
         }
         handler = handlers.get(detection_type)
         if handler is None:
@@ -328,6 +329,47 @@ class ValidationEngine:
                 "",
             )
         ]
+
+    def _oracle_to_oracle_char_padding(self, rule: dict[str, Any]) -> list[ValidationIssue]:
+        oracle_sources = {
+            (row.get("file_name", ""), row.get("source_name", ""))
+            for row in self.tables.get("sources", [])
+            if "ORACLE" in row.get("database_type", "").upper()
+        }
+        oracle_targets = {
+            (row.get("file_name", ""), row.get("target_name", ""))
+            for row in self.tables.get("targets", [])
+            if "ORACLE" in row.get("database_type", "").upper()
+        }
+        if not oracle_sources or not oracle_targets:
+            return []
+
+        source_by_file_column = {
+            (row.get("file_name", ""), self._normalize_name(row.get("column_name", ""))): row
+            for row in self.tables.get("source_columns", [])
+            if (row.get("file_name", ""), row.get("source_name", "")) in oracle_sources
+        }
+        issues: list[ValidationIssue] = []
+        for target in self.tables.get("target_columns", []):
+            if (target.get("file_name", ""), target.get("target_name", "")) not in oracle_targets:
+                continue
+            datatype = target.get("datatype", "").strip().upper()
+            if datatype not in {"CHAR", "NCHAR"}:
+                continue
+            source = source_by_file_column.get(
+                (target.get("file_name", ""), self._normalize_name(target.get("column_name", "")))
+            )
+            if not source or source.get("datatype", "").strip().upper() not in {"CHAR", "NCHAR"}:
+                continue
+            issues.append(
+                self._issue(
+                    rule,
+                    f"Oracle to Oracle fixed-length character padding risk detected for {target.get('column_name', '')}.",
+                    f"{target.get('target_name', '')}.{target.get('column_name', '')}".strip("."),
+                    target.get("file_name", ""),
+                )
+            )
+        return issues
 
     def _load_or_build_datatype_findings(self) -> list[dict[str, str]]:
         report = self.output_folder / "datatype_mismatch_report.csv"
