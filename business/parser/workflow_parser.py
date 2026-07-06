@@ -47,11 +47,22 @@ class WorkflowParser:
 
     @staticmethod
     def _parse_workflow(workflow: Element) -> WorkflowMetadata:
+        schedule = workflow.find("./SCHEDULER/SCHEDULEINFO")
+        schedule_attrib = schedule.attrib if schedule is not None else {}
         return WorkflowMetadata(
             workflow_name=workflow.attrib.get("NAME", ""),
             is_valid=workflow.attrib.get("ISVALID", ""),
             is_enabled=workflow.attrib.get("ISENABLED", ""),
             server_name=workflow.attrib.get("SERVERNAME", ""),
+            schedule_type=schedule_attrib.get("SCHEDULETYPE", ""),
+            schedule_interval=schedule_attrib.get("INTERVAL", "")
+            or schedule_attrib.get("REPEAT", "")
+            or schedule_attrib.get("REPEATCOUNT", ""),
+            schedule_timezone=schedule_attrib.get("TIMEZONE", ""),
+            schedule_start_time=schedule_attrib.get("STARTTIME", "")
+            or schedule_attrib.get("STARTDATE", ""),
+            schedule_recurrence=schedule_attrib.get("RECURRING", "")
+            or schedule_attrib.get("RECURRINGTYPE", ""),
             task_instances=[dict(item.attrib) for item in workflow.findall("TASKINSTANCE")],
             workflow_links=[dict(item.attrib) for item in workflow.findall("WORKFLOWLINK")],
         )

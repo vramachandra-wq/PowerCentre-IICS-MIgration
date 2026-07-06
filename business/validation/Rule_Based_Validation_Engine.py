@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import re
 from copy import deepcopy
@@ -260,7 +261,12 @@ class Rule_Based_Validation_Engine:
                 continue
             changed, before, after = self._apply_metadata_action(rule["action"], issue)
             applied = changed or (before and before == after)
-            status = "Resolved" if applied else "Not Applied"
+            status = "Auto Fixed" if applied and canonical in {
+                "lookup_hardcoded_schema",
+                "object_name_exceeds_65_characters",
+                "oracle_to_oracle_char_padding",
+                "powercenter_schedule_not_copied",
+            } else "Resolved" if applied else "Not Applied"
             results.append(
                 RemediationResult(
                     issue=canonical,
@@ -354,6 +360,14 @@ class Rule_Based_Validation_Engine:
             return self._add_concat_alias(issue.asset)
         if action == "add_schema_prefix":
             return self._normalize_schema_prefix(issue.asset)
+        if action == "remove_lookup_schema_prefix":
+            return self._remove_lookup_schema_prefix(issue.asset)
+        if action == "shorten_object_names":
+            return self._shorten_object_names(issue.asset)
+        if action == "trim_oracle_fixed_char_fields":
+            return self._trim_oracle_fixed_char_fields(issue.asset, issue.source_file)
+        if action == "generate_idmc_schedule_config":
+            return self._generate_idmc_schedule_config(issue.asset)
         if action == "deduplicate_column_names":
             return self._deduplicate_columns(issue.asset)
         if action == "add_missing_target_binding_metadata":
@@ -448,6 +462,193 @@ class Rule_Based_Validation_Engine:
                 row["sql_query"] = proposed
                 changed = True
         return changed, "\n".join(before_values), "\n".join(after_values)
+
+    def _remove_lookup_schema_prefix(self, asset: str) -> tuple[bool, str, str]:
+        changed = False
+        before_values: list[str] = []
+        after_values: list[str] = []
+        lookup_names = {
+            (row.get("file_name", ""), row.get("mapping_name", ""), row.get("transformation_name", ""))
+            for row in self.tables.get("transformations", [])
+            if "LOOKUP" in row.get("transformation_type", "").upper()
+        }
+        for row in self.tables.get("sql_overrides", []):
+            key = (row.get("file_name", ""), row.get("mapping_name", ""), row.get("context_name", ""))
+            if key not in lookup_names:
+                continue
+            if asset and asset not in {row.get("context_name", ""), row.get("mapping_name", ""), self._asset_name(row)}:
+                continue
+            sql = row.get("sql_query", "")
+            proposed = self._strip_schema_qualifiers(sql)
+            if proposed != sql:
+                before_values.append(sql)
+                after_values.append(proposed)
+                row["sql_query"] = proposed
+                changed = True
+        return changed, "\n".join(before_values), "\n".join(after_values)
+
+    @staticmethod
+    def _strip_schema_qualifiers(text: str) -> str:
+        parameterized = re.sub(
+            r"(?:\$\{[A-Za-z_][A-Za-z0-9_]*\}|\$\$[A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)",
+            r"\1",
+            text,
+        )
+        return re.sub(
+            r"\b(FROM|JOIN|UPDATE|INTO)\s+([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)\b",
+            r"\1 \3",
+            parameterized,
+            flags=re.IGNORECASE,
+        )
+
+    def _shorten_object_names(self, asset: str) -> tuple[bool, str, str]:
+        if len(asset) <= 65:
+            return False, asset, asset
+        replacement = self._short_name(asset, self._existing_names())
+        changed = False
+        before_values: list[str] = []
+        after_values: list[str] = []
+        for rows in self.tables.values():
+            for row in rows:
+                for field, value in list(row.items()):
+                    if value != asset:
+                        continue
+                    before_values.append(value)
+                    row[field] = replacement
+                    after_values.append(replacement)
+                    changed = True
+        return changed, ", ".join(before_values), ", ".join(after_values)
+
+    @classmethod
+    def _short_name(cls, value: str, existing_names: set[str], max_length: int = 65) -> str:
+        suffix = hashlib.sha1(value.encode("utf-8")).hexdigest()[:8]
+        base_limit = max_length - len(suffix) - 1
+        words = re.split(r"[_\s]+", value)
+        if len(words) > 1:
+            base = "_".join(word[:12] for word in words if word)[:base_limit].rstrip("_")
+        else:
+            base = value[:base_limit].rstrip("_")
+        candidate = f"{base}_{suffix}"
+        counter = 2
+        while candidate in existing_names and candidate != value:
+            numeric_suffix = f"{suffix[:5]}{counter:02d}"
+            candidate = f"{base[: max_length - len(numeric_suffix) - 1]}_{numeric_suffix}"
+            counter += 1
+        return candidate
+
+    def _existing_names(self) -> set[str]:
+        name_fields = {
+            "folder_name",
+            "mapping_name",
+            "session_name",
+            "workflow_name",
+            "source_name",
+            "target_name",
+            "transformation_name",
+            "instance_name",
+            "column_name",
+            "port_name",
+        }
+        return {
+            value
+            for rows in self.tables.values()
+            for row in rows
+            for field, value in row.items()
+            if field in name_fields and value
+        }
+
+    def _trim_oracle_fixed_char_fields(self, asset: str, source_file: str = "") -> tuple[bool, str, str]:
+        target_asset, column_asset = self._target_column_asset(asset)
+        oracle_sources = {
+            (row.get("file_name", ""), row.get("source_name", ""))
+            for row in self.tables.get("sources", [])
+            if "ORACLE" in row.get("database_type", "").upper()
+        }
+        oracle_targets = {
+            (row.get("file_name", ""), row.get("target_name", ""))
+            for row in self.tables.get("targets", [])
+            if "ORACLE" in row.get("database_type", "").upper()
+        }
+        fixed_columns = {
+            (row.get("file_name", ""), self._normalize_name(row.get("column_name", ""))): row.get("column_name", "")
+            for row in self.tables.get("source_columns", [])
+            if (row.get("file_name", ""), row.get("source_name", "")) in oracle_sources
+            and row.get("datatype", "").strip().upper() in {"CHAR", "NCHAR"}
+            and (not source_file or row.get("file_name", "") == source_file)
+            and (not column_asset or self._normalize_name(row.get("column_name", "")) == self._normalize_name(column_asset))
+        }
+        target_columns = {
+            (row.get("file_name", ""), self._normalize_name(row.get("column_name", "")))
+            for row in self.tables.get("target_columns", [])
+            if (row.get("file_name", ""), row.get("target_name", "")) in oracle_targets
+            and row.get("datatype", "").strip().upper() in {"CHAR", "NCHAR"}
+            and (not source_file or row.get("file_name", "") == source_file)
+            and (not target_asset or row.get("target_name", "") == target_asset)
+            and (not column_asset or self._normalize_name(row.get("column_name", "")) == self._normalize_name(column_asset))
+            and (row.get("file_name", ""), self._normalize_name(row.get("column_name", ""))) in fixed_columns
+        }
+        changed = False
+        satisfied = False
+        before_values: list[str] = []
+        after_values: list[str] = []
+        for row in self.tables.get("ports", []):
+            key = (row.get("file_name", ""), self._normalize_name(row.get("port_name", "")))
+            if key not in target_columns:
+                continue
+            column = fixed_columns.get(key)
+            if not column:
+                continue
+            expression = row.get("expression", "").strip() or column
+            if self._trim_already_applied(expression):
+                before_values.append(expression)
+                after_values.append(expression)
+                satisfied = True
+                continue
+            if self._normalize_name(expression) not in {self._normalize_name(column), self._normalize_name(row.get("port_name", ""))}:
+                continue
+            proposed = f"RTRIM({expression})"
+            before_values.append(expression)
+            row["expression"] = proposed
+            after_values.append(proposed)
+            changed = True
+        if changed or satisfied:
+            return changed, ", ".join(before_values), ", ".join(after_values)
+        return False, asset, asset
+
+    @staticmethod
+    def _target_column_asset(asset: str) -> tuple[str, str]:
+        if "." not in asset:
+            return "", asset
+        target, column = asset.split(".", 1)
+        return target, column
+
+    @staticmethod
+    def _trim_already_applied(expression: str) -> bool:
+        return bool(re.fullmatch(r"(?i)(?:R?TRIM)\s*\(.*\)", expression.strip()))
+
+    def _generate_idmc_schedule_config(self, asset: str) -> tuple[bool, str, str]:
+        for row in self.tables.get("workflows", []):
+            if asset and row.get("workflow_name", "") != asset:
+                continue
+            schedule_type = row.get("schedule_type", "").strip()
+            if not schedule_type:
+                return False, asset, asset
+            schedule = {
+                "workflow_name": row.get("workflow_name", ""),
+                "frequency": schedule_type,
+                "interval": row.get("schedule_interval", ""),
+                "timezone": row.get("schedule_timezone", ""),
+                "start_time": row.get("schedule_start_time", ""),
+                "recurrence": row.get("schedule_recurrence", ""),
+                "dependency": row.get("schedule_dependency", ""),
+            }
+            if schedule_type.upper() not in {"ONDEMAND", "ON_DEMAND", "DAILY", "WEEKLY", "MONTHLY", "CUSTOM"}:
+                return False, json.dumps(schedule, sort_keys=True), json.dumps(schedule, sort_keys=True)
+            before = row.get("schedule", "")
+            row["schedule"] = json.dumps({key: value for key, value in schedule.items() if value}, sort_keys=True)
+            row["idmc_schedule_config"] = row["schedule"]
+            return before != row["schedule"], before or "missing", row["schedule"]
+        return False, asset, asset
 
     def _deduplicate_columns(self, asset: str) -> tuple[bool, str, str]:
         changed = False
@@ -776,11 +977,13 @@ class Rule_Based_Validation_Engine:
             "VAL-013": "source_query_mismatch",
             "VAL-014": "source_query_mismatch",
             "VAL-015": "duplicate_column_names",
+            "VAL-016": "powercenter_schedule_not_copied",
             "VAL-017": "target_binding_issue",
             "VAL-018": "oracle_curly_brace_syntax",
+            "VAL-019": "object_name_exceeds_65_characters",
             "VAL-020": "clob_to_text_conversion",
             "VAL-021": "missing_alias",
-            "VAL-022": "schema_prefix_issue",
+            "VAL-022": "lookup_hardcoded_schema",
             "VAL-023": "unicode_mismatch",
             "VAL-024": "os_command_task",
             "VAL-025": "stored_procedure_transformation",
@@ -789,6 +992,7 @@ class Rule_Based_Validation_Engine:
             "VAL-031": "pushdown_optimization",
             "VAL-032": "java_transformation",
             "VAL-033": "dll_dependency",
+            "VAL-041": "oracle_to_oracle_char_padding",
         }
         if rule_id in by_rule:
             return by_rule[rule_id]
@@ -800,6 +1004,10 @@ class Rule_Based_Validation_Engine:
             "missing_target_table_binding": "target_binding_issue",
             "decimal_precision_mismatch": "precision_mismatch",
             "string_truncation_issue": "truncation_risk",
+            "lookup_object_in_idmc_mapping_hardcodes_schema_name_and_is_not_editable": "lookup_hardcoded_schema",
+            "name_cannot_be_more_than_65_characters_long": "object_name_exceeds_65_characters",
+            "additional_characters_getting_added_while_loading_record_from_oracle_to_oracle": "oracle_to_oracle_char_padding",
+            "powercenter_schedules_are_not_being_copied_over_during_conversion": "powercenter_schedule_not_copied",
         }
         return aliases.get(normalized, normalized)
 

@@ -479,6 +479,16 @@
         "required_fields": ["key_type", "constraint_name"]
       },
       "recommendation": "Capture primary key, foreign key, unique, and check constraints for source-target validation."
+    },
+    {
+      "rule_id": "VAL-041",
+      "rule_name": "Oracle to Oracle Fixed Character Padding",
+      "category": "Datatype Rules",
+      "severity": "MEDIUM",
+      "detection_logic": {
+        "type": "oracle_to_oracle_char_padding"
+      },
+      "recommendation": "Apply deterministic trim handling for Oracle fixed-length character fields only."
     }
   ]
 }

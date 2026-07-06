@@ -110,6 +110,11 @@ class WorkflowMetadata:
     is_valid: str
     is_enabled: str
     server_name: str
+    schedule_type: str = ""
+    schedule_interval: str = ""
+    schedule_timezone: str = ""
+    schedule_start_time: str = ""
+    schedule_recurrence: str = ""
     task_instances: list[dict[str, str]] = field(default_factory=list)
     workflow_links: list[dict[str, str]] = field(default_factory=list)
 

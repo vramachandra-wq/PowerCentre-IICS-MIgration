@@ -26,7 +26,11 @@
     {"issue": "sql_override", "auto_fix": true, "action": "propose_sql_override_fix"},
     {"issue": "unsupported_database_functions", "auto_fix": true, "action": "propose_function_replacement"},
     {"issue": "post_sql_statements", "auto_fix": true, "action": "propose_post_sql_fix"},
-    {"issue": "target_constraint_mismatch", "auto_fix": true, "action": "propose_constraint_fix"}
+    {"issue": "target_constraint_mismatch", "auto_fix": true, "action": "propose_constraint_fix"},
+    {"issue": "lookup_hardcoded_schema", "auto_fix": true, "action": "remove_lookup_schema_prefix"},
+    {"issue": "object_name_exceeds_65_characters", "auto_fix": true, "action": "shorten_object_names"},
+    {"issue": "oracle_to_oracle_char_padding", "auto_fix": true, "action": "trim_oracle_fixed_char_fields"},
+    {"issue": "powercenter_schedule_not_copied", "auto_fix": true, "action": "generate_idmc_schedule_config"}
   ],
   "ai_assistance_rules": [
     {"issue": "stored_procedure_transformation", "ai_assistance_required": true},
