@@ -29,7 +29,7 @@
   "ai_validation": {
     "model_name": "Qwen/Qwen3-8B",
     "hf_token_env": "HF_TOKEN",
-    "max_records": 4,
+    "max_records": 200,
     "max_new_tokens": 256,
     "temperature": 0.0,
     "timeout_seconds": 60,
@@ -40,7 +40,7 @@
     "enabled": true,
     "model_name": "Qwen/Qwen3-8B",
     "hf_token_env": "HF_TOKEN",
-    "max_records": 6,
+    "max_records": 200,
     "max_new_tokens": 512,
     "temperature": 0.0,
     "timeout_seconds": 60,
