@@ -7,6 +7,8 @@ from typing import Any, Iterable
 from automation.evaluation_matrix import ReportRepository
 from business.validation.ai_metrics import AIMetricsCalculator
 from business.validation.ai_validation_engine import AIValidationResult
+from automation.metrics import MetricsCalculator
+ 
 
 
 @dataclass(frozen=True)
