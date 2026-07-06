@@ -149,8 +149,8 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
         )
         AutomatedValidationFrameworkTests._write_csv(
             output / "remediation_report.csv",
-            ["Issue", "Auto Fixed", "Asset", "Manual Remediation Required", "Approval Required"],
-            [{"Issue": "scale_mismatch", "Auto Fixed": "True", "Asset": "M_SAMPLE", "Manual Remediation Required": "False", "Approval Required": "False"}],
+            ["Issue", "Auto Fixed", "Asset", "AI Assistance Required", "Approval Required"],
+            [{"Issue": "scale_mismatch", "Auto Fixed": "True", "Asset": "M_SAMPLE", "AI Assistance Required": "False", "Approval Required": "False"}],
         )
         AutomatedValidationFrameworkTests._write_csv(
             output / "post_remediation_migration_readiness_report.csv",
@@ -182,14 +182,14 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
         )
         AutomatedValidationFrameworkTests._write_csv(
             output / "post_remediation_auto_fix_effectiveness_report.csv",
-            ["mapping_name", "issues_found", "auto_fixed", "manual_review", "manual_remediation", "auto_fix_percentage"],
+            ["mapping_name", "issues_found", "auto_fixed", "ai_recommendation", "ai_assistance", "auto_fix_percentage"],
             [
                 {
                     "mapping_name": "M_SAMPLE",
                     "issues_found": "2",
                     "auto_fixed": "1",
-                    "manual_review": "0",
-                    "manual_remediation": "0",
+                    "ai_recommendation": "0",
+                    "ai_assistance": "0",
                     "auto_fix_percentage": "50.0",
                 }
             ],

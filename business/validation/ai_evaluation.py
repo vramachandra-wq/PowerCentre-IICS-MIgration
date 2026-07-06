@@ -21,7 +21,7 @@ class AIEvaluationSummary:
 
 
 class AIEvaluationBuilder:
-    """Converts model validation results into executive evaluation artifacts."""
+    """Converts model validation results into executive ML evaluation artifacts."""
 
     DATASET_FIELDNAMES = [
         "mapping_name",
@@ -32,13 +32,13 @@ class AIEvaluationBuilder:
         "correct",
     ]
     MATRIX_FIELDNAMES = [
+        "Total Evaluations",
         "ML Accuracy",
         "ML Precision",
         "Recall",
         "F1 Score",
         "Average Confidence",
         "Model Success Rate",
-        "Total Evaluations",
     ]
     DASHBOARD_FIELDNAMES = MATRIX_FIELDNAMES
 
@@ -68,20 +68,22 @@ class AIEvaluationBuilder:
         matrix = AIMetricsCalculator.confusion_counts(
             (row["ground_truth"], row["ml_decision"]) for row in valid_rows
         )
-        precision = AIMetricsCalculator.precision(matrix)
+        total_evaluations = len(dataset)
+        correct = sum(1 for row in dataset if row["correct"] == "True")
+        ml_precision = AIMetricsCalculator.precision(matrix)
         recall = AIMetricsCalculator.recall(matrix)
         return AIEvaluationSummary(
-            total_evaluations=len(dataset),
-            ml_accuracy=AIMetricsCalculator.accuracy(matrix),
-            ml_precision=precision,
+            total_evaluations=total_evaluations,
+            ml_accuracy=MetricsCalculator.percentage(correct, total_evaluations),
+            ml_precision=ml_precision,
             recall=recall,
-            f1_score=AIMetricsCalculator.f1_score(precision, recall),
-            average_confidence=AIMetricsCalculator.average_confidence(row["confidence"] for row in dataset),
-            model_success_rate=AIMetricsCalculator.agreement_rate(len(valid_rows), len(dataset)),
+            f1_score=AIMetricsCalculator.f1_score(ml_precision, recall),
+            average_confidence=AIMetricsCalculator.average_confidence(row["confidence"] for row in valid_rows),
+            model_success_rate=MetricsCalculator.percentage(len(valid_rows), total_evaluations),
         )
 
     def write(self, dataset: list[dict[str, Any]], summary: AIEvaluationSummary) -> dict[str, Path]:
-        matrix_row = self._matrix_row(summary)
+        matrix_row = self._summary_row(summary)
         outputs = {
             "dataset": self.repository.write_csv("ai_evaluation_dataset.csv", dataset, self.DATASET_FIELDNAMES),
             "matrix": self.repository.write_csv("ai_evaluation_matrix.csv", [matrix_row], self.MATRIX_FIELDNAMES),
@@ -103,21 +105,16 @@ class AIEvaluationBuilder:
         rows = self.repository.read_csv("automation/dashboard_dataset.csv")
         if not rows:
             return []
-        extended: list[dict[str, Any]] = []
-        for row in rows:
-            merged = dict(row)
-            merged.update(dashboard_row)
-            extended.append(merged)
-        return extended
+        return [{**row, **dashboard_row} for row in rows]
 
     @staticmethod
-    def _matrix_row(summary: AIEvaluationSummary) -> dict[str, Any]:
+    def _summary_row(summary: AIEvaluationSummary) -> dict[str, Any]:
         return {
+            "Total Evaluations": summary.total_evaluations,
             "ML Accuracy": summary.ml_accuracy,
             "ML Precision": summary.ml_precision,
             "Recall": summary.recall,
             "F1 Score": summary.f1_score,
             "Average Confidence": summary.average_confidence,
             "Model Success Rate": summary.model_success_rate,
-            "Total Evaluations": summary.total_evaluations,
         }

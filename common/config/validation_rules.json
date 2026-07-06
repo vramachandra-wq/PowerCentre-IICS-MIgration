@@ -330,7 +330,7 @@
         "patterns": ["MAPPLET"],
         "case_insensitive": true
       },
-      "recommendation": "Flatten or manually recreate nested mapplet logic in IDMC."
+      "recommendation": "Flatten or recreate nested mapplet logic in IDMC with AI assistance."
     },
     {
       "rule_id": "VAL-029",

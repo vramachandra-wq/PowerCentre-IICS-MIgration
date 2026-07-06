@@ -31,7 +31,7 @@ class BatchXmlProcessor:
         return {
             "xml_files": len(list(self.remediation_engine.remediated_folder.glob("*_remediated.xml"))),
             "changes": len([change for change in changes if change.status == "AUTO_FIXED"]),
-            "manual_flags": len([change for change in changes if change.status == "MANUAL_REMEDIATION_REQUIRED"]),
+            "ai_assistance_flags": len([change for change in changes if change.status == "AI_ASSISTANCE_REQUIRED"]),
         }
 
     def _write_xml_remediation_report(self, changes: list[XmlChange]) -> None:
@@ -54,8 +54,8 @@ class BatchXmlProcessor:
             xml_file = mapping_to_xml.get(mapping, "")
             ready = readiness.get(mapping, {})
             auto_fixed = len([row for row in items if self._truthy(row.get("Auto Fixed")) or row.get("Status", "").lower() == "resolved"])
-            manual_review = len([row for row in items if self._truthy(row.get("Approval Required"))])
-            manual_remediation = len([row for row in items if self._truthy(row.get("Manual Remediation Required"))])
+            ai_recommendation = len([row for row in items if self._truthy(row.get("Approval Required"))])
+            ai_assistance = len([row for row in items if self._truthy(row.get("AI Assistance Required"))])
             unresolved = [
                 row
                 for row in items
@@ -70,8 +70,8 @@ class BatchXmlProcessor:
                     "issues_after": len(unresolved),
                     "issues_resolved": auto_fixed,
                     "auto_fixed": auto_fixed,
-                    "manual_review": manual_review,
-                    "manual_remediation": manual_remediation,
+                    "ai_recommendation": ai_recommendation,
+                    "ai_assistance": ai_assistance,
                     "readiness_before": ready.get("readiness_before", ""),
                     "readiness_after": ready.get("readiness_after", ""),
                     "risk_before": sum(self._risk_score(row) for row in items),
@@ -133,8 +133,8 @@ class BatchXmlProcessor:
                     "issues_before": sum(self._to_int(row.get("issues_before")) for row in remediation),
                     "issues_after": sum(self._to_int(row.get("issues_after")) for row in remediation),
                     "auto_fixed": sum(self._to_int(row.get("auto_fixed")) for row in remediation),
-                    "manual_review": sum(self._to_int(row.get("manual_review")) for row in remediation),
-                    "manual_remediation": sum(self._to_int(row.get("manual_remediation")) for row in remediation),
+                    "ai_recommendation": sum(self._to_int(row.get("ai_recommendation")) for row in remediation),
+                    "ai_assistance": sum(self._to_int(row.get("ai_assistance")) for row in remediation),
                     "readiness_before": self._avg([self._to_float(row.get("readiness_before")) for row in remediation]),
                     "readiness_after": self._avg([self._to_float(row.get("readiness_after")) for row in remediation]),
                     "risk_before": sum(self._to_int(row.get("risk_before")) for row in remediation),

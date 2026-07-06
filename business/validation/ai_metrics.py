@@ -23,10 +23,6 @@ class BinaryConfusionMatrix:
     def correct(self) -> int:
         return self.tp + self.tn
 
-    @property
-    def incorrect(self) -> int:
-        return self.fp + self.fn
-
 
 class AIMetricsCalculator:
     """Reusable AI evaluation metric calculations."""
@@ -48,10 +44,6 @@ class AIMetricsCalculator:
         return BinaryConfusionMatrix(tp=tp, tn=tn, fp=fp, fn=fn)
 
     @staticmethod
-    def accuracy(matrix: BinaryConfusionMatrix) -> float:
-        return MetricsCalculator.percentage(matrix.correct, matrix.total)
-
-    @staticmethod
     def precision(matrix: BinaryConfusionMatrix) -> float:
         return MetricsCalculator.percentage(matrix.tp, matrix.tp + matrix.fp)
 
@@ -66,32 +58,8 @@ class AIMetricsCalculator:
         return round((2 * precision * recall) / (precision + recall), 2)
 
     @staticmethod
-    def false_positive_rate(matrix: BinaryConfusionMatrix) -> float:
-        return MetricsCalculator.percentage(matrix.fp, matrix.fp + matrix.tn)
-
-    @staticmethod
-    def false_negative_rate(matrix: BinaryConfusionMatrix) -> float:
-        return MetricsCalculator.percentage(matrix.fn, matrix.fn + matrix.tp)
-
-    @staticmethod
-    def agreement_rate(matches: int, total: int) -> float:
-        return MetricsCalculator.percentage(matches, total)
-
-    @staticmethod
     def average_confidence(values: Iterable[int | float]) -> float:
         return MetricsCalculator.average(values)
-
-    @staticmethod
-    def classification_accuracy(expected_actual: Iterable[tuple[str, str]]) -> float:
-        pairs = list(expected_actual)
-        if not pairs:
-            return 0.0
-        matches = sum(
-            1
-            for expected, actual in pairs
-            if AIMetricsCalculator.normalize_label(expected) == AIMetricsCalculator.normalize_label(actual)
-        )
-        return MetricsCalculator.percentage(matches, len(pairs))
 
     @staticmethod
     def normalize_decision(value: object) -> str:
@@ -101,10 +69,3 @@ class AIMetricsCalculator:
         if normalized in {"FAIL", "FAILED", "NOT_READY", "NOT READY", "OPEN", "FALSE", "NO"}:
             return "FAIL"
         return normalized or "UNKNOWN"
-
-    @staticmethod
-    def normalize_label(value: object) -> str:
-        return str(value or "").strip().upper().replace(" ", "_").replace("-", "_")
-
-
-

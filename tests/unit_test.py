@@ -281,7 +281,7 @@ class DatatypeValidationTests(unittest.TestCase):
                 "Status",
                 "Asset",
                 "Approval Required",
-                "Manual Remediation Required",
+                "AI Assistance Required",
             ],
             [
                 {
@@ -295,7 +295,7 @@ class DatatypeValidationTests(unittest.TestCase):
                     "Status": "Resolved",
                     "Asset": "SDE_REMEDIATION",
                     "Approval Required": "False",
-                    "Manual Remediation Required": "False",
+                    "AI Assistance Required": "False",
                 },
                 {
                     "Issue": "lookup_datatype_mismatch",
@@ -308,7 +308,7 @@ class DatatypeValidationTests(unittest.TestCase):
                     "Status": "Resolved",
                     "Asset": "SDE_REMEDIATION",
                     "Approval Required": "False",
-                    "Manual Remediation Required": "False",
+                    "AI Assistance Required": "False",
                 },
                 {
                     "Issue": "mapplet_nesting",
@@ -318,10 +318,10 @@ class DatatypeValidationTests(unittest.TestCase):
                     "Fix Applied": "",
                     "Before Value": "SDE_REMEDIATION",
                     "After Value": "SDE_REMEDIATION",
-                    "Status": "Manual Remediation Required",
+                    "Status": "AI Assistance Required",
                     "Asset": "SDE_REMEDIATION",
                     "Approval Required": "False",
-                    "Manual Remediation Required": "True",
+                    "AI Assistance Required": "True",
                 },
             ],
         )

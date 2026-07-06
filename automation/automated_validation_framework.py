@@ -119,23 +119,6 @@ class AutomatedValidationFramework:
                     )
                 self.logger.info("AI evaluation generated. rows=%s accuracy=%s", len(ai_dataset), ai_summary.ml_accuracy)
 
-            if self.config.enable_ai_recommendations:
-                ai_service = AIRecommendationService(
-                    self.repository,
-                    self.config.ai_recommendation,
-                    logger=self.logger,
-                )
-                recommendation_results, recommendation_report = ai_service.run()
-                outputs["ai_recommendations"] = str(recommendation_report)
-                error_rows = [result for result in recommendation_results if result.error]
-                if error_rows:
-                    self.logger.warning(
-                        "AI recommendation report generated with %s model fallback row(s). First error=%s",
-                        len(error_rows),
-                        error_rows[0].error,
-                    )
-                self.logger.info("AI recommendation report generated. rows=%s", len(recommendation_results))
-
             end_time = datetime.now(UTC)
             self.logger.info(
                 "Automated validation framework completed at %s. files_processed=%s outputs=%s",
