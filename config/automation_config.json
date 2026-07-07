@@ -26,10 +26,15 @@
     "ai_dashboard_dataset_csv": true,
     "ai_evaluation_summary_json": true
   },
+  "mysql_persistence": {
+    "enabled": true,
+    "config_path": "common/config/config.json",
+    "batch_size": 1000
+  },
   "ai_validation": {
     "model_name": "Qwen/Qwen3-8B",
     "hf_token_env": "HF_TOKEN",
-    "max_records": 18,
+    "max_records": 10,
     "max_new_tokens": 256,
     "temperature": 0.0,
     "timeout_seconds": 60,
@@ -40,7 +45,7 @@
     "enabled": true,
     "model_name": "Qwen/Qwen3-8B",
     "hf_token_env": "HF_TOKEN",
-    "max_records": 25,
+    "max_records": 18,
     "max_new_tokens": 512,
     "temperature": 0.0,
     "timeout_seconds": 60,

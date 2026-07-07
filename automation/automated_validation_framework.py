@@ -17,6 +17,7 @@ from automation.consolidated_findings import ConsolidatedFindingsBuilder
 from automation.dashboard_dataset import DashboardDatasetBuilder
 from automation.evaluation_dataset import EvaluationDatasetBuilder
 from automation.evaluation_matrix import EvaluationMatrixBuilder, ReportRepository
+from automation.mysql_persistence import MySQLReportPersistence
 from automation.validation_summary import ValidationSummaryBuilder
 from automation.ai import AIRecommendationConfig, AIRecommendationService
 from business.validation.ai_evaluation import AIEvaluationBuilder
@@ -53,6 +54,7 @@ class AutomatedValidationFramework:
 
         self.project_root = Path.cwd()
         self.config_path = self._resolve(config_path or self.DEFAULT_CONFIG_PATH)
+        self.raw_config = self._load_raw_config(self.config_path)
         self.config = self._load_config(self.config_path)
         self.logger = logger or self._create_logger()
         self.repository = ReportRepository(self.config.output_folder, self.config.reports_folder)
@@ -129,6 +131,7 @@ class AutomatedValidationFramework:
                 len({record.xml_name for record in matrix_records if record.xml_name}),
                 outputs,
             )
+            outputs["mysql_persistence"] = self._persist_reports(start_time)
             return {
                 "start_time": start_time.isoformat(),
                 "end_time": end_time.isoformat(),
@@ -158,10 +161,7 @@ class AutomatedValidationFramework:
     def _load_config(self, path: Path) -> AutomationConfig:
         """Load config using the provided path."""
 
-        if not path.exists():
-            raise FileNotFoundError(f"Automation config not found: {path}")
-        with path.open("r", encoding="utf-8-sig") as config_file:
-            payload = json.load(config_file)
+        payload = self._load_raw_config(path)
         exports = payload.get("exports", {})
         features = payload.get("features", {})
         return AutomationConfig(
@@ -180,6 +180,15 @@ class AutomatedValidationFramework:
             ai_validation=self._load_ai_validation_config(payload.get("ai_validation", {})),
             ai_recommendation=self._load_ai_recommendation_config(payload.get("ai_recommendation", {})),
         )
+
+    @staticmethod
+    def _load_raw_config(path: Path) -> dict[str, Any]:
+        """Load raw JSON config using the provided path."""
+
+        if not path.exists():
+            raise FileNotFoundError(f"Automation config not found: {path}")
+        with path.open("r", encoding="utf-8-sig") as config_file:
+            return json.load(config_file)
 
 
     @staticmethod
@@ -264,6 +273,23 @@ class AutomatedValidationFramework:
             self.logger.warning(
                 "Unable to replace locked remediation_report.csv with remediation_report_latest.csv before XML generation."
             )
+
+    def _persist_reports(self, runtime_timestamp: datetime) -> dict[str, int]:
+        """Persist generated report artifacts into MySQL."""
+
+        try:
+            persistence = MySQLReportPersistence.from_project_config(
+                project_root=self.project_root,
+                output_folder=self.config.output_folder,
+                reports_folder=self.config.reports_folder,
+                logs_folder=self.config.logs_folder,
+                payload=self.raw_config,
+                logger=self.logger,
+            )
+            return persistence.persist_all(runtime_timestamp)
+        except Exception as exc:
+            self.logger.exception("Generated reports were not persisted to MySQL: %s", exc)
+            return {"error": str(exc)}
 
     def _create_logger(self) -> logging.Logger:
         """Create logger for the migration workflow."""
