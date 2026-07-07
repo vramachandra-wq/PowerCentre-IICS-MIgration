@@ -1,4 +1,4 @@
-"""
+﻿"""
 Module: api/ai_services.py
 
 Purpose:
@@ -673,12 +673,11 @@ class AIEvaluationAPIService:
         """
 
         self._refresh_automation_outputs_if_needed(force=refresh)
-        dataset_response = self._evaluation_from_dataset()
-        if dataset_response:
-            return dataset_response
-
         path = self._summary_path()
         if not path.exists():
+            dataset_response = self._evaluation_from_dataset()
+            if dataset_response:
+                return dataset_response
             raise APIReportError("Missing report: ai_evaluation_summary.json", status_code=404)
         try:
             import json
@@ -1168,6 +1167,7 @@ class AIEvaluationAPIService:
         except (TypeError, ValueError):
             return False
         return True
+
 
 
 

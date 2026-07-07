@@ -1,4 +1,4 @@
-"""
+﻿"""
 Module: tests/test_ai_api_services.py
 
 Purpose:
@@ -251,7 +251,7 @@ class AIAPIServicesTests(unittest.TestCase):
         self.assertEqual(91, response["matrix"]["ML Accuracy"])
         self.assertNotIn("Agreement Rate", response["matrix"])
 
-    def test_evaluation_api_uses_dataset_with_fail_as_positive_class(self) -> None:
+    def test_evaluation_api_prefers_summary_json_over_dataset(self) -> None:
         """
         Executes the test_evaluation_api_uses_dataset_with_fail_as_positive_class workflow for automated regression tests.
         
@@ -309,9 +309,9 @@ class AIAPIServicesTests(unittest.TestCase):
 
         response = AIEvaluationAPIService(ReportRepository(output, reports)).evaluation()
 
-        self.assertEqual(100, response["matrix"]["F1 Score"])
-        self.assertEqual(100, response["matrix"]["ML Precision"])
-        self.assertEqual(100, response["matrix"]["Recall"])
+        self.assertEqual(0, response["matrix"]["F1 Score"])
+        self.assertEqual(0, response["matrix"]["ML Precision"])
+        self.assertEqual(0, response["matrix"]["Recall"])
         self.assertEqual(92.5, response["matrix"]["Average Confidence"])
 
     def test_llm_client_normalizes_qwen_instruct_alias(self) -> None:
@@ -520,5 +520,6 @@ class AIAPIServicesTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
 
 
