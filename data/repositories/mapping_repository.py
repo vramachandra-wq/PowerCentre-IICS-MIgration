@@ -156,6 +156,40 @@ class MySqlMetadataRepository:
         self.logger.info("Central metadata repository loaded. %s", summary)
         return summary
 
+    def persist_complexity_report(self, report_path: str | Path | None = None) -> int:
+        """Refresh the MySQL complexity classification report table."""
+
+        self._ensure_database()
+        path = Path(report_path) if report_path else self.output_folder / "complexity_classification_report.csv"
+        if not path.exists():
+            raise FileNotFoundError(f"Complexity classification report not found: {path}")
+
+        with path.open("r", newline="", encoding="utf-8-sig") as csv_file:
+            rows = list(csv.DictReader(csv_file))
+
+        engine = self._database_engine()
+        with engine.begin() as connection:
+            self._create_complexity_report_table(connection)
+            connection.execute(text("DELETE FROM complexity_classification_report"))
+            if rows:
+                connection.execute(
+                    text(
+                        """
+                        INSERT INTO complexity_classification_report (
+                            `XML`, `Workflow`, `Session`, `Mapping`,
+                            `Transformation Count`, `Complexity`, `Score`, `Reason`
+                        )
+                        VALUES (
+                            :xml, :workflow, :session, :mapping,
+                            :transformation_count, :complexity, :score, :reason
+                        )
+                        """
+                    ),
+                    [self._complexity_report_row(row) for row in rows],
+                )
+
+        return len(rows)
+
     def _drop_existing_tables(self, connection) -> None:
         """Handle drop existing tables using the provided connection."""
 
@@ -286,6 +320,29 @@ class MySqlMetadataRepository:
             )
         )
 
+    def _create_complexity_report_table(self, connection) -> None:
+        """Create the complexity report table when it is missing."""
+
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS complexity_classification_report (
+                    `XML` VARCHAR(255),
+                    `Workflow` VARCHAR(255),
+                    `Session` VARCHAR(255),
+                    `Mapping` VARCHAR(255),
+                    `Transformation Count` INT DEFAULT 0,
+                    `Complexity` VARCHAR(20),
+                    `Score` INT DEFAULT 0,
+                    `Reason` TEXT,
+                    loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_complexity_report_mapping (`Mapping`),
+                    INDEX idx_complexity_report_complexity (`Complexity`)
+                )
+                """
+            )
+        )
+
     def _ensure_database(self) -> None:
         """Handle ensure database for the migration workflow."""
 
@@ -344,6 +401,21 @@ class MySqlMetadataRepository:
             **row,
             "attribute_count": MySqlMetadataRepository._to_int(row.get("attribute_count", "")),
             "port_count": MySqlMetadataRepository._to_int(row.get("port_count", "")),
+        }
+
+    @staticmethod
+    def _complexity_report_row(row: dict[str, str]) -> dict[str, object]:
+        """Convert complexity report CSV values for MySQL insertion."""
+
+        return {
+            "xml": row.get("XML", ""),
+            "workflow": row.get("Workflow", ""),
+            "session": row.get("Session", ""),
+            "mapping": row.get("Mapping", ""),
+            "transformation_count": MySqlMetadataRepository._to_int(row.get("Transformation Count", "")),
+            "complexity": row.get("Complexity", ""),
+            "score": MySqlMetadataRepository._to_int(row.get("Score", "")),
+            "reason": row.get("Reason", ""),
         }
 
     @staticmethod

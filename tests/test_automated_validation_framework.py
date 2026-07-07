@@ -61,6 +61,11 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
             matrix = self._read_csv(reports / "evaluation_matrix.csv")
             self.assertEqual("M_SAMPLE", matrix[0]["mapping"])
             self.assertEqual("0", matrix[0]["remaining_unresolved"])
+            self.assertNotIn("source_count", matrix[0])
+            self.assertNotIn("ai_recommendation", matrix[0])
+            self.assertNotIn("risk_reduction", matrix[0])
+            self.assertNotIn("blocking_issues", matrix[0])
+            self.assertNotIn("overall_health_score", matrix[0])
             self.assertIn(matrix[0]["migration_status"], {"READY", "READY_WITH_MONITORING", "NEEDS_REVIEW"})
             dashboard = self._read_csv(reports / "dashboard_dataset.csv")
             self.assertNotIn("root_cause", dashboard[0])
@@ -135,11 +140,12 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
         )
         AutomatedValidationFrameworkTests._write_csv(
             output / "complexity_classification_report.csv",
-            ["XML", "Folder", "Mapping", "Transformation Count", "Complexity", "Score", "Reason"],
+            ["XML", "Workflow", "Session", "Mapping", "Transformation Count", "Complexity", "Score", "Reason"],
             [
                 {
                     "XML": "sample.XML",
-                    "Folder": "FOLDER",
+                    "Workflow": "WF_SAMPLE",
+                    "Session": "S_SAMPLE",
                     "Mapping": "M_SAMPLE",
                     "Transformation Count": "2",
                     "Complexity": "Medium",

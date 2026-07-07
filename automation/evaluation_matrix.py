@@ -206,6 +206,11 @@ class EvaluationMatrixBuilder:
         "migration_status",
         "overall_health_score",
     ]
+    EXPORT_FIELDNAMES = [
+        field
+        for index, field in enumerate(FIELDNAMES, start=1)
+        if index not in {5, 6, 7, 8, 9, 10, 11, 12, 21, 22, 29, 33, 35}
+    ]
 
     def __init__(self, repository: ReportRepository | None = None, validation_rules_path: str | Path | None = None) -> None:
         """Initialize migration data using the provided repository and validation_rules_path."""
@@ -381,8 +386,11 @@ class EvaluationMatrixBuilder:
     def write(self, records: Iterable[EvaluationMatrixRecord]) -> Path:
         """Handle write using the provided records."""
 
-        rows = [asdict(record) for record in records]
-        return self.repository.write_csv("evaluation_matrix.csv", rows, self.FIELDNAMES)
+        rows = [
+            {field: row[field] for field in self.EXPORT_FIELDNAMES}
+            for row in (asdict(record) for record in records)
+        ]
+        return self.repository.write_csv("evaluation_matrix.csv", rows, self.EXPORT_FIELDNAMES)
 
     def _validation_rule_count(self) -> int:
         """Handle validation rule count for the migration workflow."""

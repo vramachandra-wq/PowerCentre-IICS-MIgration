@@ -19,6 +19,8 @@ class ComplexityResult:
 
     file_name: str
     folder_name: str
+    workflow_name: str
+    session_name: str
     mapping_name: str
     transformation_count: int
     complexity: str
@@ -59,16 +61,26 @@ class ComplexityClassifier:
         mappings = self._read_csv("mappings.csv")
         transformations = self._read_csv("transformations.csv")
         instances = self._read_csv("instances.csv")
+        sessions = self._read_csv("sessions.csv")
+        workflows = self._read_csv("workflows.csv")
 
         transformations_by_mapping = self._group_rows(transformations)
         instances_by_mapping = self._group_rows(instances)
+        sessions_by_mapping = self._index_sessions(sessions)
+        workflows_by_xml = self._index_workflows(workflows)
 
         results: list[ComplexityResult] = []
         for mapping in mappings:
             key = self._mapping_key(mapping)
             mapping_transformations = transformations_by_mapping.get(key, [])
             mapping_instances = instances_by_mapping.get(key, [])
-            result = self._classify_mapping(mapping, mapping_transformations, mapping_instances)
+            result = self._classify_mapping(
+                mapping,
+                mapping_transformations,
+                mapping_instances,
+                workflows_by_xml.get(Path(mapping.get("file_name", "")).name, ""),
+                sessions_by_mapping.get(key, ""),
+            )
             results.append(result)
 
         return sorted(results, key=lambda item: (item.file_name, item.mapping_name))
@@ -86,7 +98,8 @@ class ComplexityClassifier:
                 csv_file,
                 fieldnames=[
                     "XML",
-                    "Folder",
+                    "Workflow",
+                    "Session",
                     "Mapping",
                     "Transformation Count",
                     "Complexity",
@@ -99,7 +112,8 @@ class ComplexityClassifier:
                 writer.writerow(
                     {
                         "XML": row.file_name,
-                        "Folder": row.folder_name,
+                        "Workflow": row.workflow_name,
+                        "Session": row.session_name,
                         "Mapping": row.mapping_name,
                         "Transformation Count": row.transformation_count,
                         "Complexity": row.complexity,
@@ -150,6 +164,7 @@ class ComplexityClassifier:
         )
         markdown_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
+        self._persist_report_to_mysql(csv_path)
         self.logger.info("Complexity classification written to %s and %s", csv_path, markdown_path)
 
     def _classify_mapping(
@@ -157,6 +172,8 @@ class ComplexityClassifier:
         mapping: dict[str, str],
         transformations: list[dict[str, str]],
         instances: list[dict[str, str]],
+        workflow_name: str,
+        session_name: str,
     ) -> ComplexityResult:
         """Classify mapping for the migration workflow."""
 
@@ -221,6 +238,8 @@ class ComplexityClassifier:
         return ComplexityResult(
             file_name=mapping.get("file_name", ""),
             folder_name=mapping.get("folder_name", ""),
+            workflow_name=workflow_name,
+            session_name=session_name,
             mapping_name=mapping.get("mapping_name", ""),
             transformation_count=transformation_count,
             complexity=complexity,
@@ -257,6 +276,26 @@ class ComplexityClassifier:
         return grouped
 
     @staticmethod
+    def _index_sessions(rows: Iterable[dict[str, str]]) -> dict[tuple[str, str, str], str]:
+        """Index session names by XML, folder, and mapping."""
+
+        return {
+            ComplexityClassifier._mapping_key(row): row.get("session_name", "")
+            for row in rows
+            if row.get("mapping_name")
+        }
+
+    @staticmethod
+    def _index_workflows(rows: Iterable[dict[str, str]]) -> dict[str, str]:
+        """Index workflow names by XML file name."""
+
+        return {
+            Path(row.get("file_name", "")).name: row.get("workflow_name", "")
+            for row in rows
+            if row.get("file_name")
+        }
+
+    @staticmethod
     def _mapping_key(row: dict[str, str]) -> tuple[str, str, str]:
         """Handle mapping key using the provided row."""
 
@@ -288,3 +327,15 @@ class ComplexityClassifier:
         if candidate.is_absolute():
             return candidate
         return self.project_root / candidate
+
+    def _persist_report_to_mysql(self, csv_path: Path) -> None:
+        """Persist the generated complexity report without blocking CSV output."""
+
+        try:
+            from data.repositories.mapping_repository import MySqlMetadataRepository
+
+            repository = MySqlMetadataRepository(config=self.config, logger=self.logger)
+            count = repository.persist_complexity_report(csv_path)
+            self.logger.info("Complexity classification report loaded into MySQL. rows=%s", count)
+        except Exception as exc:
+            self.logger.error("Unable to load complexity classification report into MySQL: %s", exc)

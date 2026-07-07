@@ -90,3 +90,17 @@ CREATE TABLE connectors (
     to_instance_type    VARCHAR(50),
     FOREIGN KEY (mapping_id) REFERENCES mappings(mapping_id) ON DELETE CASCADE
 );
+
+CREATE TABLE complexity_classification_report (
+    `XML`                   VARCHAR(255),
+    `Workflow`              VARCHAR(255),
+    `Session`               VARCHAR(255),
+    `Mapping`               VARCHAR(255),
+    `Transformation Count`  INT DEFAULT 0,
+    `Complexity`            VARCHAR(20),
+    `Score`                 INT DEFAULT 0,
+    `Reason`                TEXT,
+    loaded_at               TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_complexity_report_mapping (`Mapping`),
+    INDEX idx_complexity_report_complexity (`Complexity`)
+);
