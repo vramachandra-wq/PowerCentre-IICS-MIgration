@@ -1,3 +1,21 @@
+"""
+Module: business/validation/datatype_harmonization.py
+
+Purpose:
+    This module supports migration validation and readiness logic for the PowerCenter to IDMC migration assessment platform.
+
+Responsibilities:
+    - Provide the code and data structures needed by this part of the application.
+    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
+    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
+
+Architecture Context:
+    The file belongs to the migration validation and readiness logic area and evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
+
+Inputs and Outputs:
+    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -12,6 +30,21 @@ from common.config.config import AppConfig
 
 @dataclass(frozen=True)
 class MetadataColumn:
+    """
+    Represents the MetadataColumn component in the migration validation and readiness logic area.
+    
+    Purpose:
+        Provide a named object that groups related state and behavior for this module.
+    
+    Responsibilities:
+        - Encapsulate the data or operations required by the surrounding workflow.
+        - Collaborate with parser, validation, automation, API, or report components where this class is used.
+        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
+    
+    Architecture Notes:
+        This class is part of the project layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
+    """
+
     column: str
     datatype: str
     precision: int | None
@@ -28,6 +61,21 @@ class MetadataColumn:
 
 @dataclass(frozen=True)
 class DatatypeMismatch:
+    """
+    Represents the DatatypeMismatch component in the migration validation and readiness logic area.
+    
+    Purpose:
+        Provide a named object that groups related state and behavior for this module.
+    
+    Responsibilities:
+        - Encapsulate the data or operations required by the surrounding workflow.
+        - Collaborate with parser, validation, automation, API, or report components where this class is used.
+        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
+    
+    Architecture Notes:
+        This class is part of the project layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
+    """
+
     column: str
     source: str
     target: str
@@ -61,6 +109,35 @@ class DatatypeHarmonizationEngine:
         output_folder: str | Path | None = None,
         rules_path: str | Path | None = None,
     ) -> None:
+        """
+        Executes the __init__ workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                config (object): Value supplied by the caller and used by the workflow.
+                logger (object): Value supplied by the caller and used by the workflow.
+                output_folder (object): Value supplied by the caller and used by the workflow.
+                rules_path (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         self.config = config
         self.logger = logger
         self.project_root = Path.cwd()
@@ -71,6 +148,32 @@ class DatatypeHarmonizationEngine:
         self.mapping_engine = DatatypeMappingEngine(rules_path=rules_path)
 
     def harmonize(self) -> list[DatatypeMismatch]:
+        """
+        Executes the harmonize workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         source_columns = self._load_columns(self.metadata_folder / "source_columns.csv", "SOURCE")
         target_columns = self._load_columns(self.metadata_folder / "target_columns.csv", "TARGET")
         transformation_columns = self._load_ports(self.metadata_folder / "ports.csv")
@@ -90,6 +193,33 @@ class DatatypeHarmonizationEngine:
         source_columns: Iterable[MetadataColumn],
         target_columns: Iterable[MetadataColumn],
     ) -> list[DatatypeMismatch]:
+        """
+        Executes the compare_source_target workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                source_columns (object): Value supplied by the caller and used by the workflow.
+                target_columns (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         targets_by_context = self._index_columns(target_columns)
         findings: list[DatatypeMismatch] = []
         for source_column in source_columns:
@@ -106,6 +236,34 @@ class DatatypeHarmonizationEngine:
         target_columns: Iterable[MetadataColumn],
         transformation_columns: Iterable[MetadataColumn],
     ) -> list[DatatypeMismatch]:
+        """
+        Executes the compare_transformation_metadata workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                source_columns (object): Value supplied by the caller and used by the workflow.
+                target_columns (object): Value supplied by the caller and used by the workflow.
+                transformation_columns (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         columns_by_context = self._index_columns([*source_columns, *target_columns])
         findings: list[DatatypeMismatch] = []
         for port in transformation_columns:
@@ -119,6 +277,33 @@ class DatatypeHarmonizationEngine:
         return findings
 
     def write_report(self, findings: list[DatatypeMismatch], report_path: str | Path | None = None) -> None:
+        """
+        Executes the write_report workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                findings (object): Value supplied by the caller and used by the workflow.
+                report_path (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         path = self._resolve_path(report_path or self.report_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", newline="", encoding="utf-8") as csv_file:
@@ -132,6 +317,34 @@ class DatatypeHarmonizationEngine:
         right_column: MetadataColumn,
         comparison_scope: str,
     ) -> list[DatatypeMismatch]:
+        """
+        Executes the _compare_pair workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                left_column (object): Value supplied by the caller and used by the workflow.
+                right_column (object): Value supplied by the caller and used by the workflow.
+                comparison_scope (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         left = self.mapping_engine.map_datatype(
             left_column.datatype,
             precision=left_column.precision,
@@ -168,6 +381,38 @@ class DatatypeHarmonizationEngine:
         left: DatatypeSpec,
         right: DatatypeSpec,
     ) -> None:
+        """
+        Executes the _append_if workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                findings (object): Value supplied by the caller and used by the workflow.
+                condition (object): Value supplied by the caller and used by the workflow.
+                issue_code (object): Value supplied by the caller and used by the workflow.
+                left_column (object): Value supplied by the caller and used by the workflow.
+                right_column (object): Value supplied by the caller and used by the workflow.
+                left (object): Value supplied by the caller and used by the workflow.
+                right (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if condition:
             findings.append(self._finding(issue_code, left_column, right_column, left, right))
 
@@ -179,6 +424,36 @@ class DatatypeHarmonizationEngine:
         left: DatatypeSpec,
         right: DatatypeSpec,
     ) -> DatatypeMismatch:
+        """
+        Executes the _finding workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                issue_code (object): Value supplied by the caller and used by the workflow.
+                left_column (object): Value supplied by the caller and used by the workflow.
+                right_column (object): Value supplied by the caller and used by the workflow.
+                left (object): Value supplied by the caller and used by the workflow.
+                right (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         rule = self.mapping_engine.issue_rule(issue_code)
         return DatatypeMismatch(
             column=left_column.column,
@@ -194,26 +469,188 @@ class DatatypeHarmonizationEngine:
 
     @staticmethod
     def _precision_mismatch(left: DatatypeSpec, right: DatatypeSpec) -> bool:
+        """
+        Executes the _precision_mismatch workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                left (object): Value supplied by the caller and used by the workflow.
+                right (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return left.family in {"NUMERIC", "FLOATING"} and right.family in {"NUMERIC", "FLOATING"} and left.precision != right.precision
 
     @staticmethod
     def _scale_mismatch(left: DatatypeSpec, right: DatatypeSpec) -> bool:
+        """
+        Executes the _scale_mismatch workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                left (object): Value supplied by the caller and used by the workflow.
+                right (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return left.family in {"NUMERIC", "FLOATING"} and right.family in {"NUMERIC", "FLOATING"} and left.scale != right.scale
 
     @staticmethod
     def _length_mismatch(left: DatatypeSpec, right: DatatypeSpec) -> bool:
+        """
+        Executes the _length_mismatch workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                left (object): Value supplied by the caller and used by the workflow.
+                right (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return left.family == right.family == "STRING" and left.length is not None and right.length is not None and left.length != right.length
 
     @staticmethod
     def _varchar_vs_nvarchar(left: DatatypeSpec, right: DatatypeSpec) -> bool:
+        """
+        Executes the _varchar_vs_nvarchar workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                left (object): Value supplied by the caller and used by the workflow.
+                right (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return {left.base_type, right.base_type} & {"VARCHAR", "VARCHAR2"} and {left.base_type, right.base_type} & {"NCHAR", "NVARCHAR2"}
 
     @staticmethod
     def _decimal_vs_double(left: DatatypeSpec, right: DatatypeSpec) -> bool:
+        """
+        Executes the _decimal_vs_double workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                left (object): Value supplied by the caller and used by the workflow.
+                right (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return {left.family, right.family} == {"NUMERIC", "FLOATING"}
 
     @staticmethod
     def _native_precision_mismatch(left: DatatypeSpec, right: DatatypeSpec) -> bool:
+        """
+        Executes the _native_precision_mismatch workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                left (object): Value supplied by the caller and used by the workflow.
+                right (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return (
             left.family in {"NUMERIC", "FLOATING"}
             and right.family in {"NUMERIC", "FLOATING"}
@@ -224,6 +661,33 @@ class DatatypeHarmonizationEngine:
 
     @staticmethod
     def _truncation_risk(left: DatatypeSpec, right: DatatypeSpec) -> bool:
+        """
+        Executes the _truncation_risk workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                left (object): Value supplied by the caller and used by the workflow.
+                right (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if left.family == right.family == "STRING" and left.length and right.length:
             return right.length < left.length
         if left.family in {"NUMERIC", "FLOATING"} and right.family in {"NUMERIC", "FLOATING"}:
@@ -240,6 +704,32 @@ class DatatypeHarmonizationEngine:
 
     @staticmethod
     def _display_type(spec: DatatypeSpec) -> str:
+        """
+        Executes the _display_type workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                spec (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if spec.length is not None:
             return f"{spec.canonical_type}({spec.length})"
         if spec.precision is not None and spec.scale is not None:
@@ -249,6 +739,33 @@ class DatatypeHarmonizationEngine:
         return spec.canonical_type
 
     def _load_columns(self, path: Path, table_type: str) -> list[MetadataColumn]:
+        """
+        Executes the _load_columns workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                path (object): Value supplied by the caller and used by the workflow.
+                table_type (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         rows = self._read_csv(path)
         name_key = "source_name" if table_type == "SOURCE" else "target_name"
         return [
@@ -267,6 +784,32 @@ class DatatypeHarmonizationEngine:
         ]
 
     def _load_ports(self, path: Path) -> list[MetadataColumn]:
+        """
+        Executes the _load_ports workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                path (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         transformations = {
             (
                 row.get("file_name", ""),
@@ -305,6 +848,32 @@ class DatatypeHarmonizationEngine:
 
     @staticmethod
     def _index_columns(columns: Iterable[MetadataColumn]) -> dict[tuple[str, str, str], dict[str, MetadataColumn]]:
+        """
+        Executes the _index_columns workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                columns (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         indexed: dict[tuple[str, str, str], dict[str, MetadataColumn]] = {}
         for column in columns:
             context = (column.source_file, column.repository_name, column.folder_name)
@@ -313,6 +882,32 @@ class DatatypeHarmonizationEngine:
 
     @staticmethod
     def _deduplicate(findings: Iterable[DatatypeMismatch]) -> list[DatatypeMismatch]:
+        """
+        Executes the _deduplicate workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                findings (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         seen: set[tuple[str, str, str, str, str]] = set()
         deduped: list[DatatypeMismatch] = []
         for finding in findings:
@@ -325,10 +920,62 @@ class DatatypeHarmonizationEngine:
 
     @staticmethod
     def _normalize_name(value: str) -> str:
+        """
+        Executes the _normalize_name workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                value (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
     @staticmethod
     def _to_int(value: object) -> int | None:
+        """
+        Executes the _to_int workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                value (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if value in {None, ""}:
             return None
         try:
@@ -338,12 +985,64 @@ class DatatypeHarmonizationEngine:
 
     @staticmethod
     def _read_csv(path: Path) -> list[dict[str, str]]:
+        """
+        Executes the _read_csv workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                path (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if not path.exists():
             raise FileNotFoundError(f"Required datatype harmonization input not found: {path}")
         with path.open("r", newline="", encoding="utf-8-sig") as csv_file:
             return list(csv.DictReader(csv_file))
 
     def _resolve_path(self, path: str | Path) -> Path:
+        """
+        Executes the _resolve_path workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                path (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         candidate = Path(path)
         if candidate.is_absolute():
             return candidate
@@ -356,6 +1055,35 @@ def build_datatype_mismatch_report(
     output_folder: str | Path | None = None,
     rules_path: str | Path | None = None,
 ) -> list[DatatypeMismatch]:
+    """
+    Executes the build_datatype_mismatch_report workflow for migration validation and readiness logic.
+    
+    Purpose:
+        Support the module responsibility by performing one focused step in the migration assessment process.
+    
+    Workflow:
+        1. Receive inputs from the caller or surrounding service layer.
+        2. Apply the existing project logic without changing business rules.
+        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+    
+    Parameters:
+            config (object): Value supplied by the caller and used by the workflow.
+            logger (object): Value supplied by the caller and used by the workflow.
+            output_folder (object): Value supplied by the caller and used by the workflow.
+            rules_path (object): Value supplied by the caller and used by the workflow.
+    
+    Returns:
+        object:
+            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+    
+    Raises:
+        Exception:
+            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+    
+    Implementation Notes:
+        This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+    """
+
     return DatatypeHarmonizationEngine(
         config=config,
         logger=logger,

@@ -1,3 +1,21 @@
+"""
+Module: tests/test_remediation_reporting.py
+
+Purpose:
+    This module supports automated regression tests for the PowerCenter to IDMC migration assessment platform.
+
+Responsibilities:
+    - Provide the code and data structures needed by this part of the application.
+    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
+    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
+
+Architecture Context:
+    The file belongs to the automated regression tests area and verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
+
+Inputs and Outputs:
+    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+"""
+
 import csv
 import tempfile
 import unittest
@@ -10,7 +28,48 @@ from business.validation.risk_assessment import RiskAssessmentEngine
 
 
 class RemediationReportingTests(unittest.TestCase):
+    """
+    Represents the RemediationReportingTests component in the automated regression tests area.
+    
+    Purpose:
+        Provide a named object that groups related state and behavior for this module.
+    
+    Responsibilities:
+        - Encapsulate the data or operations required by the surrounding workflow.
+        - Collaborate with parser, validation, automation, API, or report components where this class is used.
+        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
+    
+    Architecture Notes:
+        This class is part of the project layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
+    """
+
     def test_readiness_improves_after_auto_fix(self) -> None:
+        """
+        Executes the test_readiness_improves_after_auto_fix workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)
             self._write_sample_reports(output)
@@ -24,6 +83,32 @@ class RemediationReportingTests(unittest.TestCase):
             self.assertGreater(finance.readiness_after, finance.readiness_before)
 
     def test_risk_scores_only_remaining_issues(self) -> None:
+        """
+        Executes the test_risk_scores_only_remaining_issues workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)
             self._write_sample_reports(output)
@@ -35,6 +120,32 @@ class RemediationReportingTests(unittest.TestCase):
             self.assertEqual("mapplet_nesting", finance.top_risk_factor)
 
     def test_effectiveness_and_executive_summary(self) -> None:
+        """
+        Executes the test_effectiveness_and_executive_summary workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)
             self._write_sample_reports(output)
@@ -51,6 +162,32 @@ class RemediationReportingTests(unittest.TestCase):
 
     @staticmethod
     def _write_sample_reports(output: Path) -> None:
+        """
+        Executes the _write_sample_reports workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                output (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         RemediationReportingTests._write_csv(
             output / "datatype_mismatch_report.csv",
             ["column", "source", "target", "severity", "recommendation", "issue_type", "mapping_name", "source_file"],
@@ -165,6 +302,34 @@ class RemediationReportingTests(unittest.TestCase):
 
     @staticmethod
     def _write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
+        """
+        Executes the _write_csv workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                path (object): Value supplied by the caller and used by the workflow.
+                fieldnames (object): Value supplied by the caller and used by the workflow.
+                rows (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         with path.open("w", newline="", encoding="utf-8") as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             writer.writeheader()

@@ -1,3 +1,21 @@
+"""
+Module: data/repositories/metadata_repository.py
+
+Purpose:
+    This module supports metadata persistence adapters for the PowerCenter to IDMC migration assessment platform.
+
+Responsibilities:
+    - Provide the code and data structures needed by this part of the application.
+    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
+    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
+
+Architecture Context:
+    The file belongs to the metadata persistence adapters area and encapsulates access to stored metadata and mapping information. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
+
+Inputs and Outputs:
+    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -38,6 +56,33 @@ class CanonicalMetadataBuilder:
     PLATFORM = "POWERCENTER"
 
     def __init__(self, config: AppConfig, logger) -> None:
+        """
+        Executes the __init__ workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                config (object): Value supplied by the caller and used by the workflow.
+                logger (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         self.config = config
         self.logger = logger
         self.project_root = Path.cwd()
@@ -46,6 +91,32 @@ class CanonicalMetadataBuilder:
         self.table_output_folder = self.output_folder / "tables"
 
     def build(self, parsed_files: list[ParsedXmlMetadata]) -> CanonicalRepository:
+        """
+        Executes the build workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                parsed_files (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         canonical = CanonicalRepository()
         for parsed in parsed_files:
             repository_name = parsed.repository.get("name", "")
@@ -57,6 +128,32 @@ class CanonicalMetadataBuilder:
         return canonical
 
     def to_dataframes(self, canonical: CanonicalRepository) -> dict[str, Any]:
+        """
+        Executes the to_dataframes workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                canonical (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         rows = self.to_rows(canonical)
         if pd is None:
             self.logger.warning("pandas is not installed. Returning canonical rows and writing CSV outputs only.")
@@ -64,6 +161,32 @@ class CanonicalMetadataBuilder:
         return {name: pd.DataFrame(data) for name, data in rows.items()}
 
     def to_rows(self, canonical: CanonicalRepository) -> dict[str, list[dict[str, Any]]]:
+        """
+        Executes the to_rows workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                canonical (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return {
             "canonical_assets": [asdict(item) for item in canonical.assets],
             "canonical_mappings": [asdict(item) for item in canonical.mappings],
@@ -74,6 +197,32 @@ class CanonicalMetadataBuilder:
         }
 
     def write_outputs(self, canonical: CanonicalRepository) -> None:
+        """
+        Executes the write_outputs workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                canonical (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         self.json_output_folder.mkdir(parents=True, exist_ok=True)
         self.table_output_folder.mkdir(parents=True, exist_ok=True)
 
@@ -89,6 +238,35 @@ class CanonicalMetadataBuilder:
         repository_name: str,
         folder: FolderMetadata,
     ) -> None:
+        """
+        Executes the _add_folder_assets workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                canonical (object): Value supplied by the caller and used by the workflow.
+                source_file (object): Value supplied by the caller and used by the workflow.
+                repository_name (object): Value supplied by the caller and used by the workflow.
+                folder (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         for source in folder.sources:
             asset_id = self._asset_id(repository_name, folder.folder_name, "SOURCE", source.source_name)
             canonical.assets.append(
@@ -161,6 +339,36 @@ class CanonicalMetadataBuilder:
         folder: FolderMetadata,
         mapping: MappingMetadata,
     ) -> None:
+        """
+        Executes the _add_mapping workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                canonical (object): Value supplied by the caller and used by the workflow.
+                source_file (object): Value supplied by the caller and used by the workflow.
+                repository_name (object): Value supplied by the caller and used by the workflow.
+                folder (object): Value supplied by the caller and used by the workflow.
+                mapping (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         mapping_id = self._asset_id(repository_name, folder.folder_name, "MAPPING", mapping.mapping_name)
         source_names = self._mapping_instances(mapping, "SOURCE")
         target_names = self._mapping_instances(mapping, "TARGET")
@@ -286,6 +494,33 @@ class CanonicalMetadataBuilder:
 
     @staticmethod
     def _mapping_instances(mapping: MappingMetadata, instance_type: str) -> list[str]:
+        """
+        Executes the _mapping_instances workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                mapping (object): Value supplied by the caller and used by the workflow.
+                instance_type (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return sorted(
             {
                 instance.transformation_name or instance.instance_name
@@ -296,6 +531,33 @@ class CanonicalMetadataBuilder:
 
     @staticmethod
     def _mapping_sql_overrides(folder: FolderMetadata, mapping: MappingMetadata) -> list[Any]:
+        """
+        Executes the _mapping_sql_overrides workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                folder (object): Value supplied by the caller and used by the workflow.
+                mapping (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         overrides = list(mapping.sql_overrides)
         for session in folder.sessions:
             if session.mapping_name == mapping.mapping_name:
@@ -304,6 +566,33 @@ class CanonicalMetadataBuilder:
 
     @staticmethod
     def _classify_mapping(mapping: MappingMetadata, sql_overrides: list[Any]) -> str:
+        """
+        Executes the _classify_mapping workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                mapping (object): Value supplied by the caller and used by the workflow.
+                sql_overrides (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         score = 0
         score += mapping.transformation_count
         score += len(mapping.connectors) // 25
@@ -318,6 +607,32 @@ class CanonicalMetadataBuilder:
 
     @staticmethod
     def _classify_transformation(transformation_type: str) -> str:
+        """
+        Executes the _classify_transformation workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                transformation_type (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if transformation_type in {"Lookup Procedure", "Stored Procedure", "Java", "SQL"}:
             return "HIGH"
         if transformation_type in {"Router", "Update Strategy", "Aggregator", "Joiner"}:
@@ -325,6 +640,32 @@ class CanonicalMetadataBuilder:
         return "LOW"
 
     def _write_tables(self, tables: dict[str, Any]) -> None:
+        """
+        Executes the _write_tables workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                tables (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         for table_name, table in tables.items():
             output_file = self.table_output_folder / f"{table_name}.csv"
             if pd is not None and hasattr(table, "to_csv"):
@@ -333,6 +674,32 @@ class CanonicalMetadataBuilder:
             self._write_csv(output_file, table)
 
     def _write_mapping_json(self, mappings: list[CanonicalMappingJson]) -> None:
+        """
+        Executes the _write_mapping_json workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                mappings (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         for mapping in mappings:
             file_name = f"{self._safe_name(mapping.mapping_name)}__{mapping.mapping_id}.json"
             (self.json_output_folder / file_name).write_text(
@@ -347,6 +714,32 @@ class CanonicalMetadataBuilder:
         )
 
     def _write_summary(self, canonical: CanonicalRepository) -> None:
+        """
+        Executes the _write_summary workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                canonical (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         summary = {
             "asset_count": len(canonical.assets),
             "mapping_count": len(canonical.mappings),
@@ -365,6 +758,32 @@ class CanonicalMetadataBuilder:
 
     @staticmethod
     def _deduplicate(canonical: CanonicalRepository) -> None:
+        """
+        Executes the _deduplicate workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                canonical (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         canonical.assets = list({item.asset_id: item for item in canonical.assets}.values())
         canonical.mappings = list({item.mapping_id: item for item in canonical.mappings}.values())
         canonical.transformations = list(
@@ -379,6 +798,33 @@ class CanonicalMetadataBuilder:
 
     @staticmethod
     def _write_csv(output_file: Path, rows: list[dict[str, Any]]) -> None:
+        """
+        Executes the _write_csv workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                output_file (object): Value supplied by the caller and used by the workflow.
+                rows (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         fieldnames = sorted({key for row in rows for key in row.keys()})
         with output_file.open("w", newline="", encoding="utf-8") as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
@@ -387,22 +833,156 @@ class CanonicalMetadataBuilder:
 
     @staticmethod
     def _asset_id(repository_name: str, folder_name: str, asset_type: str, asset_name: str) -> str:
+        """
+        Executes the _asset_id workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                repository_name (object): Value supplied by the caller and used by the workflow.
+                folder_name (object): Value supplied by the caller and used by the workflow.
+                asset_type (object): Value supplied by the caller and used by the workflow.
+                asset_name (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return CanonicalMetadataBuilder._hash_id("AST", repository_name, folder_name, asset_type, asset_name)
 
     @staticmethod
     def _column_id(asset_id: str, column_name: str) -> str:
+        """
+        Executes the _column_id workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset_id (object): Value supplied by the caller and used by the workflow.
+                column_name (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return CanonicalMetadataBuilder._hash_id("COL", asset_id, column_name)
 
     @staticmethod
     def _hash_id(prefix: str, *parts: str) -> str:
+        """
+        Executes the _hash_id workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                prefix (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         normalized = "||".join(part.strip().upper() for part in parts)
         digest = hashlib.sha1(normalized.encode("utf-8")).hexdigest()[:16]
         return f"{prefix}_{digest}"
 
     @staticmethod
     def _safe_name(value: str) -> str:
+        """
+        Executes the _safe_name workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                value (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return re.sub(r"[^A-Za-z0-9_.-]+", "_", value).strip("_") or "mapping"
 
     def _resolve_path(self, path_value: str | Path) -> Path:
+        """
+        Executes the _resolve_path workflow for metadata persistence adapters.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                path_value (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         path = Path(path_value)
         return path if path.is_absolute() else self.project_root / path
