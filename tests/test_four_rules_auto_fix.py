@@ -1,19 +1,6 @@
 """
-Module: tests/test_four_rules_auto_fix.py
-
-Purpose:
-    This module supports automated regression tests for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the automated regression tests area and verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support test four rules auto fix for automated regression coverage.
+Verifies migration parsing, validation, API, and AI behavior.
 """
 
 import csv
@@ -26,47 +13,10 @@ from business.validation.validation_engine import ValidationEngine
 
 
 class FourRulesAutoFixTests(unittest.TestCase):
-    """
-    Represents the FourRulesAutoFixTests component in the automated regression tests area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates four rules auto fix tests behavior for migration workflows."""
 
     def test_four_new_remediation_rules_are_loaded(self) -> None:
-        """
-        Executes the test_four_new_remediation_rules_are_loaded workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify four new remediation rules are loaded behavior."""
 
         engine = Rule_Based_Validation_Engine(output_folder="output")
 
@@ -76,31 +26,7 @@ class FourRulesAutoFixTests(unittest.TestCase):
         self.assertIn("powercenter_schedule_not_copied", engine.rules["auto"])
 
     def test_lookup_schema_name_is_removed_before_ai_flow(self) -> None:
-        """
-        Executes the test_lookup_schema_name_is_removed_before_ai_flow workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify lookup schema name is removed before ai flow behavior."""
 
         engine = Rule_Based_Validation_Engine(output_folder="output")
         engine.tables = {
@@ -130,31 +56,7 @@ class FourRulesAutoFixTests(unittest.TestCase):
         self.assertIn("FROM EMPLOYEE", after)
 
     def test_long_name_is_shortened_and_references_are_updated(self) -> None:
-        """
-        Executes the test_long_name_is_shortened_and_references_are_updated workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify long name is shortened and references are updated behavior."""
 
         long_name = "M_" + "CUSTOMER_ACCOUNT_REVENUE_RECOGNITION_AND_BILLING_STATUS_" * 2
         engine = Rule_Based_Validation_Engine(output_folder="output")
@@ -172,31 +74,7 @@ class FourRulesAutoFixTests(unittest.TestCase):
         self.assertEqual(engine.tables["mappings"][0]["mapping_name"], engine.tables["sessions"][0]["mapping_name"])
 
     def test_oracle_to_oracle_char_padding_detection_and_trim(self) -> None:
-        """
-        Executes the test_oracle_to_oracle_char_padding_detection_and_trim workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify oracle to oracle char padding detection and trim behavior."""
 
         rule = {
             "rule_id": "VAL-041",
@@ -225,31 +103,7 @@ class FourRulesAutoFixTests(unittest.TestCase):
         self.assertEqual("RTRIM(CUSTOMER_CODE)", after)
 
     def test_schedule_config_is_generated_only_when_metadata_is_available(self) -> None:
-        """
-        Executes the test_schedule_config_is_generated_only_when_metadata_is_available workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify schedule config is generated only when metadata is available behavior."""
 
         engine = Rule_Based_Validation_Engine(output_folder="output")
         engine.tables = {
@@ -277,31 +131,7 @@ class FourRulesAutoFixTests(unittest.TestCase):
         self.assertEqual(before, after)
 
     def test_auto_fixed_rows_are_not_used_for_ai_recommendations(self) -> None:
-        """
-        Executes the test_auto_fixed_rows_are_not_used_for_ai_recommendations workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify auto fixed rows are not used for ai recommendations behavior."""
 
         from automation.ai.recommendation_engine import RecommendationEngine
         from automation.evaluation_matrix import ReportRepository
@@ -339,31 +169,7 @@ class FourRulesAutoFixTests(unittest.TestCase):
 
     @staticmethod
     def _oracle_tables() -> dict[str, list[dict[str, str]]]:
-        """
-        Executes the _oracle_tables workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify oracle tables behavior."""
 
         return {
             "sources": [{"file_name": "sample.XML", "source_name": "S_CUSTOMER", "database_type": "Oracle"}],
@@ -395,33 +201,7 @@ class FourRulesAutoFixTests(unittest.TestCase):
 
     @staticmethod
     def _write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
-        """
-        Executes the _write_csv workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-                fieldnames (object): Value supplied by the caller and used by the workflow.
-                rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify write csv behavior."""
 
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", newline="", encoding="utf-8") as csv_file:

@@ -1,19 +1,6 @@
 """
-Module: automation/ai/recommendation_models.py
-
-Purpose:
-    This module supports AI recommendation and evaluation support for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the AI recommendation and evaluation support area and connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support recommendation models for automation data and validation workflows.
+Prepares metrics, findings, and AI assistance outputs.
 """
 
 from __future__ import annotations
@@ -23,7 +10,7 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class AIRecommendationConfig:
-    """Runtime settings for the AI recommendation assistant."""
+    """Stores configuration values used by the application."""
 
     model_name: str = "Qwen/Qwen3-8B"
     hf_token_env: str = "HF_TOKEN"
@@ -38,7 +25,7 @@ class AIRecommendationConfig:
 
 @dataclass(frozen=True)
 class FailureRecord:
-    """Normalized unresolved validation failure sent to the recommendation layer."""
+    """Encapsulates failure record behavior for migration workflows."""
 
     workflow: str
     mapping: str
@@ -59,7 +46,7 @@ class FailureRecord:
 
 @dataclass(frozen=True)
 class Recommendation:
-    """Validated recommendation returned by the model or a graceful fallback."""
+    """Encapsulates recommendation behavior for migration workflows."""
 
     root_cause: str
     recommendation: str
@@ -70,7 +57,7 @@ class Recommendation:
 
 @dataclass(frozen=True)
 class RecommendationResult:
-    """Recommendation plus execution metadata for report generation."""
+    """Stores computed output from a migration workflow."""
 
     failure: FailureRecord
     recommendation: Recommendation

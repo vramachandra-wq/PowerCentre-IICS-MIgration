@@ -1,19 +1,6 @@
 """
-Module: business/validation/readiness_engine.py
-
-Purpose:
-    This module supports migration validation and readiness logic for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the migration validation and readiness logic area and evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support readiness engine for migration business logic.
+Parses, validates, assesses, and remediates PowerCenter metadata.
 """
 
 from __future__ import annotations
@@ -30,20 +17,7 @@ from common.config.config import AppConfig
 
 @dataclass(frozen=True)
 class IssueRecord:
-    """
-    Represents the IssueRecord component in the migration validation and readiness logic area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates issue record behavior for migration workflows."""
 
     mapping_name: str
     issue: str
@@ -58,20 +32,7 @@ class IssueRecord:
 
 @dataclass(frozen=True)
 class ReadinessRecord:
-    """
-    Represents the ReadinessRecord component in the migration validation and readiness logic area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates readiness record behavior for migration workflows."""
 
     mapping_name: str
     issues_found: int
@@ -83,39 +44,14 @@ class ReadinessRecord:
 
 
 class RemediationReportLoader:
-    """Loads validation and remediation CSV artifacts into normalized issue records."""
+    """Encapsulates remediation report loader behavior for migration workflows."""
 
     def __init__(
         self,
         output_folder: str | Path,
         scoring_rules_path: str | Path = "common/config/readiness_rules.json",
     ) -> None:
-        """
-        Executes the __init__ workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                output_folder (object): Value supplied by the caller and used by the workflow.
-                scoring_rules_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data using the provided output_folder and scoring_rules_path."""
 
         self.project_root = Path.cwd()
         self.output_folder = self._resolve_path(output_folder)
@@ -125,31 +61,7 @@ class RemediationReportLoader:
         self.asset_to_mapping = self._load_asset_mapping_index()
 
     def load_before_issues(self) -> list[IssueRecord]:
-        """
-        Executes the load_before_issues workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load before issues for the migration workflow."""
 
         return [
             *self._load_datatype_issues(self.output_folder / "datatype_mismatch_report.csv"),
@@ -157,31 +69,7 @@ class RemediationReportLoader:
         ]
 
     def load_remediation_issues(self) -> list[IssueRecord]:
-        """
-        Executes the load_remediation_issues workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load remediation issues for the migration workflow."""
 
         path = self.output_folder / "remediation_report.csv"
         rows = self._read_csv(path)
@@ -206,31 +94,7 @@ class RemediationReportLoader:
         return records
 
     def unresolved_issues(self) -> list[IssueRecord]:
-        """
-        Executes the unresolved_issues workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle unresolved issues for the migration workflow."""
 
         remediation = self.load_remediation_issues()
         remaining_from_remediation = [
@@ -259,31 +123,7 @@ class RemediationReportLoader:
 
     @staticmethod
     def _deduplicate_issues(issues: Iterable[IssueRecord]) -> list[IssueRecord]:
-        """
-        Executes the _deduplicate_issues workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                issues (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle deduplicate issues using the provided issues."""
 
         deduped: list[IssueRecord] = []
         seen: set[tuple[str, str, str]] = set()
@@ -296,31 +136,7 @@ class RemediationReportLoader:
         return deduped
 
     def issue_category(self, issue: str) -> str:
-        """
-        Executes the issue_category workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                issue (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle issue category using the provided issue."""
 
         risk_factor = self.rules.get("risk_factors", {}).get(issue)
         if risk_factor:
@@ -338,68 +154,21 @@ class RemediationReportLoader:
         return "metadata"
 
     def score_readiness(self, issues: Iterable[IssueRecord]) -> int:
-        """
-        Executes the score_readiness workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                issues (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Score readiness using the provided issues."""
 
         base_score = int(self.rules.get("base_score", 100))
         severity_penalties = self.rules.get("severity_penalties", {})
         multipliers = self.rules.get("category_penalty_multipliers", {})
         penalty = 0.0
         for issue in issues:
+            # Weight readiness loss by both severity and migration issue category.
             severity_penalty = float(severity_penalties.get(issue.severity.upper(), 5))
             multiplier = float(multipliers.get(issue.category, 1.0))
             penalty += severity_penalty * multiplier
         return max(0, min(100, round(base_score - penalty)))
 
     def readiness_category(self, score: int) -> str:
-        """
-        Executes the readiness_category workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                score (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle readiness category using the provided score."""
 
         for band in self.rules.get("readiness_categories", []):
             if int(band["min"]) <= score <= int(band["max"]):
@@ -407,33 +176,10 @@ class RemediationReportLoader:
         return "HIGH RISK"
 
     def canonical_issue(self, text: str) -> str:
-        """
-        Executes the canonical_issue workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                text (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle canonical issue using the provided text."""
 
         value = re.sub(r"[^a-z0-9]+", "_", str(text or "").lower()).strip("_")
+        # Collapse report wording variants into stable scoring categories.
         aliases = {
             "decimal_precision_mismatch": "precision_mismatch",
             "scale_mismatch_detected": "scale_mismatch",
@@ -505,31 +251,7 @@ class RemediationReportLoader:
         return value
 
     def _load_datatype_issues(self, path: Path) -> list[IssueRecord]:
-        """
-        Executes the _load_datatype_issues workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load datatype issues using the provided path."""
 
         records: list[IssueRecord] = []
         for row in self._read_csv(path):
@@ -547,31 +269,7 @@ class RemediationReportLoader:
         return records
 
     def _load_validation_issues(self, path: Path) -> list[IssueRecord]:
-        """
-        Executes the _load_validation_issues workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load validation issues using the provided path."""
 
         records: list[IssueRecord] = []
         for row in self._read_csv(path):
@@ -591,31 +289,7 @@ class RemediationReportLoader:
         return records
 
     def _mapping_from_row(self, row: dict[str, str]) -> str:
-        """
-        Executes the _mapping_from_row workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle mapping from row using the provided row."""
 
         for field in ["mapping_name", "Mapping Name", "transformation"]:
             if row.get(field):
@@ -635,31 +309,7 @@ class RemediationReportLoader:
         return sorted(self.mapping_names)[0] if self.mapping_names else "UNMAPPED_ASSET"
 
     def _resolve_mapping_name(self, value: str) -> str:
-        """
-        Executes the _resolve_mapping_name workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve mapping name using the provided value."""
 
         cleaned = self._clean_mapping_name(value)
         if not self.mapping_names:
@@ -669,31 +319,7 @@ class RemediationReportLoader:
         return self.asset_to_mapping.get(self._normalize_name(cleaned), "")
 
     def _load_mapping_catalog(self) -> tuple[set[str], dict[str, str]]:
-        """
-        Executes the _load_mapping_catalog workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load mapping catalog for the migration workflow."""
 
         path = self.output_folder / "complexity_classification_report.csv"
         mapping_names: set[str] = set()
@@ -710,31 +336,7 @@ class RemediationReportLoader:
         return mapping_names, xml_to_mapping
 
     def _load_asset_mapping_index(self) -> dict[str, str]:
-        """
-        Executes the _load_asset_mapping_index workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load asset mapping index for the migration workflow."""
 
         index: dict[str, str] = {}
         metadata_folder = self.output_folder / "metadata_tables"
@@ -767,31 +369,7 @@ class RemediationReportLoader:
 
     @staticmethod
     def _clean_mapping_name(value: str) -> str:
-        """
-        Executes the _clean_mapping_name workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle clean mapping name using the provided value."""
 
         cleaned = str(value or "").strip()
         if cleaned.lower().endswith(".xml"):
@@ -800,91 +378,19 @@ class RemediationReportLoader:
 
     @staticmethod
     def _normalize_name(value: str) -> str:
-        """
-        Executes the _normalize_name workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Normalize name using the provided value."""
 
         return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
     @staticmethod
     def _truthy(value: object) -> bool:
-        """
-        Executes the _truthy workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle truthy using the provided value."""
 
         return str(value or "").strip().lower() in {"true", "yes", "y", "1", "resolved"}
 
     @staticmethod
     def _read_csv(path: Path) -> list[dict[str, str]]:
-        """
-        Executes the _read_csv workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle read csv using the provided path."""
 
         if not path.exists():
             return []
@@ -892,61 +398,13 @@ class RemediationReportLoader:
             return list(csv.DictReader(csv_file))
 
     def _load_rules(self) -> dict[str, Any]:
-        """
-        Executes the _load_rules workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load rules for the migration workflow."""
 
         with self.scoring_rules_path.open("r", encoding="utf-8") as rules_file:
             return json.load(rules_file)
 
     def _resolve_path(self, path: str | Path) -> Path:
-        """
-        Executes the _resolve_path workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve path using the provided path."""
 
         candidate = Path(path)
         if candidate.is_absolute():
@@ -955,7 +413,7 @@ class RemediationReportLoader:
 
 
 class MigrationReadinessEngine:
-    """Calculates before/after migration readiness using unresolved issue penalties only."""
+    """Runs focused migration processing and analysis logic."""
 
     REPORT_COLUMNS = [
         "mapping_name",
@@ -974,34 +432,7 @@ class MigrationReadinessEngine:
         output_folder: str | Path | None = None,
         scoring_rules_path: str | Path | None = None,
     ) -> None:
-        """
-        Executes the __init__ workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                config (object): Value supplied by the caller and used by the workflow.
-                logger (object): Value supplied by the caller and used by the workflow.
-                output_folder (object): Value supplied by the caller and used by the workflow.
-                scoring_rules_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data for the migration workflow."""
 
         self.config = config
         self.logger = logger
@@ -1015,31 +446,7 @@ class MigrationReadinessEngine:
         )
 
     def build_report(self) -> list[ReadinessRecord]:
-        """
-        Executes the build_report workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build report for the migration workflow."""
 
         remaining = self.loader.unresolved_issues()
         remediation = self.loader.load_remediation_issues()
@@ -1078,32 +485,7 @@ class MigrationReadinessEngine:
         return records
 
     def write_report(self, records: list[ReadinessRecord], report_path: str | Path | None = None) -> None:
-        """
-        Executes the write_report workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                records (object): Value supplied by the caller and used by the workflow.
-                report_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write report using the provided records and report_path."""
 
         path = self._resolve_path(report_path or self.report_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -1118,31 +500,7 @@ class MigrationReadinessEngine:
             writer.writerows(record.__dict__ for record in records)
 
     def _resolve_path(self, path: str | Path) -> Path:
-        """
-        Executes the _resolve_path workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve path using the provided path."""
 
         candidate = Path(path)
         if candidate.is_absolute():
@@ -1156,34 +514,7 @@ def build_migration_readiness_report(
     output_folder: str | Path | None = None,
     scoring_rules_path: str | Path | None = None,
 ) -> list[ReadinessRecord]:
-    """
-    Executes the build_migration_readiness_report workflow for migration validation and readiness logic.
-    
-    Purpose:
-        Support the module responsibility by performing one focused step in the migration assessment process.
-    
-    Workflow:
-        1. Receive inputs from the caller or surrounding service layer.
-        2. Apply the existing project logic without changing business rules.
-        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-    
-    Parameters:
-            config (object): Value supplied by the caller and used by the workflow.
-            logger (object): Value supplied by the caller and used by the workflow.
-            output_folder (object): Value supplied by the caller and used by the workflow.
-            scoring_rules_path (object): Value supplied by the caller and used by the workflow.
-    
-    Returns:
-        object:
-            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-    
-    Raises:
-        Exception:
-            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-    
-    Implementation Notes:
-        This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-    """
+    """Build migration readiness report for the migration workflow."""
 
     return MigrationReadinessEngine(
         config=config,

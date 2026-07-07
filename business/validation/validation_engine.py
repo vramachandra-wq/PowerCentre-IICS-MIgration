@@ -1,19 +1,6 @@
 """
-Module: business/validation/validation_engine.py
-
-Purpose:
-    This module supports migration validation and readiness logic for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the migration validation and readiness logic area and evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support validation engine for migration business logic.
+Parses, validates, assesses, and remediates PowerCenter metadata.
 """
 
 from __future__ import annotations
@@ -32,20 +19,7 @@ from common.config.config import AppConfig
 
 @dataclass(frozen=True)
 class ValidationIssue:
-    """
-    Represents the ValidationIssue component in the migration validation and readiness logic area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates validation issue behavior for migration workflows."""
 
     rule_id: str
     issue: str
@@ -57,7 +31,7 @@ class ValidationIssue:
 
 
 class ValidationEngine:
-    """Rule-driven migration validation engine backed by validation_rules.json."""
+    """Runs focused migration processing and analysis logic."""
 
     REPORT_COLUMNS = [
         "Issue",
@@ -80,34 +54,7 @@ class ValidationEngine:
         output_folder: str | Path | None = None,
         rules_path: str | Path | None = None,
     ) -> None:
-        """
-        Executes the __init__ workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                config (object): Value supplied by the caller and used by the workflow.
-                logger (object): Value supplied by the caller and used by the workflow.
-                output_folder (object): Value supplied by the caller and used by the workflow.
-                rules_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data for the migration workflow."""
 
         self.config = config
         self.logger = logger
@@ -122,32 +69,9 @@ class ValidationEngine:
         self.datatype_findings: list[dict[str, str]] = []
 
     def validate(self) -> list[ValidationIssue]:
-        """
-        Executes the validate workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Validate migration data for the migration workflow."""
 
+        # Load parser outputs once so each rule evaluates the same metadata snapshot.
         self.tables = self._load_metadata_tables()
         self.datatype_findings = self._load_or_build_datatype_findings()
 
@@ -162,32 +86,7 @@ class ValidationEngine:
         return deduped
 
     def write_report(self, issues: list[ValidationIssue], report_path: str | Path | None = None) -> None:
-        """
-        Executes the write_report workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                issues (object): Value supplied by the caller and used by the workflow.
-                report_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write report using the provided issues and report_path."""
 
         path = self._resolve_path(report_path or self.report_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -212,34 +111,11 @@ class ValidationEngine:
                 )
 
     def _evaluate_rule(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _evaluate_rule workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Evaluate rule using the provided rule."""
 
         logic = rule.get("detection_logic", {})
         detection_type = logic.get("type", "")
+        # Route configured rule types to focused detectors.
         handlers = {
             "session_sql_override_precedence": self._session_sql_override_precedence,
             "mapping_sql_override_precedence": self._mapping_sql_override_precedence,
@@ -268,31 +144,7 @@ class ValidationEngine:
         return handler(rule)
 
     def _session_sql_override_precedence(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _session_sql_override_precedence workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle session sql override precedence using the provided rule."""
 
         sql_rows = self.tables.get("sql_overrides", [])
         grouped: dict[tuple[str, str], set[str]] = defaultdict(set)
@@ -307,31 +159,7 @@ class ValidationEngine:
         ]
 
     def _mapping_sql_override_precedence(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _mapping_sql_override_precedence workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle mapping sql override precedence using the provided rule."""
 
         counter: Counter[tuple[str, str]] = Counter(
             (row.get("file_name", ""), row.get("mapping_name", ""))
@@ -345,34 +173,11 @@ class ValidationEngine:
         ]
 
     def _pattern_rule(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _pattern_rule workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle pattern rule using the provided rule."""
 
         logic = rule["detection_logic"]
         flags = re.IGNORECASE if logic.get("case_insensitive", True) else 0
+        # Compile rule patterns once before scanning configured metadata fields.
         patterns = [re.compile(pattern, flags) for pattern in logic.get("patterns", [])]
         issues: list[ValidationIssue] = []
         for table_name in logic.get("tables", []):
@@ -386,31 +191,7 @@ class ValidationEngine:
         return issues
 
     def _varchar_precision_doubling(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _varchar_precision_doubling workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle varchar precision doubling using the provided rule."""
 
         issues: list[ValidationIssue] = []
         for finding in self.datatype_findings:
@@ -426,31 +207,7 @@ class ValidationEngine:
         return issues
 
     def _missing_physical_connection(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _missing_physical_connection workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle missing physical connection using the provided rule."""
 
         issues: list[ValidationIssue] = []
         for row in [*self.tables.get("sources", []), *self.tables.get("targets", [])]:
@@ -460,31 +217,7 @@ class ValidationEngine:
         return issues
 
     def _datatype_issue(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _datatype_issue workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle datatype issue using the provided rule."""
 
         issue_types = set(rule["detection_logic"].get("issue_types", []))
         return [
@@ -499,31 +232,7 @@ class ValidationEngine:
         ]
 
     def _source_query_column_count_mismatch(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _source_query_column_count_mismatch workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle source query column count mismatch using the provided rule."""
 
         ports = self._ports_by_transformation()
         issues: list[ValidationIssue] = []
@@ -539,31 +248,7 @@ class ValidationEngine:
         return issues
 
     def _source_query_column_order_mismatch(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _source_query_column_order_mismatch workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle source query column order mismatch using the provided rule."""
 
         ports = self._ports_by_transformation()
         issues: list[ValidationIssue] = []
@@ -580,31 +265,7 @@ class ValidationEngine:
         return issues
 
     def _duplicate_column_names(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _duplicate_column_names workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle duplicate column names using the provided rule."""
 
         issues: list[ValidationIssue] = []
         for table_name, asset_key in [("source_columns", "source_name"), ("target_columns", "target_name")]:
@@ -618,31 +279,7 @@ class ValidationEngine:
         return issues
 
     def _missing_schedules(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _missing_schedules workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle missing schedules using the provided rule."""
 
         return [
             self._issue(rule, f"Workflow schedule metadata is not available for {row.get('workflow_name', '')}.", row.get("workflow_name", ""), row.get("file_name", ""))
@@ -651,31 +288,7 @@ class ValidationEngine:
         ]
 
     def _missing_target_table_binding(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _missing_target_table_binding workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle missing target table binding using the provided rule."""
 
         target_names = {(row.get("file_name", ""), row.get("target_name", "")) for row in self.tables.get("targets", [])}
         issues: list[ValidationIssue] = []
@@ -685,31 +298,7 @@ class ValidationEngine:
         return issues
 
     def _name_length(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _name_length workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle name length using the provided rule."""
 
         max_length = int(rule["detection_logic"].get("max_length", 65))
         name_fields = ["folder_name", "mapping_name", "session_name", "workflow_name", "source_name", "target_name", "transformation_name", "instance_name", "column_name", "port_name"]
@@ -723,31 +312,7 @@ class ValidationEngine:
         return issues
 
     def _missing_alias_in_concat(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _missing_alias_in_concat workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle missing alias in concat using the provided rule."""
 
         issues: list[ValidationIssue] = []
         for row in [*self.tables.get("sql_overrides", []), *self.tables.get("ports", [])]:
@@ -757,31 +322,7 @@ class ValidationEngine:
         return issues
 
     def _schema_prefix_in_lookup(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _schema_prefix_in_lookup workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle schema prefix in lookup using the provided rule."""
 
         lookup_names = {
             (row.get("file_name", ""), row.get("mapping_name", ""), row.get("transformation_name", ""))
@@ -796,31 +337,7 @@ class ValidationEngine:
         return issues
 
     def _transformation_type(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _transformation_type workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle transformation type using the provided rule."""
 
         patterns = [re.compile(pattern, re.IGNORECASE) for pattern in rule["detection_logic"].get("patterns", [])]
         return [
@@ -830,31 +347,7 @@ class ValidationEngine:
         ]
 
     def _shared_folder_dependency(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _shared_folder_dependency workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle shared folder dependency using the provided rule."""
 
         return [
             self._issue(rule, f"Reusable asset dependency detected for {row.get('transformation_name', '')}.", row.get("transformation_name", ""), row.get("file_name", ""))
@@ -863,31 +356,7 @@ class ValidationEngine:
         ]
 
     def _snowflake_keyword_conflicts(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _snowflake_keyword_conflicts workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle snowflake keyword conflicts using the provided rule."""
 
         keywords = {"ACCOUNT", "CURRENT_DATE", "CURRENT_TIMESTAMP", "DATABASE", "GROUP", "ILIKE", "QUALIFY", "SAMPLE", "SCHEMA", "TABLE"}
         rows = [*self.tables.get("source_columns", []), *self.tables.get("target_columns", []), *self.tables.get("ports", [])]
@@ -899,31 +368,7 @@ class ValidationEngine:
         return issues
 
     def _field_unavailable(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _field_unavailable workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle field unavailable using the provided rule."""
 
         required = set(rule["detection_logic"].get("required_fields", []))
         available = {field for rows in self.tables.values() for row in rows[:1] for field in row}
@@ -940,31 +385,7 @@ class ValidationEngine:
         ]
 
     def _oracle_to_oracle_char_padding(self, rule: dict[str, Any]) -> list[ValidationIssue]:
-        """
-        Executes the _oracle_to_oracle_char_padding workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle oracle to oracle char padding using the provided rule."""
 
         oracle_sources = {
             (row.get("file_name", ""), row.get("source_name", ""))
@@ -1007,31 +428,7 @@ class ValidationEngine:
         return issues
 
     def _load_or_build_datatype_findings(self) -> list[dict[str, str]]:
-        """
-        Executes the _load_or_build_datatype_findings workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load or build datatype findings for the migration workflow."""
 
         report = self.output_folder / "datatype_mismatch_report.csv"
         if not report.exists():
@@ -1039,31 +436,7 @@ class ValidationEngine:
         return self._read_csv(report) if report.exists() else []
 
     def _load_metadata_tables(self) -> dict[str, list[dict[str, str]]]:
-        """
-        Executes the _load_metadata_tables workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load metadata tables for the migration workflow."""
 
         tables: dict[str, list[dict[str, str]]] = {}
         if not self.metadata_folder.exists():
@@ -1073,62 +446,14 @@ class ValidationEngine:
         return tables
 
     def _load_rules(self) -> list[dict[str, Any]]:
-        """
-        Executes the _load_rules workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load rules for the migration workflow."""
 
         with self.rules_path.open("r", encoding="utf-8") as rules_file:
             payload = json.load(rules_file)
         return list(payload.get("rules", []))
 
     def _ports_by_transformation(self) -> dict[tuple[str, str, str, str, str], list[dict[str, str]]]:
-        """
-        Executes the _ports_by_transformation workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle ports by transformation for the migration workflow."""
 
         grouped: dict[tuple[str, str, str, str, str], list[dict[str, str]]] = defaultdict(list)
         for row in self.tables.get("ports", []):
@@ -1137,31 +462,7 @@ class ValidationEngine:
 
     @staticmethod
     def _select_columns(sql: str) -> list[str]:
-        """
-        Executes the _select_columns workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                sql (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle select columns using the provided sql."""
 
         match = re.search(r"\bSELECT\b(.*?)\bFROM\b", sql or "", re.IGNORECASE | re.DOTALL)
         if not match:
@@ -1186,31 +487,7 @@ class ValidationEngine:
 
     @staticmethod
     def _transformation_key(row: dict[str, str]) -> tuple[str, str, str, str, str]:
-        """
-        Executes the _transformation_key workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle transformation key using the provided row."""
 
         return (
             row.get("file_name", ""),
@@ -1222,31 +499,7 @@ class ValidationEngine:
 
     @staticmethod
     def _asset_name(row: dict[str, str]) -> str:
-        """
-        Executes the _asset_name workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle asset name using the provided row."""
 
         for field in ["mapping_name", "session_name", "workflow_name", "context_name", "transformation_name", "instance_name", "source_name", "target_name", "column_name", "port_name"]:
             if row.get(field):
@@ -1255,63 +508,12 @@ class ValidationEngine:
 
     @staticmethod
     def _normalize_name(value: str) -> str:
-        """
-        Executes the _normalize_name workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Normalize name using the provided value."""
 
         return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
     def _issue(self, rule: dict[str, Any], issue: str, asset: str, source_file: str) -> ValidationIssue:
-        """
-        Executes the _issue workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rule (object): Value supplied by the caller and used by the workflow.
-                issue (object): Value supplied by the caller and used by the workflow.
-                asset (object): Value supplied by the caller and used by the workflow.
-                source_file (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle issue for the migration workflow."""
 
         return ValidationIssue(
             rule_id=rule["rule_id"],
@@ -1325,31 +527,7 @@ class ValidationEngine:
 
     @staticmethod
     def _deduplicate(issues: Iterable[ValidationIssue]) -> list[ValidationIssue]:
-        """
-        Executes the _deduplicate workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                issues (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle deduplicate using the provided issues."""
 
         seen: set[tuple[str, str, str]] = set()
         deduped: list[ValidationIssue] = []
@@ -1363,31 +541,7 @@ class ValidationEngine:
 
     @staticmethod
     def _read_csv(path: Path) -> list[dict[str, str]]:
-        """
-        Executes the _read_csv workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle read csv using the provided path."""
 
         if not path.exists():
             return []
@@ -1395,31 +549,7 @@ class ValidationEngine:
             return list(csv.DictReader(csv_file))
 
     def _resolve_path(self, path: str | Path) -> Path:
-        """
-        Executes the _resolve_path workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve path using the provided path."""
 
         candidate = Path(path)
         if candidate.is_absolute():
@@ -1433,34 +563,7 @@ def build_validation_report(
     output_folder: str | Path | None = None,
     rules_path: str | Path | None = None,
 ) -> list[ValidationIssue]:
-    """
-    Executes the build_validation_report workflow for migration validation and readiness logic.
-    
-    Purpose:
-        Support the module responsibility by performing one focused step in the migration assessment process.
-    
-    Workflow:
-        1. Receive inputs from the caller or surrounding service layer.
-        2. Apply the existing project logic without changing business rules.
-        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-    
-    Parameters:
-            config (object): Value supplied by the caller and used by the workflow.
-            logger (object): Value supplied by the caller and used by the workflow.
-            output_folder (object): Value supplied by the caller and used by the workflow.
-            rules_path (object): Value supplied by the caller and used by the workflow.
-    
-    Returns:
-        object:
-            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-    
-    Raises:
-        Exception:
-            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-    
-    Implementation Notes:
-        This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-    """
+    """Build validation report for the migration workflow."""
 
     return ValidationEngine(
         config=config,

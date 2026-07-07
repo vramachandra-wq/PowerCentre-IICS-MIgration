@@ -1,19 +1,6 @@
 """
-Module: automation/evaluation_matrix.py
-
-Purpose:
-    This module supports automated validation reporting for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the automated validation reporting area and builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support evaluation matrix for automation data and validation workflows.
+Prepares metrics, findings, and AI assistance outputs.
 """
 
 from __future__ import annotations
@@ -32,7 +19,7 @@ from business.validation.readiness_engine import RemediationReportLoader
 
 @dataclass(frozen=True)
 class CanonicalEvaluationObject:
-    """Normalized mapping-level object consumed by rule-based evaluation."""
+    """Encapsulates canonical evaluation object behavior for migration workflows."""
 
     xml_name: str
     workflow: str
@@ -49,7 +36,7 @@ class CanonicalEvaluationObject:
 
 @dataclass(frozen=True)
 class EvaluationMatrixRecord:
-    """Flat validation matrix row. One record represents one mapping."""
+    """Encapsulates evaluation matrix record behavior for migration workflows."""
 
     xml_name: str
     workflow: str
@@ -89,125 +76,28 @@ class EvaluationMatrixRecord:
 
     @property
     def remaining_issues(self) -> int:
-        """
-        Executes the remaining_issues workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle remaining issues for the migration workflow."""
 
         return self.remaining_unresolved
 
     @property
     def risk_score(self) -> int:
-        """
-        Executes the risk_score workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle risk score for the migration workflow."""
 
         return self.risk_after
 
 
 class ReportRepository:
-    """File repository for generated validation, remediation, and automation artifacts."""
+    """Handles persistence operations for migration metadata."""
 
     def __init__(self, output_folder: str | Path = "output", reports_folder: str | Path = "output/automation") -> None:
-        """
-        Executes the __init__ workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                output_folder (object): Value supplied by the caller and used by the workflow.
-                reports_folder (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data using the provided output_folder and reports_folder."""
 
         self.output_folder = Path(output_folder)
         self.reports_folder = Path(reports_folder)
 
     def read_csv(self, relative_path: str | Path) -> list[dict[str, str]]:
-        """
-        Executes the read_csv workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                relative_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle read csv using the provided relative_path."""
 
         path = self.output_folder / relative_path
         path = self._preferred_existing_path(path)
@@ -217,31 +107,7 @@ class ReportRepository:
             return list(csv.DictReader(csv_file))
 
     def read_json(self, relative_path: str | Path) -> Any:
-        """
-        Executes the read_json workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                relative_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle read json using the provided relative_path."""
 
         path = self.output_folder / relative_path
         if not path.exists():
@@ -250,33 +116,7 @@ class ReportRepository:
             return json.load(json_file)
 
     def write_csv(self, file_name: str, rows: Iterable[dict[str, Any]], fieldnames: list[str]) -> Path:
-        """
-        Executes the write_csv workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                file_name (object): Value supplied by the caller and used by the workflow.
-                rows (object): Value supplied by the caller and used by the workflow.
-                fieldnames (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write csv for the migration workflow."""
 
         self.reports_folder.mkdir(parents=True, exist_ok=True)
         path = self.reports_folder / file_name
@@ -287,32 +127,7 @@ class ReportRepository:
             return Path(csv_file.name)
 
     def write_json(self, file_name: str, payload: Any) -> Path:
-        """
-        Executes the write_json workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                file_name (object): Value supplied by the caller and used by the workflow.
-                payload (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write json using the provided file_name and payload."""
 
         self.reports_folder.mkdir(parents=True, exist_ok=True)
         path = self.reports_folder / file_name
@@ -322,31 +137,7 @@ class ReportRepository:
 
     @staticmethod
     def _preferred_existing_path(path: Path) -> Path:
-        """
-        Executes the _preferred_existing_path workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle preferred existing path using the provided path."""
 
         latest = path.with_name(f"{path.stem}_latest{path.suffix}")
         if latest.exists() and (not path.exists() or latest.stat().st_mtime >= path.stat().st_mtime):
@@ -355,32 +146,7 @@ class ReportRepository:
 
     @staticmethod
     def _open_writable(path: Path, newline: str | None = None):
-        """
-        Executes the _open_writable workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-                newline (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle open writable using the provided path and newline."""
 
         candidates = [
             path,
@@ -399,7 +165,7 @@ class ReportRepository:
 
 
 class EvaluationMatrixBuilder:
-    """Builds the validation matrix by consuming existing report artifacts."""
+    """Encapsulates evaluation matrix builder behavior for migration workflows."""
 
     AI_ASSISTANCE_UNRESOLVED_ISSUES = {"mapplet_nesting"}
 
@@ -442,32 +208,7 @@ class EvaluationMatrixBuilder:
     ]
 
     def __init__(self, repository: ReportRepository | None = None, validation_rules_path: str | Path | None = None) -> None:
-        """
-        Executes the __init__ workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                repository (object): Value supplied by the caller and used by the workflow.
-                validation_rules_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data using the provided repository and validation_rules_path."""
 
         self.repository = repository or ReportRepository()
         self.validation_rules_path = Path(validation_rules_path or "common/config/validation_rules.json")
@@ -476,31 +217,7 @@ class EvaluationMatrixBuilder:
         self.risk_rules = self.report_loader.rules
 
     def build(self) -> list[EvaluationMatrixRecord]:
-        """
-        Executes the build workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build migration data for the migration workflow."""
 
         mappings = self.repository.read_csv("metadata_tables/mappings.csv")
         complexity = self._index(self.repository.read_csv("complexity_classification_report.csv"), "Mapping")
@@ -608,31 +325,7 @@ class EvaluationMatrixBuilder:
         return sorted(records, key=lambda item: (item.xml_name, item.mapping))
 
     def build_canonical_objects(self, records: Iterable[EvaluationMatrixRecord]) -> list[CanonicalEvaluationObject]:
-        """
-        Executes the build_canonical_objects workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                records (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build canonical objects using the provided records."""
 
         objects: list[CanonicalEvaluationObject] = []
         for record in records:
@@ -686,61 +379,13 @@ class EvaluationMatrixBuilder:
         return objects
 
     def write(self, records: Iterable[EvaluationMatrixRecord]) -> Path:
-        """
-        Executes the write workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                records (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write using the provided records."""
 
         rows = [asdict(record) for record in records]
         return self.repository.write_csv("evaluation_matrix.csv", rows, self.FIELDNAMES)
 
     def _validation_rule_count(self) -> int:
-        """
-        Executes the _validation_rule_count workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle validation rule count for the migration workflow."""
 
         if not self.validation_rules_path.exists():
             return 0
@@ -754,33 +399,7 @@ class EvaluationMatrixBuilder:
     def _group_by_mapping(
         self, rows: list[dict[str, str]], mapping_field: str, source_file_field: str
     ) -> dict[str, list[dict[str, str]]]:
-        """
-        Executes the _group_by_mapping workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-                mapping_field (object): Value supplied by the caller and used by the workflow.
-                source_file_field (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle group by mapping for the migration workflow."""
 
         mapping_by_xml = self._mapping_by_xml()
         grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
@@ -796,31 +415,7 @@ class EvaluationMatrixBuilder:
         return grouped
 
     def _mapping_by_xml(self) -> dict[str, str]:
-        """
-        Executes the _mapping_by_xml workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle mapping by xml for the migration workflow."""
 
         index: dict[str, str] = {}
         for row in self.repository.read_csv("metadata_tables/mappings.csv"):
@@ -832,31 +427,7 @@ class EvaluationMatrixBuilder:
         return index
 
     def _group_remediation_by_mapping(self, rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
-        """
-        Executes the _group_remediation_by_mapping workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle group remediation by mapping using the provided rows."""
 
         grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
         for row in rows:
@@ -867,31 +438,7 @@ class EvaluationMatrixBuilder:
 
     @staticmethod
     def _group_by_xml(rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
-        """
-        Executes the _group_by_xml workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle group by xml using the provided rows."""
 
         grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
         for row in rows:
@@ -902,154 +449,31 @@ class EvaluationMatrixBuilder:
 
     @staticmethod
     def _index(rows: list[dict[str, str]], key: str) -> dict[str, dict[str, str]]:
-        """
-        Executes the _index workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-                key (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle index using the provided rows and key."""
 
         return {row.get(key, ""): row for row in rows if row.get(key)}
 
     @staticmethod
     def _first_int(row: dict[str, str], field: str) -> int:
-        """
-        Executes the _first_int workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-                field (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle first int using the provided row and field."""
 
         return MetricsCalculator.to_int(row.get(field, 0))
 
     @staticmethod
     def _type_count(rows: Iterable[dict[str, str]], token: str) -> int:
-        """
-        Executes the _type_count workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-                token (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle type count using the provided rows and token."""
 
         return sum(1 for row in rows if token in row.get("transformation_type", "").lower())
 
     @staticmethod
     def _auto_fixed(rows: Iterable[dict[str, str]]) -> int:
-        """
-        Executes the _auto_fixed workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle auto fixed using the provided rows."""
 
         return sum(1 for row in rows if str(row.get("Auto Fixed", "")).lower() == "true")
 
     @staticmethod
     def _auto_fixable_count(rows: Iterable[dict[str, str]]) -> int:
-        """
-        Executes the _auto_fixable_count workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle auto fixable count using the provided rows."""
 
         count = 0
         for row in rows:
@@ -1061,93 +485,19 @@ class EvaluationMatrixBuilder:
 
     @staticmethod
     def _ai_flag_count(rows: Iterable[dict[str, str]], field: str) -> int:
-        """
-        Executes the _ai_flag_count workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-                field (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle ai flag count using the provided rows and field."""
 
         return sum(1 for row in rows if str(row.get(field, "")).lower() == "true")
 
     @staticmethod
     def _session_name(rows: list[dict[str, str]]) -> str:
-        """
-        Executes the _session_name workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle session name using the provided rows."""
 
         return rows[0].get("session_name", "") if rows else ""
 
     @staticmethod
     def _workflow_name(rows: list[dict[str, str]], xml_name: str) -> str:
-        """
-        Executes the _workflow_name workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-                xml_name (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle workflow name using the provided rows and xml_name."""
 
         if rows:
             return rows[0].get("workflow_name", "")
@@ -1155,33 +505,7 @@ class EvaluationMatrixBuilder:
 
     @staticmethod
     def _blocking_issues(remaining: int, risk_category: str, readiness_after: int) -> int:
-        """
-        Executes the _blocking_issues workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                remaining (object): Value supplied by the caller and used by the workflow.
-                risk_category (object): Value supplied by the caller and used by the workflow.
-                readiness_after (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle blocking issues for the migration workflow."""
 
         if remaining <= 0:
             return 0
@@ -1191,34 +515,7 @@ class EvaluationMatrixBuilder:
 
     @staticmethod
     def _migration_status(readiness_after: int, risk_category: str, remaining: int, ai_assistance: int) -> str:
-        """
-        Executes the _migration_status workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                readiness_after (object): Value supplied by the caller and used by the workflow.
-                risk_category (object): Value supplied by the caller and used by the workflow.
-                remaining (object): Value supplied by the caller and used by the workflow.
-                ai_assistance (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle migration status for the migration workflow."""
 
         if readiness_after >= 80 and risk_category.upper() == "LOW" and remaining == 0:
             return "READY"
@@ -1234,33 +531,7 @@ class EvaluationMatrixBuilder:
         validation_rows: Iterable[dict[str, str]],
         datatype_rows: Iterable[dict[str, str]],
     ) -> list[dict[str, str]]:
-        """
-        Executes the _issue_records workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                mapping (object): Value supplied by the caller and used by the workflow.
-                validation_rows (object): Value supplied by the caller and used by the workflow.
-                datatype_rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle issue records for the migration workflow."""
 
         records: list[dict[str, str]] = []
         for row in validation_rows:
@@ -1288,31 +559,7 @@ class EvaluationMatrixBuilder:
         return records
 
     def _deduplicate_issues(self, issues: Iterable[dict[str, str]]) -> list[dict[str, str]]:
-        """
-        Executes the _deduplicate_issues workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                issues (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle deduplicate issues using the provided issues."""
 
         deduped: list[dict[str, str]] = []
         seen: set[tuple[str, str, str, str]] = set()
@@ -1329,32 +576,7 @@ class EvaluationMatrixBuilder:
         before_issues: list[dict[str, str]],
         remediation_rows: Iterable[dict[str, str]],
     ) -> list[dict[str, str]]:
-        """
-        Executes the _unresolved_issues workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                before_issues (object): Value supplied by the caller and used by the workflow.
-                remediation_rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle unresolved issues using the provided before_issues and remediation_rows."""
 
         resolved_counts: dict[tuple[str, str, str, str], int] = {}
         resolved_issue_counts: dict[tuple[str, str], int] = {}
@@ -1390,31 +612,7 @@ class EvaluationMatrixBuilder:
 
     @staticmethod
     def _issue_key(issue: dict[str, str]) -> tuple[str, str, str, str]:
-        """
-        Executes the _issue_key workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                issue (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle issue key using the provided issue."""
 
         return (
             issue.get("mapping", ""),
@@ -1424,31 +622,7 @@ class EvaluationMatrixBuilder:
         )
 
     def _risk_summary(self, issues: Iterable[dict[str, str]]) -> tuple[int, str]:
-        """
-        Executes the _risk_summary workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                issues (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle risk summary using the provided issues."""
 
         scored = [(issue["issue"], self._risk_score(issue)) for issue in issues]
         if not scored:
@@ -1456,31 +630,7 @@ class EvaluationMatrixBuilder:
         return sum(score for _, score in scored), max(scored, key=lambda item: item[1])[0]
 
     def _risk_score(self, issue: dict[str, str]) -> int:
-        """
-        Executes the _risk_score workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                issue (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle risk score using the provided issue."""
 
         factors = self.risk_rules.get("risk_factors", {})
         issue_name = issue["issue"]
@@ -1490,31 +640,7 @@ class EvaluationMatrixBuilder:
         return int(defaults.get(issue.get("severity", "MEDIUM").upper(), 8))
 
     def _risk_category(self, score: int) -> str:
-        """
-        Executes the _risk_category workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                score (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle risk category using the provided score."""
 
         for band in self.risk_rules.get("risk_levels", []):
             if int(band["min"]) <= score <= int(band["max"]):
@@ -1528,34 +654,7 @@ class EvaluationMatrixBuilder:
         validation_failed: int,
         auto_fix_success_rate: float,
     ) -> float:
-        """
-        Executes the _overall_health_score workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                readiness_after (object): Value supplied by the caller and used by the workflow.
-                risk_after (object): Value supplied by the caller and used by the workflow.
-                validation_failed (object): Value supplied by the caller and used by the workflow.
-                auto_fix_success_rate (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle overall health score for the migration workflow."""
 
         risk_component = max(0.0, 100.0 - min(float(risk_after), 100.0))
         validation_component = max(0.0, 100.0 - min(float(validation_failed), 100.0))
@@ -1569,31 +668,6 @@ class EvaluationMatrixBuilder:
 
     @staticmethod
     def issue_distribution(rows: Iterable[dict[str, str]], field: str) -> Counter[str]:
-        """
-        Executes the issue_distribution workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-                field (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle issue distribution using the provided rows and field."""
 
         return Counter(row.get(field, "") for row in rows if row.get(field))

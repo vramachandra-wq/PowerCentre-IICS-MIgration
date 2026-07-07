@@ -1,4 +1,7 @@
-"""AI recommendation assistant for post-validation migration findings."""
+"""
+Initialize the ai package.
+Expose related migration toolkit modules for imports.
+"""
 
 from automation.ai.ai_assistance_service import AIRecommendationService
 from automation.ai.recommendation_engine import RecommendationEngine

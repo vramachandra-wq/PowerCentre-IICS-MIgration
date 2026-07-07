@@ -1,19 +1,6 @@
 """
-Module: business/validation/executive_summary.py
-
-Purpose:
-    This module supports migration validation and readiness logic for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the migration validation and readiness logic area and evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support executive summary for migration business logic.
+Parses, validates, assesses, and remediates PowerCenter metadata.
 """
 
 from __future__ import annotations
@@ -33,27 +20,14 @@ from common.config.config import AppConfig
 
 @dataclass(frozen=True)
 class ExecutiveMetric:
-    """
-    Represents the ExecutiveMetric component in the migration validation and readiness logic area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates executive metric behavior for migration workflows."""
 
     metric: str
     value: str
 
 
 class ExecutiveSummaryEngine:
-    """Builds stakeholder-friendly summary metrics from post-remediation analytical reports."""
+    """Runs focused migration processing and analysis logic."""
 
     REPORT_COLUMNS = ["metric", "value"]
 
@@ -64,34 +38,7 @@ class ExecutiveSummaryEngine:
         output_folder: str | Path | None = None,
         scoring_rules_path: str | Path | None = None,
     ) -> None:
-        """
-        Executes the __init__ workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                config (object): Value supplied by the caller and used by the workflow.
-                logger (object): Value supplied by the caller and used by the workflow.
-                output_folder (object): Value supplied by the caller and used by the workflow.
-                scoring_rules_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data for the migration workflow."""
 
         self.config = config
         self.logger = logger
@@ -102,31 +49,7 @@ class ExecutiveSummaryEngine:
         self.scoring_rules_path = scoring_rules_path
 
     def build_report(self) -> list[ExecutiveMetric]:
-        """
-        Executes the build_report workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build report for the migration workflow."""
 
         readiness = MigrationReadinessEngine(
             config=self.config,
@@ -154,32 +77,7 @@ class ExecutiveSummaryEngine:
         return metrics
 
     def write_report(self, metrics: list[ExecutiveMetric], report_path: str | Path | None = None) -> None:
-        """
-        Executes the write_report workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                metrics (object): Value supplied by the caller and used by the workflow.
-                report_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write report using the provided metrics and report_path."""
 
         path = self._resolve_path(report_path or self.report_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -199,33 +97,7 @@ class ExecutiveSummaryEngine:
         risk: list[RiskAssessmentRecord],
         effectiveness: list[RemediationEffectivenessRecord],
     ) -> list[ExecutiveMetric]:
-        """
-        Executes the _metrics workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                readiness (object): Value supplied by the caller and used by the workflow.
-                risk (object): Value supplied by the caller and used by the workflow.
-                effectiveness (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle metrics for the migration workflow."""
 
         total_found = sum(record.issues_found for record in readiness)
         total_auto_fixed = sum(record.issues_auto_fixed for record in readiness)
@@ -273,31 +145,7 @@ class ExecutiveSummaryEngine:
         ]
 
     def _resolve_path(self, path: str | Path) -> Path:
-        """
-        Executes the _resolve_path workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve path using the provided path."""
 
         candidate = Path(path)
         if candidate.is_absolute():
@@ -311,34 +159,7 @@ def build_executive_summary_report(
     output_folder: str | Path | None = None,
     scoring_rules_path: str | Path | None = None,
 ) -> list[ExecutiveMetric]:
-    """
-    Executes the build_executive_summary_report workflow for migration validation and readiness logic.
-    
-    Purpose:
-        Support the module responsibility by performing one focused step in the migration assessment process.
-    
-    Workflow:
-        1. Receive inputs from the caller or surrounding service layer.
-        2. Apply the existing project logic without changing business rules.
-        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-    
-    Parameters:
-            config (object): Value supplied by the caller and used by the workflow.
-            logger (object): Value supplied by the caller and used by the workflow.
-            output_folder (object): Value supplied by the caller and used by the workflow.
-            scoring_rules_path (object): Value supplied by the caller and used by the workflow.
-    
-    Returns:
-        object:
-            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-    
-    Raises:
-        Exception:
-            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-    
-    Implementation Notes:
-        This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-    """
+    """Build executive summary report for the migration workflow."""
 
     return ExecutiveSummaryEngine(
         config=config,

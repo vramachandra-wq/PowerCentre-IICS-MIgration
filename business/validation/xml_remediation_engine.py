@@ -1,19 +1,6 @@
 """
-Module: business/validation/xml_remediation_engine.py
-
-Purpose:
-    This module supports migration validation and readiness logic for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the migration validation and readiness logic area and evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support xml remediation engine for migration business logic.
+Parses, validates, assesses, and remediates PowerCenter metadata.
 """
 
 from __future__ import annotations
@@ -32,20 +19,7 @@ except ModuleNotFoundError:  # pragma: no cover - stdlib fallback for lean envir
 
 @dataclass(frozen=True)
 class XmlChange:
-    """
-    Represents the XmlChange component in the migration validation and readiness logic area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates xml change behavior for migration workflows."""
 
     xml_file: str
     object_type: str
@@ -59,7 +33,7 @@ class XmlChange:
 
 
 class XmlRemediationEngine:
-    """Applies approved metadata-level remediation to every PowerCenter XML file."""
+    """Runs focused migration processing and analysis logic."""
 
     AUTO_FIX_ISSUES = {
         "precision_mismatch",
@@ -95,33 +69,7 @@ class XmlRemediationEngine:
         output_folder: str | Path = "output",
         datatype_report: str | Path | None = None,
     ) -> None:
-        """
-        Executes the __init__ workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                input_folder (object): Value supplied by the caller and used by the workflow.
-                output_folder (object): Value supplied by the caller and used by the workflow.
-                datatype_report (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data for the migration workflow."""
 
         self.project_root = Path.cwd()
         self.input_folder = self._resolve_path(input_folder)
@@ -130,31 +78,7 @@ class XmlRemediationEngine:
         self.datatype_report = self._resolve_path(datatype_report or self.output_folder / "datatype_mismatch_report.csv")
 
     def remediate_all(self) -> list[XmlChange]:
-        """
-        Executes the remediate_all workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle remediate all for the migration workflow."""
 
         self.remediated_folder.mkdir(parents=True, exist_ok=True)
         target_updates, transform_updates = self._build_updates(self._read_csv(self.datatype_report))
@@ -170,33 +94,7 @@ class XmlRemediationEngine:
         target_updates: dict[tuple[str, str], dict[str, object]],
         transform_updates: dict[tuple[str, str, str], dict[str, object]],
     ) -> list[XmlChange]:
-        """
-        Executes the remediate_file workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                xml_path (object): Value supplied by the caller and used by the workflow.
-                target_updates (object): Value supplied by the caller and used by the workflow.
-                transform_updates (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle remediate file for the migration workflow."""
 
         output_path = self.remediated_folder / f"{xml_path.stem}_remediated{xml_path.suffix.lower()}"
         tree = self._parse_xml(xml_path)
@@ -240,33 +138,7 @@ class XmlRemediationEngine:
         return changes
 
     def _apply_update(self, xml_file: str, elem, update: dict[str, object]) -> list[XmlChange]:
-        """
-        Executes the _apply_update workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                xml_file (object): Value supplied by the caller and used by the workflow.
-                elem (object): Value supplied by the caller and used by the workflow.
-                update (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Apply update for the migration workflow."""
 
         changes: list[XmlChange] = []
         issues = set(update.get("issues", set()))
@@ -300,37 +172,7 @@ class XmlRemediationEngine:
         after: object,
         rule: str,
     ) -> list[XmlChange]:
-        """
-        Executes the _set_attr workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                xml_file (object): Value supplied by the caller and used by the workflow.
-                elem (object): Value supplied by the caller and used by the workflow.
-                object_type (object): Value supplied by the caller and used by the workflow.
-                object_name (object): Value supplied by the caller and used by the workflow.
-                attribute (object): Value supplied by the caller and used by the workflow.
-                after (object): Value supplied by the caller and used by the workflow.
-                rule (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle set attr for the migration workflow."""
 
         if after is None:
             return []
@@ -345,31 +187,7 @@ class XmlRemediationEngine:
         self,
         rows: Iterable[dict[str, str]],
     ) -> tuple[dict[tuple[str, str], dict[str, object]], dict[tuple[str, str, str], dict[str, object]]]:
-        """
-        Executes the _build_updates workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build updates using the provided rows."""
 
         target_updates: dict[tuple[str, str], dict[str, object]] = {}
         transform_updates: dict[tuple[str, str, str], dict[str, object]] = {}
@@ -391,32 +209,7 @@ class XmlRemediationEngine:
         return target_updates, transform_updates
 
     def _merge_update(self, entry: dict[str, object], row: dict[str, str]) -> None:
-        """
-        Executes the _merge_update workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                entry (object): Value supplied by the caller and used by the workflow.
-                row (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle merge update using the provided entry and row."""
 
         issue = row.get("issue_type", "").strip()
         source_base, source_precision, source_scale = self._parse_type(row.get("source", ""))
@@ -434,31 +227,7 @@ class XmlRemediationEngine:
             entry["unicode"] = True
 
     def _parse_xml(self, path: Path):
-        """
-        Executes the _parse_xml workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Parse xml using the provided path."""
 
         if etree is None:
             import xml.etree.ElementTree as std_etree
@@ -468,32 +237,7 @@ class XmlRemediationEngine:
         return etree.parse(str(path), parser)
 
     def _write_xml(self, tree, path: Path) -> None:
-        """
-        Executes the _write_xml workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                tree (object): Value supplied by the caller and used by the workflow.
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write xml using the provided tree and path."""
 
         if etree is None:
             body = self._stdlib_tostring(tree)
@@ -510,153 +254,33 @@ class XmlRemediationEngine:
 
     @staticmethod
     def _stdlib_tostring(tree) -> str:
-        """
-        Executes the _stdlib_tostring workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                tree (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle stdlib tostring using the provided tree."""
 
         import xml.etree.ElementTree as std_etree
 
         return std_etree.tostring(tree.getroot(), encoding="unicode")
 
     def _ai_assistance_only(self, root) -> bool:
-        """
-        Executes the _ai_assistance_only workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                root (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle ai assistance only using the provided root."""
 
         text = " ".join(str(value).upper() for elem in root.iter() for value in [elem.tag, *elem.attrib.values()])
         return any(pattern in text for pattern in ["SAP CONNECTOR", "MAINFRAME", "COBOL SOURCE", "MQ SOURCE"])
 
     def _ai_assistance_transformation(self, elem) -> bool:
-        """
-        Executes the _ai_assistance_transformation workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                elem (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle ai assistance transformation using the provided elem."""
 
         text = " ".join(str(value).upper() for value in [elem.get("NAME", ""), elem.get("TYPE", ""), *elem.attrib.values()])
         return any(pattern in text for pattern in self.AI_ASSISTANCE_PATTERNS)
 
     @staticmethod
     def _string_datatype(elem) -> bool:
-        """
-        Executes the _string_datatype workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                elem (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle string datatype using the provided elem."""
 
         return elem.get("DATATYPE", "").lower() in {"varchar", "varchar2", "nvarchar2", "char", "nchar", "string"}
 
     @staticmethod
     def _parse_type(value: str) -> tuple[str, int | None, int | None]:
-        """
-        Executes the _parse_type workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Parse type using the provided value."""
 
         match = re.match(r"^([A-Z0-9_]+)\s*(?:\((\d+)(?:,(\d+))?\))?$", str(value or "").strip().upper())
         if not match:
@@ -669,61 +293,13 @@ class XmlRemediationEngine:
 
     @staticmethod
     def _normalize(value: str) -> str:
-        """
-        Executes the _normalize workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Normalize migration data using the provided value."""
 
         return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
     @staticmethod
     def _read_csv(path: Path) -> list[dict[str, str]]:
-        """
-        Executes the _read_csv workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle read csv using the provided path."""
 
         if not path.exists():
             return []
@@ -731,31 +307,7 @@ class XmlRemediationEngine:
             return list(csv.DictReader(csv_file))
 
     def _xml_files(self) -> list[Path]:
-        """
-        Executes the _xml_files workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle xml files for the migration workflow."""
 
         return sorted({path.resolve() for path in [*self.input_folder.glob("*.XML"), *self.input_folder.glob("*.xml")]})
 
@@ -770,38 +322,7 @@ class XmlRemediationEngine:
         rule: str,
         status: str,
     ) -> XmlChange:
-        """
-        Executes the _change workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                xml_file (object): Value supplied by the caller and used by the workflow.
-                object_type (object): Value supplied by the caller and used by the workflow.
-                object_name (object): Value supplied by the caller and used by the workflow.
-                attribute (object): Value supplied by the caller and used by the workflow.
-                before (object): Value supplied by the caller and used by the workflow.
-                after (object): Value supplied by the caller and used by the workflow.
-                rule (object): Value supplied by the caller and used by the workflow.
-                status (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle change for the migration workflow."""
 
         from datetime import datetime
 
@@ -818,31 +339,7 @@ class XmlRemediationEngine:
         )
 
     def _resolve_path(self, path: str | Path) -> Path:
-        """
-        Executes the _resolve_path workflow for migration validation and readiness logic.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve path using the provided path."""
 
         candidate = Path(path)
         if candidate.is_absolute():

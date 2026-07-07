@@ -1,19 +1,6 @@
 """
-Module: reports/html_report.py
-
-Purpose:
-    This module supports report generation for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the report generation area and converts parsed and validated migration data into stakeholder-readable report artifacts. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support html report for report generation.
+Formats validation and migration output for review.
 """
 
 from __future__ import annotations
@@ -28,35 +15,10 @@ from common.config.config import AppConfig
 
 
 class EnterpriseReportBuilder:
-    """Builds stakeholder and engineering reports from generated metadata tables."""
+    """Encapsulates enterprise report builder behavior for migration workflows."""
 
     def __init__(self, config: AppConfig, logger) -> None:
-        """
-        Executes the __init__ workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                config (object): Value supplied by the caller and used by the workflow.
-                logger (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data using the provided config and logger."""
 
         self.config = config
         self.logger = logger
@@ -67,31 +29,7 @@ class EnterpriseReportBuilder:
         self.enterprise_folder = self.output_folder / "enterprise"
 
     def build_reports(self) -> dict[str, int]:
-        """
-        Executes the build_reports workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build reports for the migration workflow."""
 
         self.enterprise_folder.mkdir(parents=True, exist_ok=True)
 
@@ -115,31 +53,7 @@ class EnterpriseReportBuilder:
         return summary
 
     def _build_asset_inventory(self) -> list[dict[str, object]]:
-        """
-        Executes the _build_asset_inventory workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build asset inventory for the migration workflow."""
 
         xml_folder = self._resolve_path(self.config.paths.xml_folder)
         xml_files = sorted({path.name for path in xml_folder.glob("*.XML")} | {path.name for path in xml_folder.glob("*.xml")})
@@ -162,31 +76,7 @@ class EnterpriseReportBuilder:
         return rows
 
     def _build_transformation_type_counts(self) -> list[dict[str, object]]:
-        """
-        Executes the _build_transformation_type_counts workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build transformation type counts for the migration workflow."""
 
         transformations = self._read_csv(self.metadata_folder / "transformations.csv")
         counter = Counter(row.get("transformation_type", "") for row in transformations)
@@ -196,31 +86,7 @@ class EnterpriseReportBuilder:
         ]
 
     def _build_mapping_catalog(self) -> list[dict[str, object]]:
-        """
-        Executes the _build_mapping_catalog workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build mapping catalog for the migration workflow."""
 
         mappings = self._read_csv(self.canonical_folder / "canonical_mappings.csv")
         transformations = self._read_csv(self.canonical_folder / "canonical_transformations.csv")
@@ -260,33 +126,7 @@ class EnterpriseReportBuilder:
         transformation_counts: list[dict[str, object]],
         mapping_catalog: list[dict[str, object]],
     ) -> dict[str, object]:
-        """
-        Executes the _build_executive_summary workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                asset_inventory (object): Value supplied by the caller and used by the workflow.
-                transformation_counts (object): Value supplied by the caller and used by the workflow.
-                mapping_catalog (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build executive summary for the migration workflow."""
 
         canonical_assets = self._read_csv(self.canonical_folder / "canonical_assets.csv")
         canonical_columns = self._read_csv(self.canonical_folder / "canonical_columns.csv")
@@ -326,34 +166,7 @@ class EnterpriseReportBuilder:
         transformation_counts: list[dict[str, object]],
         mapping_catalog: list[dict[str, object]],
     ) -> None:
-        """
-        Executes the _write_markdown workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                summary (object): Value supplied by the caller and used by the workflow.
-                asset_inventory (object): Value supplied by the caller and used by the workflow.
-                transformation_counts (object): Value supplied by the caller and used by the workflow.
-                mapping_catalog (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write markdown for the migration workflow."""
 
         markdown_path = self.enterprise_folder / "enterprise_migration_report.md"
         lines = [
@@ -419,32 +232,7 @@ class EnterpriseReportBuilder:
         markdown_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     def _write_csv(self, file_name: str, rows: list[dict[str, object]]) -> None:
-        """
-        Executes the _write_csv workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                file_name (object): Value supplied by the caller and used by the workflow.
-                rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write csv using the provided file_name and rows."""
 
         path = self.enterprise_folder / file_name
         if not rows:
@@ -456,62 +244,13 @@ class EnterpriseReportBuilder:
             writer.writerows(rows)
 
     def _write_json(self, file_name: str, payload: dict[str, object]) -> None:
-        """
-        Executes the _write_json workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                file_name (object): Value supplied by the caller and used by the workflow.
-                payload (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write json using the provided file_name and payload."""
 
         (self.enterprise_folder / file_name).write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     @staticmethod
     def _read_csv(path: Path) -> list[dict[str, str]]:
-        """
-        Executes the _read_csv workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle read csv using the provided path."""
 
         if not path.exists():
             raise FileNotFoundError(f"Required report input not found: {path}")
@@ -520,91 +259,18 @@ class EnterpriseReportBuilder:
 
     @staticmethod
     def _count_by_file(rows: Iterable[dict[str, str]], file_name: str) -> int:
-        """
-        Executes the _count_by_file workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-                file_name (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle count by file using the provided rows and file_name."""
 
         return sum(1 for row in rows if row.get("file_name") == file_name)
 
     @staticmethod
     def _md(value: object) -> str:
-        """
-        Executes the _md workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle md using the provided value."""
 
         return str(value).replace("|", "\\|")
 
     def _resolve_path(self, path: str | Path) -> Path:
-        """
-        Executes the _resolve_path workflow for report generation.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that converts parsed and validated migration data into stakeholder-readable report artifacts. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve path using the provided path."""
 
         candidate = Path(path)
         if candidate.is_absolute():
