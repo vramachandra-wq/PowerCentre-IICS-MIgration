@@ -1,19 +1,6 @@
 """
-Module: automation/ai/issue_definition_loader.py
-
-Purpose:
-    This module supports AI recommendation and evaluation support for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the AI recommendation and evaluation support area and connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support issue definition loader for automation data and validation workflows.
+Prepares metrics, findings, and AI assistance outputs.
 """
 
 from __future__ import annotations
@@ -29,7 +16,7 @@ from automation.ai.recommendation_models import FailureRecord
 
 @dataclass(frozen=True)
 class IssueDefinition:
-    """One AI-only issue definition from the uploaded text file."""
+    """Encapsulates issue definition behavior for migration workflows."""
 
     error_name: str
     priority: str
@@ -38,7 +25,7 @@ class IssueDefinition:
 
 
 class AIRecommendationIssueLoader:
-    """Loads AI-only migration issue definitions and detects matching XML context."""
+    """Encapsulates airecommendation issue loader behavior for migration workflows."""
 
     FILE_NAMES = [
         "ai_recommendation_issues.txt",
@@ -47,63 +34,14 @@ class AIRecommendationIssueLoader:
     PRIORITIES = {"critical": "Critical", "high": "High", "medium": "Medium", "low": "Low"}
 
     def __init__(self, repository: ReportRepository, configured_path: str | Path = "") -> None:
-        """
-        Executes the __init__ workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                repository (object): Value supplied by the caller and used by the workflow.
-                configured_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data using the provided repository and configured_path."""
 
         self.repository = repository
         self.configured_path = Path(configured_path) if configured_path else None
 
     def build_failures(self, migration_context: dict[str, object]) -> list[FailureRecord]:
         # These rows are recommendation-only; they are never written to remediation rules.
-        """
-        Executes the build_failures workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                migration_context (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build failures using the provided migration_context."""
 
         definitions = self.load()
         if not definitions:
@@ -127,31 +65,7 @@ class AIRecommendationIssueLoader:
         return failures
 
     def load(self) -> list[IssueDefinition]:
-        """
-        Executes the load workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load migration data for the migration workflow."""
 
         path = self._definition_path()
         if not path:
@@ -160,7 +74,7 @@ class AIRecommendationIssueLoader:
 
     @classmethod
     def parse(cls, content: str) -> list[IssueDefinition]:
-        """Parses repeated Error Name/Priority/Why/How blocks from a plain text upload."""
+        """Parse migration data using the provided content."""
         blocks = re.split(r"\n\s*\n+", content.strip())
         definitions: list[IssueDefinition] = []
         buffer = ""
@@ -181,31 +95,7 @@ class AIRecommendationIssueLoader:
 
     @classmethod
     def _parse_block(cls, block: str) -> IssueDefinition | None:
-        """
-        Executes the _parse_block workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                block (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Parse block using the provided block."""
 
         normalized = re.sub(r"^\s*\d+\.", "", block.strip())
         error_match = re.search(r"Error Name\s*=\s*(.+)", normalized, flags=re.IGNORECASE)
@@ -224,31 +114,7 @@ class AIRecommendationIssueLoader:
 
     def _definition_path(self) -> Path | None:
         # Prefer project-local files; use Downloads only for the default app repository.
-        """
-        Executes the _definition_path workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle definition path for the migration workflow."""
 
         candidates: list[Path] = []
         if self.configured_path:
@@ -269,62 +135,14 @@ class AIRecommendationIssueLoader:
         return None
 
     def _uses_default_repository(self) -> bool:
-        """
-        Executes the _uses_default_repository workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle uses default repository for the migration workflow."""
 
         output = self.repository.output_folder
         return output == Path("output") or output.resolve() == (Path.cwd() / "output").resolve()
 
     def _metadata_contexts(self) -> list[dict[str, str]]:
         # Build the same hierarchy that is rendered in the recommendation table.
-        """
-        Executes the _metadata_contexts workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle metadata contexts for the migration workflow."""
 
         workflows_by_file = {
             Path(row.get("file_name", "")).name: row.get("workflow_name", "")
@@ -360,32 +178,7 @@ class AIRecommendationIssueLoader:
         self, definition: IssueDefinition, contexts: Iterable[dict[str, str]]
     ) -> list[dict[str, str]]:
         # Use broad issue tokens so uploaded business issue names can map to XML constructs.
-        """
-        Executes the _matching_contexts workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                definition (object): Value supplied by the caller and used by the workflow.
-                contexts (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle matching contexts using the provided definition and contexts."""
 
         issue_key = self._issue_key(definition.error_name)
         matches: list[dict[str, str]] = []
@@ -404,31 +197,7 @@ class AIRecommendationIssueLoader:
 
     @staticmethod
     def _issue_key(error_name: str) -> str:
-        """
-        Executes the _issue_key workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                error_name (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle issue key using the provided error_name."""
 
         value = error_name.lower()
         if "sequence" in value:
@@ -443,32 +212,7 @@ class AIRecommendationIssueLoader:
 
     @staticmethod
     def _is_match(issue_key: str, haystack: str) -> bool:
-        """
-        Executes the _is_match workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                issue_key (object): Value supplied by the caller and used by the workflow.
-                haystack (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle is match using the provided issue_key and haystack."""
 
         if issue_key == "sequence":
             return "sequence" in haystack
@@ -479,31 +223,7 @@ class AIRecommendationIssueLoader:
         return issue_key in haystack
 
     def _xml_text(self, file_name: str) -> str:
-        """
-        Executes the _xml_text workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                file_name (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle xml text using the provided file_name."""
 
         if not file_name:
             return ""
@@ -520,34 +240,7 @@ class AIRecommendationIssueLoader:
         migration_context: dict[str, object],
         detected: bool,
     ) -> FailureRecord:
-        """
-        Executes the _failure workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                definition (object): Value supplied by the caller and used by the workflow.
-                context (object): Value supplied by the caller and used by the workflow.
-                migration_context (object): Value supplied by the caller and used by the workflow.
-                detected (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle failure for the migration workflow."""
 
         asset = self._asset_name(definition, context)
         # Store the uploaded priority in context so fallback generation preserves it.
@@ -577,32 +270,7 @@ class AIRecommendationIssueLoader:
 
     @staticmethod
     def _asset_name(definition: IssueDefinition, context: dict[str, str]) -> str:
-        """
-        Executes the _asset_name workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                definition (object): Value supplied by the caller and used by the workflow.
-                context (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle asset name using the provided definition and context."""
 
         transformation = context.get("transformation", "")
         mapping = context.get("mapping", "")
@@ -615,31 +283,7 @@ class AIRecommendationIssueLoader:
 
     @staticmethod
     def _placeholder_context(index: int) -> dict[str, str]:
-        """
-        Executes the _placeholder_context workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                index (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle placeholder context using the provided index."""
 
         suffix = index + 1
         return {

@@ -1,19 +1,6 @@
 """
-Module: business/complexity/complexity_engine.py
-
-Purpose:
-    This module supports mapping complexity assessment for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the mapping complexity assessment area and scores mappings based on metadata patterns and migration complexity indicators. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support complexity engine for migration business logic.
+Parses, validates, assesses, and remediates PowerCenter metadata.
 """
 
 from __future__ import annotations
@@ -28,23 +15,12 @@ from common.config.config import AppConfig
 
 @dataclass(frozen=True)
 class ComplexityResult:
-    """
-    Represents the ComplexityResult component in the mapping complexity assessment area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that scores mappings based on metadata patterns and migration complexity indicators. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Stores computed output from a migration workflow."""
 
     file_name: str
     folder_name: str
+    workflow_name: str
+    session_name: str
     mapping_name: str
     transformation_count: int
     complexity: str
@@ -53,7 +29,7 @@ class ComplexityResult:
 
 
 class ComplexityClassifier:
-    """Rule-based complexity classifier for representative PowerCenter mappings."""
+    """Encapsulates complexity classifier behavior for migration workflows."""
 
     COMPLEX_TYPES = {
         "aggregator",
@@ -71,32 +47,7 @@ class ComplexityClassifier:
     }
 
     def __init__(self, config: AppConfig, logger) -> None:
-        """
-        Executes the __init__ workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                config (object): Value supplied by the caller and used by the workflow.
-                logger (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data using the provided config and logger."""
 
         self.config = config
         self.logger = logger
@@ -105,75 +56,37 @@ class ComplexityClassifier:
         self.metadata_folder = self.output_folder / "metadata_tables"
 
     def classify(self) -> list[ComplexityResult]:
-        """
-        Executes the classify workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Classify migration data for the migration workflow."""
 
         mappings = self._read_csv("mappings.csv")
         transformations = self._read_csv("transformations.csv")
         instances = self._read_csv("instances.csv")
+        sessions = self._read_csv("sessions.csv")
+        workflows = self._read_csv("workflows.csv")
 
         transformations_by_mapping = self._group_rows(transformations)
         instances_by_mapping = self._group_rows(instances)
+        sessions_by_mapping = self._index_sessions(sessions)
+        workflows_by_xml = self._index_workflows(workflows)
 
         results: list[ComplexityResult] = []
         for mapping in mappings:
             key = self._mapping_key(mapping)
             mapping_transformations = transformations_by_mapping.get(key, [])
             mapping_instances = instances_by_mapping.get(key, [])
-            result = self._classify_mapping(mapping, mapping_transformations, mapping_instances)
+            result = self._classify_mapping(
+                mapping,
+                mapping_transformations,
+                mapping_instances,
+                workflows_by_xml.get(Path(mapping.get("file_name", "")).name, ""),
+                sessions_by_mapping.get(key, ""),
+            )
             results.append(result)
 
         return sorted(results, key=lambda item: (item.file_name, item.mapping_name))
 
     def write_report(self, results: Iterable[ComplexityResult]) -> None:
-        """
-        Executes the write_report workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                results (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write report using the provided results."""
 
         rows = list(results)
         self.output_folder.mkdir(parents=True, exist_ok=True)
@@ -185,7 +98,8 @@ class ComplexityClassifier:
                 csv_file,
                 fieldnames=[
                     "XML",
-                    "Folder",
+                    "Workflow",
+                    "Session",
                     "Mapping",
                     "Transformation Count",
                     "Complexity",
@@ -198,7 +112,8 @@ class ComplexityClassifier:
                 writer.writerow(
                     {
                         "XML": row.file_name,
-                        "Folder": row.folder_name,
+                        "Workflow": row.workflow_name,
+                        "Session": row.session_name,
                         "Mapping": row.mapping_name,
                         "Transformation Count": row.transformation_count,
                         "Complexity": row.complexity,
@@ -249,6 +164,7 @@ class ComplexityClassifier:
         )
         markdown_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
+        self._persist_report_to_mysql(csv_path)
         self.logger.info("Complexity classification written to %s and %s", csv_path, markdown_path)
 
     def _classify_mapping(
@@ -256,34 +172,10 @@ class ComplexityClassifier:
         mapping: dict[str, str],
         transformations: list[dict[str, str]],
         instances: list[dict[str, str]],
+        workflow_name: str,
+        session_name: str,
     ) -> ComplexityResult:
-        """
-        Executes the _classify_mapping workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                mapping (object): Value supplied by the caller and used by the workflow.
-                transformations (object): Value supplied by the caller and used by the workflow.
-                instances (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Classify mapping for the migration workflow."""
 
         transformation_count = self._to_int(mapping.get("transformation_count", "0"))
         sql_override_count = self._to_int(mapping.get("sql_override_count", "0"))
@@ -346,6 +238,8 @@ class ComplexityClassifier:
         return ComplexityResult(
             file_name=mapping.get("file_name", ""),
             folder_name=mapping.get("folder_name", ""),
+            workflow_name=workflow_name,
+            session_name=session_name,
             mapping_name=mapping.get("mapping_name", ""),
             transformation_count=transformation_count,
             complexity=complexity,
@@ -355,31 +249,7 @@ class ComplexityClassifier:
 
     @staticmethod
     def _complexity_band(score: int) -> str:
-        """
-        Executes the _complexity_band workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                score (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle complexity band using the provided score."""
 
         if score <= 30:
             return "Simple"
@@ -388,31 +258,7 @@ class ComplexityClassifier:
         return "Complex"
 
     def _read_csv(self, file_name: str) -> list[dict[str, str]]:
-        """
-        Executes the _read_csv workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                file_name (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle read csv using the provided file_name."""
 
         path = self.metadata_folder / file_name
         if not path.exists():
@@ -422,31 +268,7 @@ class ComplexityClassifier:
 
     @staticmethod
     def _group_rows(rows: Iterable[dict[str, str]]) -> dict[tuple[str, str, str], list[dict[str, str]]]:
-        """
-        Executes the _group_rows workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle group rows using the provided rows."""
 
         grouped: dict[tuple[str, str, str], list[dict[str, str]]] = {}
         for row in rows:
@@ -454,32 +276,28 @@ class ComplexityClassifier:
         return grouped
 
     @staticmethod
+    def _index_sessions(rows: Iterable[dict[str, str]]) -> dict[tuple[str, str, str], str]:
+        """Index session names by XML, folder, and mapping."""
+
+        return {
+            ComplexityClassifier._mapping_key(row): row.get("session_name", "")
+            for row in rows
+            if row.get("mapping_name")
+        }
+
+    @staticmethod
+    def _index_workflows(rows: Iterable[dict[str, str]]) -> dict[str, str]:
+        """Index workflow names by XML file name."""
+
+        return {
+            Path(row.get("file_name", "")).name: row.get("workflow_name", "")
+            for row in rows
+            if row.get("file_name")
+        }
+
+    @staticmethod
     def _mapping_key(row: dict[str, str]) -> tuple[str, str, str]:
-        """
-        Executes the _mapping_key workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle mapping key using the provided row."""
 
         return (
             row.get("file_name", ""),
@@ -489,62 +307,13 @@ class ComplexityClassifier:
 
     @staticmethod
     def _contains_type(types: set[str], expected: set[str]) -> bool:
-        """
-        Executes the _contains_type workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                types (object): Value supplied by the caller and used by the workflow.
-                expected (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle contains type using the provided types and expected."""
 
         return any(any(item == value or value in item for value in expected) for item in types)
 
     @staticmethod
     def _to_int(value: str) -> int:
-        """
-        Executes the _to_int workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle to int using the provided value."""
 
         try:
             return int(value)
@@ -552,33 +321,21 @@ class ComplexityClassifier:
             return 0
 
     def _resolve_path(self, path: str | Path) -> Path:
-        """
-        Executes the _resolve_path workflow for mapping complexity assessment.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that scores mappings based on metadata patterns and migration complexity indicators. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve path using the provided path."""
 
         candidate = Path(path)
         if candidate.is_absolute():
             return candidate
         return self.project_root / candidate
+
+    def _persist_report_to_mysql(self, csv_path: Path) -> None:
+        """Persist the generated complexity report without blocking CSV output."""
+
+        try:
+            from data.repositories.mapping_repository import MySqlMetadataRepository
+
+            repository = MySqlMetadataRepository(config=self.config, logger=self.logger)
+            count = repository.persist_complexity_report(csv_path)
+            self.logger.info("Complexity classification report loaded into MySQL. rows=%s", count)
+        except Exception as exc:
+            self.logger.error("Unable to load complexity classification report into MySQL: %s", exc)

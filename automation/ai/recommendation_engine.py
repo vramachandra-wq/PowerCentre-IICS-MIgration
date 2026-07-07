@@ -1,19 +1,6 @@
 """
-Module: automation/ai/recommendation_engine.py
-
-Purpose:
-    This module supports AI recommendation and evaluation support for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the AI recommendation and evaluation support area and connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support recommendation engine for automation data and validation workflows.
+Prepares metrics, findings, and AI assistance outputs.
 """
 
 from __future__ import annotations
@@ -38,7 +25,7 @@ from business.validation.readiness_engine import RemediationReportLoader
 
 
 class RecommendationEngine:
-    """Generates AI recommendations for unresolved post-remediation failures."""
+    """Runs focused migration processing and analysis logic."""
 
     def __init__(
         self,
@@ -47,34 +34,7 @@ class RecommendationEngine:
         client: RecommendationModelClient | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
-        """
-        Executes the __init__ workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                repository (object): Value supplied by the caller and used by the workflow.
-                config (object): Value supplied by the caller and used by the workflow.
-                client (object): Value supplied by the caller and used by the workflow.
-                logger (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data for the migration workflow."""
 
         self.repository = repository or ReportRepository()
         self.config = config or AIRecommendationConfig()
@@ -83,31 +43,7 @@ class RecommendationEngine:
         self.report_loader = RemediationReportLoader(self.repository.output_folder)
 
     def build_failures(self) -> list[FailureRecord]:
-        """
-        Executes the build_failures workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Build failures for the migration workflow."""
 
         failures = self._from_remediation_report()
         if not failures:
@@ -123,36 +59,13 @@ class RecommendationEngine:
         return failures
 
     def recommend(self) -> list[RecommendationResult]:
-        """
-        Executes the recommend workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Recommend migration data for the migration workflow."""
 
         failures = self.build_failures()
         if not failures:
             return []
         try:
+            # Use the injected client in tests; otherwise create the configured model client.
             client = self.client or HuggingFaceQwenRecommendationClient(self.config)
         except Exception as exc:
             self._log_warning("AI recommendation client unavailable: %s", exc)
@@ -163,6 +76,7 @@ class RecommendationEngine:
             started = time.perf_counter()
             try:
                 payload = client.recommend(failure)
+                # Normalize model output before exposing it to API and report layers.
                 recommendation = RecommendationResponseParser.parse(payload)
                 elapsed = int((time.perf_counter() - started) * 1000)
                 results.append(RecommendationResult(failure, recommendation, elapsed))
@@ -173,31 +87,7 @@ class RecommendationEngine:
         return results
 
     def _from_remediation_report(self) -> list[FailureRecord]:
-        """
-        Executes the _from_remediation_report workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle from remediation report for the migration workflow."""
 
         rows = self.repository.read_csv("remediation_report.csv")
         validation_rows = self.repository.read_csv("validation_report.csv")
@@ -217,31 +107,7 @@ class RecommendationEngine:
         return failures
 
     def _from_validation_report(self) -> list[FailureRecord]:
-        """
-        Executes the _from_validation_report workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle from validation report for the migration workflow."""
 
         rows = self.repository.read_csv("validation_report.csv")
         metadata = self._metadata_context()
@@ -266,34 +132,7 @@ class RecommendationEngine:
         metadata: dict[str, dict[str, str]],
         validation_rows: list[dict[str, str]],
     ) -> FailureRecord:
-        """
-        Executes the _failure_from_row workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-                mapping (object): Value supplied by the caller and used by the workflow.
-                metadata (object): Value supplied by the caller and used by the workflow.
-                validation_rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle failure from row for the migration workflow."""
 
         context = metadata.get(mapping, {})
         asset = row.get("Asset") or row.get("Asset Name") or row.get("Before Value") or mapping
@@ -321,31 +160,7 @@ class RecommendationEngine:
 
     def _metadata_context(self) -> dict[str, dict[str, str]]:
         # Join parser output tables into mapping-level workflow/session context.
-        """
-        Executes the _metadata_context workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle metadata context for the migration workflow."""
 
         workflows_by_file = {
             Path(row.get("file_name", "")).name: row.get("workflow_name", "")
@@ -368,32 +183,7 @@ class RecommendationEngine:
         return context
 
     def _transformation_name(self, mapping: str, asset: str) -> str:
-        """
-        Executes the _transformation_name workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                mapping (object): Value supplied by the caller and used by the workflow.
-                asset (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle transformation name using the provided mapping and asset."""
 
         normalized_asset = self.report_loader._normalize_name(asset)
         for row in self.repository.read_csv("metadata_tables/transformations.csv"):
@@ -406,32 +196,7 @@ class RecommendationEngine:
 
     @staticmethod
     def _matching_validation_row(row: dict[str, str], validation_rows: Iterable[dict[str, str]]) -> dict[str, str]:
-        """
-        Executes the _matching_validation_row workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-                validation_rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle matching validation row using the provided row and validation_rows."""
 
         issue = row.get("Issue", "")
         asset = row.get("Asset", "")
@@ -442,31 +207,7 @@ class RecommendationEngine:
 
     @staticmethod
     def _resolved(row: dict[str, str]) -> bool:
-        """
-        Executes the _resolved workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolved using the provided row."""
 
         return str(row.get("Auto Fixed", "")).strip().lower() == "true" or row.get("Status", "").strip().lower() in {
             "resolved",
@@ -475,31 +216,7 @@ class RecommendationEngine:
 
     @staticmethod
     def _auto_fix_status(row: dict[str, str]) -> str:
-        """
-        Executes the _auto_fix_status workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle auto fix status using the provided row."""
 
         if str(row.get("Auto Fixed", "")).strip().lower() == "true":
             return "Auto Fixed"
@@ -514,31 +231,7 @@ class RecommendationEngine:
 
     @staticmethod
     def _error_details(row: dict[str, str]) -> str:
-        """
-        Executes the _error_details workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle error details using the provided row."""
 
         details = {
             "before_value": row.get("Before Value", ""),
@@ -551,63 +244,13 @@ class RecommendationEngine:
 
     @staticmethod
     def _dedupe_key(failure: FailureRecord) -> tuple[str, str, str, str]:
-        """
-        Executes the _dedupe_key workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                failure (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle dedupe key using the provided failure."""
 
         return (failure.mapping, failure.failure_type, failure.object_name, Path(failure.source_file).name)
 
     def _fallback_result(self, failure: FailureRecord, exc: Exception, elapsed_ms: int) -> RecommendationResult:
         # Uploaded issue definitions own their priority; other findings use inferred priority.
-        """
-        Executes the _fallback_result workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                failure (object): Value supplied by the caller and used by the workflow.
-                exc (object): Value supplied by the caller and used by the workflow.
-                elapsed_ms (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle fallback result for the migration workflow."""
 
         priority = str(failure.migration_context.get("defined_priority") or self.assign_priority(failure))
         root_cause = failure.root_cause or self.infer_root_cause(failure)
@@ -622,31 +265,7 @@ class RecommendationEngine:
 
     @staticmethod
     def assign_priority(failure: FailureRecord) -> str:
-        """
-        Executes the assign_priority workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                failure (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle assign priority using the provided failure."""
 
         text = " ".join(
             [
@@ -672,31 +291,7 @@ class RecommendationEngine:
 
     @staticmethod
     def infer_root_cause(failure: FailureRecord) -> str:
-        """
-        Executes the infer_root_cause workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                failure (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle infer root cause using the provided failure."""
 
         issue = failure.failure_type.replace("_", " ")
         object_name = failure.object_name or failure.mapping
@@ -718,32 +313,7 @@ class RecommendationEngine:
 
     @classmethod
     def _consultant_recommendation(cls, failure: FailureRecord, priority: str) -> str:
-        """
-        Executes the _consultant_recommendation workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                failure (object): Value supplied by the caller and used by the workflow.
-                priority (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle consultant recommendation using the provided failure and priority."""
 
         issue = failure.failure_type.replace("_", " ")
         object_name = failure.object_name or failure.mapping
@@ -792,31 +362,7 @@ class RecommendationEngine:
         )
 
     def _migration_context(self) -> dict[str, object]:
-        """
-        Executes the _migration_context workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle migration context for the migration workflow."""
 
         matrix_rows = self.repository.read_csv("automation/evaluation_matrix.csv")
         validation_summary = self.repository.read_json("automation/validation_summary.json")
@@ -857,32 +403,7 @@ class RecommendationEngine:
 
     @classmethod
     def _executive_summary(cls, failure: FailureRecord, priority: str) -> str:
-        """
-        Executes the _executive_summary workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                failure (object): Value supplied by the caller and used by the workflow.
-                priority (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle executive summary using the provided failure and priority."""
 
         context = failure.migration_context
         success_rate = cls._number(context.get("migration_success_rate"))
@@ -917,32 +438,7 @@ class RecommendationEngine:
 
     @staticmethod
     def _percentage(numerator: int, denominator: int) -> float:
-        """
-        Executes the _percentage workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                numerator (object): Value supplied by the caller and used by the workflow.
-                denominator (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle percentage using the provided numerator and denominator."""
 
         if denominator <= 0:
             return 0.0
@@ -950,31 +446,7 @@ class RecommendationEngine:
 
     @classmethod
     def _average(cls, values: Iterable[object]) -> float:
-        """
-        Executes the _average workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                values (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle average using the provided values."""
 
         numbers = [cls._number(value) for value in values if cls._is_number(value)]
         if not numbers:
@@ -983,31 +455,7 @@ class RecommendationEngine:
 
     @staticmethod
     def _number(value: object) -> float:
-        """
-        Executes the _number workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle number using the provided value."""
 
         try:
             return float(str(value))
@@ -1016,31 +464,7 @@ class RecommendationEngine:
 
     @staticmethod
     def _to_int(value: object) -> int:
-        """
-        Executes the _to_int workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle to int using the provided value."""
 
         try:
             return int(float(str(value)))
@@ -1049,31 +473,7 @@ class RecommendationEngine:
 
     @staticmethod
     def _is_number(value: object) -> bool:
-        """
-        Executes the _is_number workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle is number using the provided value."""
 
         try:
             float(str(value))
@@ -1082,31 +482,7 @@ class RecommendationEngine:
         return True
 
     def _log_warning(self, message: str, *args: object) -> None:
-        """
-        Executes the _log_warning workflow for AI recommendation and evaluation support.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                message (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that connects validation findings, prompt/model execution, fallback recommendations, and report-ready AI outputs. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle log warning using the provided message and args."""
 
         if self.logger:
             self.logger.warning(message, *args)

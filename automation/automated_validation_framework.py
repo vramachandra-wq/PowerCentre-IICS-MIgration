@@ -1,19 +1,6 @@
 """
-Module: automation/automated_validation_framework.py
-
-Purpose:
-    This module supports automated validation reporting for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the automated validation reporting area and builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support automated validation framework for automation data and validation workflows.
+Prepares metrics, findings, and AI assistance outputs.
 """
 
 from __future__ import annotations
@@ -38,7 +25,7 @@ from business.validation.ai_validation_engine import AIValidationConfig, AIValid
 
 @dataclass(frozen=True)
 class AutomationConfig:
-    """Runtime configuration for the automated validation framework."""
+    """Stores configuration values used by the application."""
 
     output_folder: Path
     reports_folder: Path
@@ -57,43 +44,12 @@ class AutomationConfig:
 
 
 class AutomatedValidationFramework:
-    """
-    Orchestrates generated metadata, validation, remediation, and readiness outputs into rule-based reports.
-
-    This class does not reimplement validation, datatype, remediation, readiness,
-    or risk logic. It consumes existing artifacts and normalizes them into a
-    single mapping-level evaluation matrix plus derived datasets.
-    """
+    """Encapsulates automated validation framework behavior for migration workflows."""
 
     DEFAULT_CONFIG_PATH = Path("config/automation_config.json")
 
     def __init__(self, config_path: str | Path | None = None, logger: logging.Logger | None = None) -> None:
-        """
-        Executes the __init__ workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                config_path (object): Value supplied by the caller and used by the workflow.
-                logger (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data using the provided config_path and logger."""
 
         self.project_root = Path.cwd()
         self.config_path = self._resolve(config_path or self.DEFAULT_CONFIG_PATH)
@@ -102,31 +58,7 @@ class AutomatedValidationFramework:
         self.repository = ReportRepository(self.config.output_folder, self.config.reports_folder)
 
     def run(self) -> dict[str, Any]:
-        """
-        Executes the run workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Run migration data for the migration workflow."""
 
         start_time = datetime.now(UTC)
         try:
@@ -209,31 +141,7 @@ class AutomatedValidationFramework:
             self._close_logger_handlers()
 
     def _validate_prerequisites(self) -> None:
-        """
-        Executes the _validate_prerequisites workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Validate prerequisites for the migration workflow."""
 
         required = [
             self.config.output_folder / "metadata_tables" / "mappings.csv",
@@ -248,31 +156,7 @@ class AutomatedValidationFramework:
             raise FileNotFoundError(message)
 
     def _load_config(self, path: Path) -> AutomationConfig:
-        """
-        Executes the _load_config workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load config using the provided path."""
 
         if not path.exists():
             raise FileNotFoundError(f"Automation config not found: {path}")
@@ -300,31 +184,7 @@ class AutomatedValidationFramework:
 
     @staticmethod
     def _load_ai_validation_config(payload: dict[str, Any]) -> AIValidationConfig:
-        """
-        Executes the _load_ai_validation_config workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                payload (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load ai validation config using the provided payload."""
 
         return AIValidationConfig(
             model_name=str(payload.get("model_name", "Qwen/Qwen3-8B")),
@@ -339,31 +199,7 @@ class AutomatedValidationFramework:
 
     @staticmethod
     def _load_ai_recommendation_config(payload: dict[str, Any]) -> AIRecommendationConfig:
-        """
-        Executes the _load_ai_recommendation_config workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                payload (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Load ai recommendation config using the provided payload."""
 
         return AIRecommendationConfig(
             model_name=str(payload.get("model_name", "Qwen/Qwen3-8B")),
@@ -377,7 +213,7 @@ class AutomatedValidationFramework:
         )
 
     def _execute_existing_modules(self) -> list[str]:
-        """Runs existing report builders without duplicating their logic."""
+        """Handle execute existing modules for the migration workflow."""
         from business.validation.Rule_Based_Validation_Engine import build_remediation_report
         from business.validation.batch_xml_processor import run_batch_xml_remediation
         from business.validation.datatype_harmonization import build_datatype_mismatch_report
@@ -414,31 +250,7 @@ class AutomatedValidationFramework:
         return executed
 
     def _sync_latest_remediation_report(self) -> None:
-        """
-        Executes the _sync_latest_remediation_report workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle sync latest remediation report for the migration workflow."""
 
         latest = self.config.output_folder / "remediation_report_latest.csv"
         target = self.config.output_folder / "remediation_report.csv"
@@ -454,31 +266,7 @@ class AutomatedValidationFramework:
             )
 
     def _create_logger(self) -> logging.Logger:
-        """
-        Executes the _create_logger workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Create logger for the migration workflow."""
 
         self.config.logs_folder.mkdir(parents=True, exist_ok=True)
         logger = logging.getLogger("automation")
@@ -491,31 +279,7 @@ class AutomatedValidationFramework:
         return logger
 
     def _close_logger_handlers(self) -> None:
-        """
-        Executes the _close_logger_handlers workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle close logger handlers for the migration workflow."""
 
         for handler in list(self.logger.handlers):
             handler.flush()
@@ -523,31 +287,7 @@ class AutomatedValidationFramework:
             self.logger.removeHandler(handler)
 
     def _resolve(self, path: str | Path) -> Path:
-        """
-        Executes the _resolve workflow for automated validation reporting.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve using the provided path."""
 
         candidate = Path(path)
         if candidate.is_absolute():
@@ -556,31 +296,7 @@ class AutomatedValidationFramework:
 
 
 def main() -> None:
-    """
-    Executes the main workflow for automated validation reporting.
-    
-    Purpose:
-        Support the module responsibility by performing one focused step in the migration assessment process.
-    
-    Workflow:
-        1. Receive inputs from the caller or surrounding service layer.
-        2. Apply the existing project logic without changing business rules.
-        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-    
-    Parameters:
-    None.
-    
-    Returns:
-        object:
-            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-    
-    Raises:
-        Exception:
-            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-    
-    Implementation Notes:
-        This function belongs to the layer that builds dashboard, evaluation, summary, and consolidated report artifacts from migration assessment data. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-    """
+    """Handle main for the migration workflow."""
 
     parser = argparse.ArgumentParser(description="Generate automated validation evaluation artifacts.")
     parser.add_argument(

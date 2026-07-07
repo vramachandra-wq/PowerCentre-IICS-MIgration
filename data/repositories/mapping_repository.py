@@ -1,19 +1,6 @@
 """
-Module: data/repositories/mapping_repository.py
-
-Purpose:
-    This module supports metadata persistence adapters for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the metadata persistence adapters area and encapsulates access to stored metadata and mapping information. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support mapping repository for migration data structures and persistence.
+Defines models and repository access for metadata workflows.
 """
 
 from __future__ import annotations
@@ -28,7 +15,7 @@ from common.config.config import AppConfig
 
 
 class MySqlMetadataRepository:
-    """Persists canonical PowerCenter metadata into the central MySQL repository."""
+    """Handles persistence operations for migration metadata."""
 
     TABLES = [
         "connectors",
@@ -40,32 +27,7 @@ class MySqlMetadataRepository:
     ]
 
     def __init__(self, config: AppConfig, logger) -> None:
-        """
-        Executes the __init__ workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                config (object): Value supplied by the caller and used by the workflow.
-                logger (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data using the provided config and logger."""
 
         self.config = config
         self.logger = logger
@@ -74,31 +36,7 @@ class MySqlMetadataRepository:
         self.canonical_tables_folder = self.output_folder / "canonical" / "tables"
 
     def persist(self) -> dict[str, int]:
-        """
-        Executes the persist workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle persist for the migration workflow."""
 
         self._ensure_database()
         engine = self._database_engine()
@@ -218,32 +156,42 @@ class MySqlMetadataRepository:
         self.logger.info("Central metadata repository loaded. %s", summary)
         return summary
 
+    def persist_complexity_report(self, report_path: str | Path | None = None) -> int:
+        """Refresh the MySQL complexity classification report table."""
+
+        self._ensure_database()
+        path = Path(report_path) if report_path else self.output_folder / "complexity_classification_report.csv"
+        if not path.exists():
+            raise FileNotFoundError(f"Complexity classification report not found: {path}")
+
+        with path.open("r", newline="", encoding="utf-8-sig") as csv_file:
+            rows = list(csv.DictReader(csv_file))
+
+        engine = self._database_engine()
+        with engine.begin() as connection:
+            self._create_complexity_report_table(connection)
+            connection.execute(text("DELETE FROM complexity_classification_report"))
+            if rows:
+                connection.execute(
+                    text(
+                        """
+                        INSERT INTO complexity_classification_report (
+                            `XML`, `Workflow`, `Session`, `Mapping`,
+                            `Transformation Count`, `Complexity`, `Score`, `Reason`
+                        )
+                        VALUES (
+                            :xml, :workflow, :session, :mapping,
+                            :transformation_count, :complexity, :score, :reason
+                        )
+                        """
+                    ),
+                    [self._complexity_report_row(row) for row in rows],
+                )
+
+        return len(rows)
+
     def _drop_existing_tables(self, connection) -> None:
-        """
-        Executes the _drop_existing_tables workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                connection (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle drop existing tables using the provided connection."""
 
         connection.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
         for table in self.TABLES:
@@ -251,31 +199,7 @@ class MySqlMetadataRepository:
         connection.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
 
     def _create_tables(self, connection) -> None:
-        """
-        Executes the _create_tables workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                connection (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Create tables using the provided connection."""
 
         connection.execute(
             text(
@@ -396,32 +320,31 @@ class MySqlMetadataRepository:
             )
         )
 
+    def _create_complexity_report_table(self, connection) -> None:
+        """Create the complexity report table when it is missing."""
+
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS complexity_classification_report (
+                    `XML` VARCHAR(255),
+                    `Workflow` VARCHAR(255),
+                    `Session` VARCHAR(255),
+                    `Mapping` VARCHAR(255),
+                    `Transformation Count` INT DEFAULT 0,
+                    `Complexity` VARCHAR(20),
+                    `Score` INT DEFAULT 0,
+                    `Reason` TEXT,
+                    loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_complexity_report_mapping (`Mapping`),
+                    INDEX idx_complexity_report_complexity (`Complexity`)
+                )
+                """
+            )
+        )
+
     def _ensure_database(self) -> None:
-        """
-        Executes the _ensure_database workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle ensure database for the migration workflow."""
 
         self._validate_identifier(self.config.database.database)
         engine = self._server_engine()
@@ -434,62 +357,14 @@ class MySqlMetadataRepository:
             )
 
     def _server_engine(self):
-        """
-        Executes the _server_engine workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle server engine for the migration workflow."""
 
         db = self.config.database
         url = f"{db.driver}://{quote_plus(db.username)}:{quote_plus(db.password)}@{db.host}:{db.port}"
         return create_engine(url, future=True)
 
     def _database_engine(self):
-        """
-        Executes the _database_engine workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle database engine for the migration workflow."""
 
         db = self.config.database
         url = (
@@ -499,31 +374,7 @@ class MySqlMetadataRepository:
         return create_engine(url, future=True)
 
     def _read_csv(self, file_name: str) -> list[dict[str, str]]:
-        """
-        Executes the _read_csv workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                file_name (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle read csv using the provided file_name."""
 
         path = self.canonical_tables_folder / file_name
         if not path.exists():
@@ -533,31 +384,7 @@ class MySqlMetadataRepository:
 
     @staticmethod
     def _mapping_row(row: dict[str, str]) -> dict[str, object]:
-        """
-        Executes the _mapping_row workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle mapping row using the provided row."""
 
         return {
             **row,
@@ -568,31 +395,7 @@ class MySqlMetadataRepository:
 
     @staticmethod
     def _transformation_row(row: dict[str, str]) -> dict[str, object]:
-        """
-        Executes the _transformation_row workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                row (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle transformation row using the provided row."""
 
         return {
             **row,
@@ -601,32 +404,23 @@ class MySqlMetadataRepository:
         }
 
     @staticmethod
+    def _complexity_report_row(row: dict[str, str]) -> dict[str, object]:
+        """Convert complexity report CSV values for MySQL insertion."""
+
+        return {
+            "xml": row.get("XML", ""),
+            "workflow": row.get("Workflow", ""),
+            "session": row.get("Session", ""),
+            "mapping": row.get("Mapping", ""),
+            "transformation_count": MySqlMetadataRepository._to_int(row.get("Transformation Count", "")),
+            "complexity": row.get("Complexity", ""),
+            "score": MySqlMetadataRepository._to_int(row.get("Score", "")),
+            "reason": row.get("Reason", ""),
+        }
+
+    @staticmethod
     def _to_int(value: str) -> int:
-        """
-        Executes the _to_int workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle to int using the provided value."""
 
         try:
             return int(value or 0)
@@ -635,61 +429,13 @@ class MySqlMetadataRepository:
 
     @staticmethod
     def _validate_identifier(value: str) -> None:
-        """
-        Executes the _validate_identifier workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Validate identifier using the provided value."""
 
         if not value.replace("_", "").isalnum():
             raise ValueError(f"Unsafe database identifier: {value}")
 
     def _resolve_path(self, path: str | Path) -> Path:
-        """
-        Executes the _resolve_path workflow for metadata persistence adapters.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that encapsulates access to stored metadata and mapping information. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve path using the provided path."""
 
         candidate = Path(path)
         if candidate.is_absolute():

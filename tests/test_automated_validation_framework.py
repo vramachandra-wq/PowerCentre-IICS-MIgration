@@ -1,19 +1,6 @@
 """
-Module: tests/test_automated_validation_framework.py
-
-Purpose:
-    This module supports automated regression tests for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the automated regression tests area and verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support test automated validation framework for automated regression coverage.
+Verifies migration parsing, validation, API, and AI behavior.
 """
 
 import csv
@@ -26,47 +13,10 @@ from automation.automated_validation_framework import AutomatedValidationFramewo
 
 
 class AutomatedValidationFrameworkTests(unittest.TestCase):
-    """
-    Represents the AutomatedValidationFrameworkTests component in the automated regression tests area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates automated validation framework tests behavior for migration workflows."""
 
     def test_framework_generates_ai_ready_outputs_from_existing_reports(self) -> None:
-        """
-        Executes the test_framework_generates_ai_ready_outputs_from_existing_reports workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify framework generates ai ready outputs from existing reports behavior."""
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -111,6 +61,11 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
             matrix = self._read_csv(reports / "evaluation_matrix.csv")
             self.assertEqual("M_SAMPLE", matrix[0]["mapping"])
             self.assertEqual("0", matrix[0]["remaining_unresolved"])
+            self.assertNotIn("source_count", matrix[0])
+            self.assertNotIn("ai_recommendation", matrix[0])
+            self.assertNotIn("risk_reduction", matrix[0])
+            self.assertNotIn("blocking_issues", matrix[0])
+            self.assertNotIn("overall_health_score", matrix[0])
             self.assertIn(matrix[0]["migration_status"], {"READY", "READY_WITH_MONITORING", "NEEDS_REVIEW"})
             dashboard = self._read_csv(reports / "dashboard_dataset.csv")
             self.assertNotIn("root_cause", dashboard[0])
@@ -119,32 +74,7 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
 
     @staticmethod
     def _write_artifacts(output: Path, rules_path: Path) -> None:
-        """
-        Executes the _write_artifacts workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                output (object): Value supplied by the caller and used by the workflow.
-                rules_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify write artifacts behavior."""
 
         metadata = output / "metadata_tables"
         metadata.mkdir(parents=True)
@@ -210,11 +140,12 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
         )
         AutomatedValidationFrameworkTests._write_csv(
             output / "complexity_classification_report.csv",
-            ["XML", "Folder", "Mapping", "Transformation Count", "Complexity", "Score", "Reason"],
+            ["XML", "Workflow", "Session", "Mapping", "Transformation Count", "Complexity", "Score", "Reason"],
             [
                 {
                     "XML": "sample.XML",
-                    "Folder": "FOLDER",
+                    "Workflow": "WF_SAMPLE",
+                    "Session": "S_SAMPLE",
                     "Mapping": "M_SAMPLE",
                     "Transformation Count": "2",
                     "Complexity": "Medium",
@@ -283,33 +214,7 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
 
     @staticmethod
     def _write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
-        """
-        Executes the _write_csv workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-                fieldnames (object): Value supplied by the caller and used by the workflow.
-                rows (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify write csv behavior."""
 
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", newline="", encoding="utf-8") as csv_file:
@@ -319,31 +224,7 @@ class AutomatedValidationFrameworkTests(unittest.TestCase):
 
     @staticmethod
     def _read_csv(path: Path) -> list[dict[str, str]]:
-        """
-        Executes the _read_csv workflow for automated regression tests.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Verify read csv behavior."""
 
         with path.open("r", newline="", encoding="utf-8") as csv_file:
             return list(csv.DictReader(csv_file))

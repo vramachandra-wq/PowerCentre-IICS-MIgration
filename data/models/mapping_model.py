@@ -1,19 +1,6 @@
 """
-Module: data/models/mapping_model.py
-
-Purpose:
-    This module supports domain data models for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the domain data models area and defines structured records used by parsers, validators, and reporting components. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support mapping model for migration data structures and persistence.
+Defines models and repository access for metadata workflows.
 """
 
 from __future__ import annotations
@@ -24,20 +11,7 @@ from typing import Any
 
 @dataclass
 class SourceColumn:
-    """
-    Represents the SourceColumn component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates source column behavior for migration workflows."""
 
     column_name: str
     datatype: str
@@ -47,20 +21,7 @@ class SourceColumn:
 
 @dataclass
 class SourceMetadata:
-    """
-    Represents the SourceMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates source metadata behavior for migration workflows."""
 
     source_name: str
     database_type: str
@@ -70,20 +31,7 @@ class SourceMetadata:
 
 @dataclass
 class TargetColumn:
-    """
-    Represents the TargetColumn component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates target column behavior for migration workflows."""
 
     column_name: str
     datatype: str
@@ -93,20 +41,7 @@ class TargetColumn:
 
 @dataclass
 class TargetMetadata:
-    """
-    Represents the TargetMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates target metadata behavior for migration workflows."""
 
     target_name: str
     database_type: str
@@ -115,20 +50,7 @@ class TargetMetadata:
 
 @dataclass
 class TransformationPort:
-    """
-    Represents the TransformationPort component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates transformation port behavior for migration workflows."""
 
     port_name: str
     datatype: str
@@ -140,20 +62,7 @@ class TransformationPort:
 
 @dataclass
 class TransformationMetadata:
-    """
-    Represents the TransformationMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates transformation metadata behavior for migration workflows."""
 
     transformation_name: str
     transformation_type: str
@@ -164,20 +73,7 @@ class TransformationMetadata:
 
 @dataclass
 class ConnectorMetadata:
-    """
-    Represents the ConnectorMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates connector metadata behavior for migration workflows."""
 
     from_instance: str
     from_field: str
@@ -189,20 +85,7 @@ class ConnectorMetadata:
 
 @dataclass
 class InstanceMetadata:
-    """
-    Represents the InstanceMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates instance metadata behavior for migration workflows."""
 
     instance_name: str
     instance_type: str
@@ -213,20 +96,7 @@ class InstanceMetadata:
 
 @dataclass
 class SqlOverrideMetadata:
-    """
-    Represents the SqlOverrideMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates sql override metadata behavior for migration workflows."""
 
     context_type: str
     context_name: str
@@ -236,20 +106,7 @@ class SqlOverrideMetadata:
 
 @dataclass
 class MappingMetadata:
-    """
-    Represents the MappingMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates mapping metadata behavior for migration workflows."""
 
     mapping_name: str
     is_valid: str
@@ -264,20 +121,7 @@ class MappingMetadata:
 
 @dataclass
 class SessionMetadata:
-    """
-    Represents the SessionMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates session metadata behavior for migration workflows."""
 
     session_name: str
     mapping_name: str
@@ -289,20 +133,7 @@ class SessionMetadata:
 
 @dataclass
 class WorkflowMetadata:
-    """
-    Represents the WorkflowMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates workflow metadata behavior for migration workflows."""
 
     workflow_name: str
     is_valid: str
@@ -319,20 +150,7 @@ class WorkflowMetadata:
 
 @dataclass
 class FolderMetadata:
-    """
-    Represents the FolderMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates folder metadata behavior for migration workflows."""
 
     folder_name: str
     repository_name: str
@@ -345,20 +163,7 @@ class FolderMetadata:
 
 @dataclass
 class ParsedXmlMetadata:
-    """
-    Represents the ParsedXmlMetadata component in the domain data models area.
-    
-    Purpose:
-        Provide a named object that groups related state and behavior for this module.
-    
-    Responsibilities:
-        - Encapsulate the data or operations required by the surrounding workflow.
-        - Collaborate with parser, validation, automation, API, or report components where this class is used.
-        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
-    
-    Architecture Notes:
-        This class is part of the project layer that defines structured records used by parsers, validators, and reporting components. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
-    """
+    """Encapsulates parsed xml metadata behavior for migration workflows."""
 
     file_name: str
     repository: dict[str, str]
@@ -366,31 +171,7 @@ class ParsedXmlMetadata:
 
 
 def to_plain_dict(value: Any) -> Any:
-    """
-    Executes the to_plain_dict workflow for domain data models.
-    
-    Purpose:
-        Support the module responsibility by performing one focused step in the migration assessment process.
-    
-    Workflow:
-        1. Receive inputs from the caller or surrounding service layer.
-        2. Apply the existing project logic without changing business rules.
-        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-    
-    Parameters:
-            value (object): Value supplied by the caller and used by the workflow.
-    
-    Returns:
-        object:
-            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-    
-    Raises:
-        Exception:
-            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-    
-    Implementation Notes:
-        This function belongs to the layer that defines structured records used by parsers, validators, and reporting components. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-    """
+    """Handle to plain dict using the provided value."""
 
     if is_dataclass(value):
         return {key: to_plain_dict(item) for key, item in asdict(value).items()}

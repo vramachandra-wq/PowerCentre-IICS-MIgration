@@ -1,19 +1,6 @@
 """
-Module: business/parser/xml_parser.py
-
-Purpose:
-    This module supports PowerCenter XML metadata parsing for the PowerCenter to IDMC migration assessment platform.
-
-Responsibilities:
-    - Provide the code and data structures needed by this part of the application.
-    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
-    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
-
-Architecture Context:
-    The file belongs to the PowerCenter XML metadata parsing area and extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
-
-Inputs and Outputs:
-    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+Support xml parser for migration business logic.
+Parses, validates, assesses, and remediates PowerCenter metadata.
 """
 
 from __future__ import annotations
@@ -51,35 +38,10 @@ from common.config.config import AppConfig
 
 
 class XMLParser:
-    """Coordinates batch parsing of PowerCenter XML exports into structured metadata."""
+    """Parses migration metadata into application structures."""
 
     def __init__(self, config: AppConfig, logger) -> None:
-        """
-        Executes the __init__ workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                config (object): Value supplied by the caller and used by the workflow.
-                logger (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Initialize migration data using the provided config and logger."""
 
         self.config = config
         self.logger = logger
@@ -94,31 +56,7 @@ class XMLParser:
         self.workflow_parser = WorkflowParser()
 
     def parse_folder(self) -> dict[str, Any]:
-        """
-        Executes the parse_folder workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-        None.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Parse folder for the migration workflow."""
 
         xml_files = sorted(self.xml_folder.glob("*.XML")) + sorted(self.xml_folder.glob("*.xml"))
         unique_files = sorted(set(xml_files))
@@ -147,31 +85,7 @@ class XMLParser:
         return {"parsed_files": parsed_files, "dataframes": tables, "errors": errors}
 
     def parse_file(self, xml_path: Path) -> ParsedXmlMetadata:
-        """
-        Executes the parse_file workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                xml_path (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Parse file using the provided xml_path."""
 
         xml_file = self._resolve_path(xml_path)
         tree = self.loader.parse(xml_file)
@@ -195,31 +109,7 @@ class XMLParser:
         return ParsedXmlMetadata(file_name=xml_file.name, repository=repository, folders=folders)
 
     def to_dataframes(self, parsed_files: list[ParsedXmlMetadata]) -> dict[str, Any]:
-        """
-        Executes the to_dataframes workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                parsed_files (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle to dataframes using the provided parsed_files."""
 
         rows = self._flatten(parsed_files)
         if pd is None:
@@ -228,31 +118,7 @@ class XMLParser:
         return {name: pd.DataFrame(data) for name, data in rows.items()}
 
     def _flatten(self, parsed_files: list[ParsedXmlMetadata]) -> dict[str, list[dict[str, Any]]]:
-        """
-        Executes the _flatten workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                parsed_files (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle flatten using the provided parsed_files."""
 
         tables: dict[str, list[dict[str, Any]]] = {
             "repositories": [],
@@ -298,33 +164,7 @@ class XMLParser:
 
     @staticmethod
     def _flatten_sources(sources, base, tables) -> None:
-        """
-        Executes the _flatten_sources workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                sources (object): Value supplied by the caller and used by the workflow.
-                base (object): Value supplied by the caller and used by the workflow.
-                tables (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle flatten sources for the migration workflow."""
 
         for source in sources:
             source_base = {**base, "source_name": source.source_name}
@@ -341,33 +181,7 @@ class XMLParser:
 
     @staticmethod
     def _flatten_targets(targets, base, tables) -> None:
-        """
-        Executes the _flatten_targets workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                targets (object): Value supplied by the caller and used by the workflow.
-                base (object): Value supplied by the caller and used by the workflow.
-                tables (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle flatten targets for the migration workflow."""
 
         for target in targets:
             target_base = {**base, "target_name": target.target_name}
@@ -383,33 +197,7 @@ class XMLParser:
 
     @staticmethod
     def _flatten_mappings(mappings, base, tables) -> None:
-        """
-        Executes the _flatten_mappings workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                mappings (object): Value supplied by the caller and used by the workflow.
-                base (object): Value supplied by the caller and used by the workflow.
-                tables (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle flatten mappings for the migration workflow."""
 
         for mapping in mappings:
             mapping_base = {**base, "mapping_name": mapping.mapping_name}
@@ -456,33 +244,7 @@ class XMLParser:
 
     @staticmethod
     def _flatten_sessions(sessions, base, tables) -> None:
-        """
-        Executes the _flatten_sessions workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                sessions (object): Value supplied by the caller and used by the workflow.
-                base (object): Value supplied by the caller and used by the workflow.
-                tables (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle flatten sessions for the migration workflow."""
 
         for session in sessions:
             session_base = {**base, "session_name": session.session_name}
@@ -501,33 +263,7 @@ class XMLParser:
 
     @staticmethod
     def _flatten_workflows(workflows, base, tables) -> None:
-        """
-        Executes the _flatten_workflows workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                workflows (object): Value supplied by the caller and used by the workflow.
-                base (object): Value supplied by the caller and used by the workflow.
-                tables (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle flatten workflows for the migration workflow."""
 
         for workflow in workflows:
             tables["workflows"].append(
@@ -548,61 +284,13 @@ class XMLParser:
             )
 
     def _write_json(self, parsed: ParsedXmlMetadata) -> None:
-        """
-        Executes the _write_json workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                parsed (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write json using the provided parsed."""
 
         output_file = self.json_output_folder / f"{Path(parsed.file_name).stem}.json"
         output_file.write_text(json.dumps(to_plain_dict(parsed), indent=2), encoding="utf-8")
 
     def _write_tables(self, tables: dict[str, Any]) -> None:
-        """
-        Executes the _write_tables workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                tables (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write tables using the provided tables."""
 
         for table_name, table in tables.items():
             output_file = self.table_output_folder / f"{table_name}.csv"
@@ -618,32 +306,7 @@ class XMLParser:
                 writer.writerows(rows)
 
     def _write_batch_summary(self, parsed_files: list[ParsedXmlMetadata], errors: list[dict[str, str]]) -> None:
-        """
-        Executes the _write_batch_summary workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                parsed_files (object): Value supplied by the caller and used by the workflow.
-                errors (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle write batch summary using the provided parsed_files and errors."""
 
         summary = {
             "processed_file_count": len(parsed_files),
@@ -658,31 +321,7 @@ class XMLParser:
 
     @staticmethod
     def _repository(root: Element) -> dict[str, str]:
-        """
-        Executes the _repository workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                root (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle repository using the provided root."""
 
         repository = root.find("REPOSITORY")
         if repository is None:
@@ -702,31 +341,7 @@ class XMLParser:
         }
 
     def _resolve_path(self, path_value: str | Path) -> Path:
-        """
-        Executes the _resolve_path workflow for PowerCenter XML metadata parsing.
-        
-        Purpose:
-            Support the module responsibility by performing one focused step in the migration assessment process.
-        
-        Workflow:
-            1. Receive inputs from the caller or surrounding service layer.
-            2. Apply the existing project logic without changing business rules.
-            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
-        
-        Parameters:
-                path_value (object): Value supplied by the caller and used by the workflow.
-        
-        Returns:
-            object:
-                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
-        
-        Raises:
-            Exception:
-                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
-        
-        Implementation Notes:
-            This function belongs to the layer that extracts mappings, transformations, sessions, workflows, sources, and targets from Informatica XML exports. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
-        """
+        """Handle resolve path using the provided path_value."""
 
         path = Path(path_value)
         return path if path.is_absolute() else self.project_root / path
