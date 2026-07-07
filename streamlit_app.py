@@ -1,4 +1,22 @@
-﻿from __future__ import annotations
+"""
+Module: streamlit_app.py
+
+Purpose:
+    This module supports Streamlit user interface for the PowerCenter to IDMC migration assessment platform.
+
+Responsibilities:
+    - Provide the code and data structures needed by this part of the application.
+    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
+    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
+
+Architecture Context:
+    The file belongs to the Streamlit user interface area and presents AI evaluation metrics and recommendation tables by calling the FastAPI backend. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
+
+Inputs and Outputs:
+    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+"""
+
+from __future__ import annotations
 
 import os
 
@@ -8,7 +26,16 @@ import streamlit as st
 from api.client import AIAPIClient, FastAPIClientError
 
 
-RECOMMENDATION_COLUMNS = ["Workflow", "Failures", "Root Cause", "AI Recommendation", "Priority", "AI Summary"]
+RECOMMENDATION_COLUMNS = [
+    # Keep this list synchronized with AIRecommendationAPIService.RESPONSE_COLUMNS.
+    "Workflow -> Session -> Mapping -> Transformations",
+    "Assets",
+    "Failures",
+    "Root Cause",
+    "AI Recommendation",
+    "Priority",
+    "AI Summary",
+]
 MATRIX_COLUMNS = [
     "Average Confidence",
     "F1 Score",
@@ -21,6 +48,32 @@ MATRIX_COLUMNS = [
 
 
 def main() -> None:
+    """
+    Executes the main workflow for Streamlit user interface.
+    
+    Purpose:
+        Support the module responsibility by performing one focused step in the migration assessment process.
+    
+    Workflow:
+        1. Receive inputs from the caller or surrounding service layer.
+        2. Apply the existing project logic without changing business rules.
+        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+    
+    Parameters:
+    None.
+    
+    Returns:
+        object:
+            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+    
+    Raises:
+        Exception:
+            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+    
+    Implementation Notes:
+        This function belongs to the layer that presents AI evaluation metrics and recommendation tables by calling the FastAPI backend. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+    """
+
     st.set_page_config(page_title="PC to IDMC AI Assistant", page_icon="AI", layout="wide")
     st.title("PowerCenter to IDMC AI Assistant")
 
@@ -47,15 +100,93 @@ def main() -> None:
 
 @st.cache_data(ttl=60, show_spinner=False)
 def load_evaluation(base_url: str) -> dict[str, object]:
+    """
+    Executes the load_evaluation workflow for Streamlit user interface.
+    
+    Purpose:
+        Support the module responsibility by performing one focused step in the migration assessment process.
+    
+    Workflow:
+        1. Receive inputs from the caller or surrounding service layer.
+        2. Apply the existing project logic without changing business rules.
+        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+    
+    Parameters:
+            base_url (object): Value supplied by the caller and used by the workflow.
+    
+    Returns:
+        object:
+            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+    
+    Raises:
+        Exception:
+            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+    
+    Implementation Notes:
+        This function belongs to the layer that presents AI evaluation metrics and recommendation tables by calling the FastAPI backend. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+    """
+
     return AIAPIClient(base_url=base_url).evaluation()
 
 
 @st.cache_data(ttl=60, show_spinner=False)
 def load_recommendations(base_url: str) -> list[dict[str, object]]:
+    """
+    Executes the load_recommendations workflow for Streamlit user interface.
+    
+    Purpose:
+        Support the module responsibility by performing one focused step in the migration assessment process.
+    
+    Workflow:
+        1. Receive inputs from the caller or surrounding service layer.
+        2. Apply the existing project logic without changing business rules.
+        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+    
+    Parameters:
+            base_url (object): Value supplied by the caller and used by the workflow.
+    
+    Returns:
+        object:
+            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+    
+    Raises:
+        Exception:
+            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+    
+    Implementation Notes:
+        This function belongs to the layer that presents AI evaluation metrics and recommendation tables by calling the FastAPI backend. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+    """
+
     return AIAPIClient(base_url=base_url).recommendations()
 
 
 def render_evaluation(client: AIAPIClient) -> None:
+    """
+    Executes the render_evaluation workflow for Streamlit user interface.
+    
+    Purpose:
+        Support the module responsibility by performing one focused step in the migration assessment process.
+    
+    Workflow:
+        1. Receive inputs from the caller or surrounding service layer.
+        2. Apply the existing project logic without changing business rules.
+        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+    
+    Parameters:
+            client (object): Value supplied by the caller and used by the workflow.
+    
+    Returns:
+        object:
+            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+    
+    Raises:
+        Exception:
+            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+    
+    Implementation Notes:
+        This function belongs to the layer that presents AI evaluation metrics and recommendation tables by calling the FastAPI backend. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+    """
+
     st.subheader("AI Evaluation Matrix")
     try:
         payload = load_evaluation(client.base_url)
@@ -77,6 +208,32 @@ def render_evaluation(client: AIAPIClient) -> None:
 
 
 def render_recommendations(client: AIAPIClient) -> None:
+    """
+    Executes the render_recommendations workflow for Streamlit user interface.
+    
+    Purpose:
+        Support the module responsibility by performing one focused step in the migration assessment process.
+    
+    Workflow:
+        1. Receive inputs from the caller or surrounding service layer.
+        2. Apply the existing project logic without changing business rules.
+        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+    
+    Parameters:
+            client (object): Value supplied by the caller and used by the workflow.
+    
+    Returns:
+        object:
+            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+    
+    Raises:
+        Exception:
+            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+    
+    Implementation Notes:
+        This function belongs to the layer that presents AI evaluation metrics and recommendation tables by calling the FastAPI backend. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+    """
+
     st.subheader("AI Recommendation Report")
     try:
         rows = load_recommendations(client.base_url)
@@ -89,6 +246,7 @@ def render_recommendations(client: AIAPIClient) -> None:
         return
 
     dataframe = pd.DataFrame(rows)
+    # Display only the stakeholder-facing recommendation columns in the requested order.
     dataframe = dataframe[[column for column in RECOMMENDATION_COLUMNS if column in dataframe.columns]]
 
     priority_filter = st.multiselect(
@@ -108,7 +266,10 @@ def render_recommendations(client: AIAPIClient) -> None:
     selected_index = st.selectbox(
         "Recommendation detail",
         options=list(dataframe.index),
-        format_func=lambda index: f"{dataframe.at[index, 'Workflow']} - {dataframe.at[index, 'Failures']}",
+        format_func=lambda index: (
+            f"{dataframe.at[index, 'Workflow -> Session -> Mapping -> Transformations']} - "
+            f"{dataframe.at[index, 'Failures']}"
+        ),
     )
     selected = dataframe.loc[selected_index]
     left, right = st.columns([1, 1])

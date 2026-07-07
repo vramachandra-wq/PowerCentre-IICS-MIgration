@@ -1,3 +1,21 @@
+"""
+Module: app.py
+
+Purpose:
+    This module supports application startup for the PowerCenter to IDMC migration assessment platform.
+
+Responsibilities:
+    - Provide the code and data structures needed by this part of the application.
+    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
+    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
+
+Architecture Context:
+    The file belongs to the application startup area and creates and wires the FastAPI application, routers, dependencies, and service entry points. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
+
+Inputs and Outputs:
+    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -23,6 +41,32 @@ def create_app():
 
 
 def parse_args() -> argparse.Namespace:
+    """
+    Executes the parse_args workflow for application startup.
+    
+    Purpose:
+        Support the module responsibility by performing one focused step in the migration assessment process.
+    
+    Workflow:
+        1. Receive inputs from the caller or surrounding service layer.
+        2. Apply the existing project logic without changing business rules.
+        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+    
+    Parameters:
+    None.
+    
+    Returns:
+        object:
+            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+    
+    Raises:
+        Exception:
+            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+    
+    Implementation Notes:
+        This function belongs to the layer that creates and wires the FastAPI application, routers, dependencies, and service entry points. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+    """
+
     parser = argparse.ArgumentParser(
         description="Explore Informatica PowerCenter XML exports and generate structure summaries."
     )
@@ -75,6 +119,32 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """
+    Executes the main workflow for application startup.
+    
+    Purpose:
+        Support the module responsibility by performing one focused step in the migration assessment process.
+    
+    Workflow:
+        1. Receive inputs from the caller or surrounding service layer.
+        2. Apply the existing project logic without changing business rules.
+        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+    
+    Parameters:
+    None.
+    
+    Returns:
+        object:
+            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+    
+    Raises:
+        Exception:
+            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+    
+    Implementation Notes:
+        This function belongs to the layer that creates and wires the FastAPI application, routers, dependencies, and service entry points. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+    """
+
     args = parse_args()
     config = ConfigLoader(Path(args.config)).load()
     logger = LoggerFactory.create_logger(config.logging, config.paths.log_folder)

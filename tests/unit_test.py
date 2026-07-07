@@ -1,3 +1,21 @@
+"""
+Module: tests/unit_test.py
+
+Purpose:
+    This module supports automated regression tests for the PowerCenter to IDMC migration assessment platform.
+
+Responsibilities:
+    - Provide the code and data structures needed by this part of the application.
+    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
+    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
+
+Architecture Context:
+    The file belongs to the automated regression tests area and verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
+
+Inputs and Outputs:
+    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+"""
+
 import csv
 import tempfile
 import unittest
@@ -11,7 +29,48 @@ from business.validation.validation_engine import ValidationEngine
 
 
 class DatatypeValidationTests(unittest.TestCase):
+    """
+    Represents the DatatypeValidationTests component in the automated regression tests area.
+    
+    Purpose:
+        Provide a named object that groups related state and behavior for this module.
+    
+    Responsibilities:
+        - Encapsulate the data or operations required by the surrounding workflow.
+        - Collaborate with parser, validation, automation, API, or report components where this class is used.
+        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
+    
+    Architecture Notes:
+        This class is part of the project layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
+    """
+
     def test_datatype_mapping_rules_map_aliases_and_recommend_decimal_scale(self) -> None:
+        """
+        Executes the test_datatype_mapping_rules_map_aliases_and_recommend_decimal_scale workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         engine = DatatypeMappingEngine()
 
         number = engine.map_datatype("NUMBER(18,6)")
@@ -31,6 +90,32 @@ class DatatypeValidationTests(unittest.TestCase):
         )
 
     def test_datatype_harmonization_detects_core_mismatches(self) -> None:
+        """
+        Executes the test_datatype_harmonization_detects_core_mismatches workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         engine = DatatypeHarmonizationEngine(output_folder=Path("output"))
         source_columns = [
             MetadataColumn(
@@ -82,6 +167,32 @@ class DatatypeValidationTests(unittest.TestCase):
         self.assertIn("truncation_risk", issue_types)
 
     def test_harmonization_flags_lookup_datatype_mismatch_for_lookup_ports(self) -> None:
+        """
+        Executes the test_harmonization_flags_lookup_datatype_mismatch_for_lookup_ports workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         engine = DatatypeHarmonizationEngine(output_folder=Path("output"))
         source_columns = [
             MetadataColumn(
@@ -113,6 +224,32 @@ class DatatypeValidationTests(unittest.TestCase):
         self.assertTrue(any(finding.issue_type == "lookup_datatype_mismatch" for finding in findings))
 
     def test_validation_rules_repository_detects_sql_and_datatype_issues(self) -> None:
+        """
+        Executes the test_validation_rules_repository_detects_sql_and_datatype_issues workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         engine = ValidationEngine(output_folder="output")
         self.assertGreaterEqual(len(engine.rules), 40)
 
@@ -167,6 +304,32 @@ class DatatypeValidationTests(unittest.TestCase):
         self.assertEqual("VAL-012", datatype_issues[0].rule_id)
 
     def test_readiness_scorecard_and_risk_report_use_remaining_issues_only(self) -> None:
+        """
+        Executes the test_readiness_scorecard_and_risk_report_use_remaining_issues_only workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)
             self._write_remediation_reports(output)
@@ -187,6 +350,32 @@ class DatatypeValidationTests(unittest.TestCase):
 
     @staticmethod
     def _write_remediation_reports(output: Path) -> None:
+        """
+        Executes the _write_remediation_reports workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                output (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         metadata = output / "metadata_tables"
         metadata.mkdir(parents=True, exist_ok=True)
         DatatypeValidationTests._write_csv(
@@ -328,6 +517,34 @@ class DatatypeValidationTests(unittest.TestCase):
 
     @staticmethod
     def _write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
+        """
+        Executes the _write_csv workflow for automated regression tests.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                path (object): Value supplied by the caller and used by the workflow.
+                fieldnames (object): Value supplied by the caller and used by the workflow.
+                rows (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that verifies expected behavior for parser, validation, API, AI recommendation, and reporting workflows. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         with path.open("w", newline="", encoding="utf-8") as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             writer.writeheader()

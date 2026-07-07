@@ -1,3 +1,21 @@
+"""
+Module: business/validation/Rule_Based_Validation_Engine.py
+
+Purpose:
+    This module supports migration validation and readiness logic for the PowerCenter to IDMC migration assessment platform.
+
+Responsibilities:
+    - Provide the code and data structures needed by this part of the application.
+    - Integrate with the surrounding parsing, validation, automation, API, or reporting workflow as appropriate.
+    - Keep inputs and outputs consistent with the project reporting pipeline so downstream modules can consume them reliably.
+
+Architecture Context:
+    The file belongs to the migration validation and readiness logic area and evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. It participates in the overall input -> processing -> output lifecycle where PowerCenter XML metadata and generated reports are transformed into migration readiness, validation, and AI recommendation insights.
+
+Inputs and Outputs:
+    Inputs generally include configuration values, XML-derived metadata, CSV/JSON report rows, API payloads, or test fixtures. Outputs are returned Python objects, API responses, generated report records, or assertions that protect expected behavior.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -17,6 +35,21 @@ from common.config.config import AppConfig
 
 @dataclass(frozen=True)
 class RemediationResult:
+    """
+    Represents the RemediationResult component in the migration validation and readiness logic area.
+    
+    Purpose:
+        Provide a named object that groups related state and behavior for this module.
+    
+    Responsibilities:
+        - Encapsulate the data or operations required by the surrounding workflow.
+        - Collaborate with parser, validation, automation, API, or report components where this class is used.
+        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
+    
+    Architecture Notes:
+        This class is part of the project layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
+    """
+
     issue: str
     severity: str
     recommendation: str
@@ -34,6 +67,21 @@ class RemediationResult:
 
 @dataclass(frozen=True)
 class RevalidationSummary:
+    """
+    Represents the RevalidationSummary component in the migration validation and readiness logic area.
+    
+    Purpose:
+        Provide a named object that groups related state and behavior for this module.
+    
+    Responsibilities:
+        - Encapsulate the data or operations required by the surrounding workflow.
+        - Collaborate with parser, validation, automation, API, or report components where this class is used.
+        - Keep behavior predictable so migration assessment outputs remain traceable and easy to review.
+    
+    Architecture Notes:
+        This class is part of the project layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. Instances or class methods are used by higher-level orchestration code, services, tests, or report builders without changing business rules.
+    """
+
     before_fix_issues: int
     after_fix_issues: int
     resolved_issues: int
@@ -96,6 +144,36 @@ class Rule_Based_Validation_Engine:
         validation_rules_path: str | Path | None = None,
         remediation_rules_path: str | Path | None = None,
     ) -> None:
+        """
+        Executes the __init__ workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                config (object): Value supplied by the caller and used by the workflow.
+                logger (object): Value supplied by the caller and used by the workflow.
+                output_folder (object): Value supplied by the caller and used by the workflow.
+                validation_rules_path (object): Value supplied by the caller and used by the workflow.
+                remediation_rules_path (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         self.config = config
         self.logger = logger
         self.project_root = Path.cwd()
@@ -113,6 +191,32 @@ class Rule_Based_Validation_Engine:
         self.results: list[RemediationResult] = []
 
     def remediate(self) -> tuple[list[RemediationResult], RevalidationSummary]:
+        """
+        Executes the remediate workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         validator = ValidationEngine(
             config=self.config,
             logger=self.logger,
@@ -146,6 +250,32 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _validate_without_writing(validator: ValidationEngine) -> list[ValidationIssue]:
+        """
+        Executes the _validate_without_writing workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                validator (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         validator.tables = validator._load_metadata_tables()
         validator.datatype_findings = validator._load_or_build_datatype_findings()
         issues: list[ValidationIssue] = []
@@ -156,6 +286,33 @@ class Rule_Based_Validation_Engine:
     def write_remediation_report(
         self, results: list[RemediationResult], report_path: str | Path | None = None
     ) -> None:
+        """
+        Executes the write_remediation_report workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                results (object): Value supplied by the caller and used by the workflow.
+                report_path (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         path = self._resolve_path(report_path or self.remediation_report_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         csv_file = self._open_writable_report(path)
@@ -184,6 +341,33 @@ class Rule_Based_Validation_Engine:
     def write_revalidation_report(
         self, summary: RevalidationSummary, report_path: str | Path | None = None
     ) -> None:
+        """
+        Executes the write_revalidation_report workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                summary (object): Value supplied by the caller and used by the workflow.
+                report_path (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         path = self._resolve_path(report_path or self.revalidation_report_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         csv_file = self._open_writable_report(path)
@@ -199,6 +383,32 @@ class Rule_Based_Validation_Engine:
             )
 
     def _remediate_datatype_findings(self, findings: list[dict[str, str]]) -> list[RemediationResult]:
+        """
+        Executes the _remediate_datatype_findings workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                findings (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         results: list[RemediationResult] = []
         for finding in findings:
             issue = self._canonical_issue(finding.get("issue_type", ""))
@@ -235,6 +445,32 @@ class Rule_Based_Validation_Engine:
         return results
 
     def _remediate_validation_issues(self, issues: list[ValidationIssue]) -> list[RemediationResult]:
+        """
+        Executes the _remediate_validation_issues workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                issues (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         results: list[RemediationResult] = []
         for issue in issues:
             canonical = self._canonical_issue(issue.issue, issue.rule_id)
@@ -285,6 +521,34 @@ class Rule_Based_Validation_Engine:
     def _apply_column_action(
         self, action: str, source_row: dict[str, str], target_row: dict[str, str]
     ) -> bool:
+        """
+        Executes the _apply_column_action workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                action (object): Value supplied by the caller and used by the workflow.
+                source_row (object): Value supplied by the caller and used by the workflow.
+                target_row (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         before = dict(target_row)
         if action in {"align_datatype", "align_numeric_datatype", "align_lookup_datatype", "standardize_unicode_string"}:
             target_row["datatype"] = source_row.get("datatype", target_row.get("datatype", ""))
@@ -320,6 +584,34 @@ class Rule_Based_Validation_Engine:
     def _column_recommendation_satisfied(
         self, action: str, source_row: dict[str, str], target_row: dict[str, str]
     ) -> bool:
+        """
+        Executes the _column_recommendation_satisfied workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                action (object): Value supplied by the caller and used by the workflow.
+                source_row (object): Value supplied by the caller and used by the workflow.
+                target_row (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if action == "copy_source_precision":
             return self._same_value(source_row.get("precision"), target_row.get("precision"))
         if action == "copy_source_scale":
@@ -341,6 +633,33 @@ class Rule_Based_Validation_Engine:
         return False
 
     def _target_capacity_covers_source(self, source_row: dict[str, str], target_row: dict[str, str]) -> bool:
+        """
+        Executes the _target_capacity_covers_source workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                source_row (object): Value supplied by the caller and used by the workflow.
+                target_row (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         source_precision = self._to_int(source_row.get("precision"))
         target_precision = self._to_int(target_row.get("precision"))
         source_scale = self._to_int(source_row.get("scale"))
@@ -353,9 +672,63 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _same_value(left: object, right: object) -> bool:
+        """
+        Executes the _same_value workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                left (object): Value supplied by the caller and used by the workflow.
+                right (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return str(left or "").strip().lower() == str(right or "").strip().lower()
 
     def _apply_metadata_action(self, action: str, issue: ValidationIssue) -> tuple[bool, str, str]:
+        """
+        Executes the _apply_metadata_action workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                action (object): Value supplied by the caller and used by the workflow.
+                issue (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if action == "add_concat_alias":
             return self._add_concat_alias(issue.asset)
         if action == "add_schema_prefix":
@@ -389,6 +762,32 @@ class Rule_Based_Validation_Engine:
         return False, issue.asset, issue.asset
 
     def _add_concat_alias(self, asset: str) -> tuple[bool, str, str]:
+        """
+        Executes the _add_concat_alias workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         changed = False
         before_values: list[str] = []
         after_values: list[str] = []
@@ -413,6 +812,32 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _add_alias_to_concat_expression(text: str) -> str:
+        """
+        Executes the _add_alias_to_concat_expression workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                text (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         match = re.search(r"\bCONCAT\s*\(", text, re.IGNORECASE)
         if not match:
             return text
@@ -443,6 +868,32 @@ class Rule_Based_Validation_Engine:
         return f"{text[:expression_end]} AS CONCAT_VALUE{text[expression_end:]}"
 
     def _normalize_schema_prefix(self, asset: str) -> tuple[bool, str, str]:
+        """
+        Executes the _normalize_schema_prefix workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         changed = False
         before_values: list[str] = []
         after_values: list[str] = []
@@ -464,6 +915,32 @@ class Rule_Based_Validation_Engine:
         return changed, "\n".join(before_values), "\n".join(after_values)
 
     def _remove_lookup_schema_prefix(self, asset: str) -> tuple[bool, str, str]:
+        """
+        Executes the _remove_lookup_schema_prefix workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         changed = False
         before_values: list[str] = []
         after_values: list[str] = []
@@ -489,6 +966,32 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _strip_schema_qualifiers(text: str) -> str:
+        """
+        Executes the _strip_schema_qualifiers workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                text (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         parameterized = re.sub(
             r"(?:\$\{[A-Za-z_][A-Za-z0-9_]*\}|\$\$[A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)",
             r"\1",
@@ -502,6 +1005,32 @@ class Rule_Based_Validation_Engine:
         )
 
     def _shorten_object_names(self, asset: str) -> tuple[bool, str, str]:
+        """
+        Executes the _shorten_object_names workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if len(asset) <= 65:
             return False, asset, asset
         replacement = self._short_name(asset, self._existing_names())
@@ -521,6 +1050,34 @@ class Rule_Based_Validation_Engine:
 
     @classmethod
     def _short_name(cls, value: str, existing_names: set[str], max_length: int = 65) -> str:
+        """
+        Executes the _short_name workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                value (object): Value supplied by the caller and used by the workflow.
+                existing_names (object): Value supplied by the caller and used by the workflow.
+                max_length (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         suffix = hashlib.sha1(value.encode("utf-8")).hexdigest()[:8]
         base_limit = max_length - len(suffix) - 1
         words = re.split(r"[_\s]+", value)
@@ -537,6 +1094,32 @@ class Rule_Based_Validation_Engine:
         return candidate
 
     def _existing_names(self) -> set[str]:
+        """
+        Executes the _existing_names workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         name_fields = {
             "folder_name",
             "mapping_name",
@@ -558,6 +1141,33 @@ class Rule_Based_Validation_Engine:
         }
 
     def _trim_oracle_fixed_char_fields(self, asset: str, source_file: str = "") -> tuple[bool, str, str]:
+        """
+        Executes the _trim_oracle_fixed_char_fields workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+                source_file (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         target_asset, column_asset = self._target_column_asset(asset)
         oracle_sources = {
             (row.get("file_name", ""), row.get("source_name", ""))
@@ -617,6 +1227,32 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _target_column_asset(asset: str) -> tuple[str, str]:
+        """
+        Executes the _target_column_asset workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if "." not in asset:
             return "", asset
         target, column = asset.split(".", 1)
@@ -624,9 +1260,61 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _trim_already_applied(expression: str) -> bool:
+        """
+        Executes the _trim_already_applied workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                expression (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return bool(re.fullmatch(r"(?i)(?:R?TRIM)\s*\(.*\)", expression.strip()))
 
     def _generate_idmc_schedule_config(self, asset: str) -> tuple[bool, str, str]:
+        """
+        Executes the _generate_idmc_schedule_config workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         for row in self.tables.get("workflows", []):
             if asset and row.get("workflow_name", "") != asset:
                 continue
@@ -651,6 +1339,32 @@ class Rule_Based_Validation_Engine:
         return False, asset, asset
 
     def _deduplicate_columns(self, asset: str) -> tuple[bool, str, str]:
+        """
+        Executes the _deduplicate_columns workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         changed = False
         before_values: list[str] = []
         after_values: list[str] = []
@@ -673,6 +1387,32 @@ class Rule_Based_Validation_Engine:
         return changed, ", ".join(before_values), ", ".join(after_values)
 
     def _add_target_binding(self, asset: str) -> tuple[bool, str, str]:
+        """
+        Executes the _add_target_binding workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         target_names = {(row.get("file_name", ""), row.get("target_name", "")) for row in self.tables.get("targets", [])}
         for row in self.tables.get("instances", []):
             if row.get("instance_type", "").upper() != "TARGET" or row.get("instance_name", "") != asset:
@@ -694,6 +1434,32 @@ class Rule_Based_Validation_Engine:
         return False, asset, asset
 
     def _convert_datetime_formats(self, asset: str) -> tuple[bool, str, str]:
+        """
+        Executes the _convert_datetime_formats workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         changed = False
         matched_values: list[str] = []
         before_values: list[str] = []
@@ -715,10 +1481,62 @@ class Rule_Based_Validation_Engine:
 
     @classmethod
     def _convert_datetime_format_masks(cls, sql: str) -> str:
+        """
+        Executes the _convert_datetime_format_masks workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                sql (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return re.sub(r"'([^']*)'", lambda match: f"'{cls._convert_datetime_mask(match.group(1))}'", sql)
 
     @staticmethod
     def _convert_datetime_mask(mask: str) -> str:
+        """
+        Executes the _convert_datetime_mask workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                mask (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if not re.search(r"YYYY|YY|MM|MON|DD|HH24|MI|SS", mask, re.IGNORECASE):
             return mask
         replacements = [
@@ -735,6 +1553,33 @@ class Rule_Based_Validation_Engine:
         return converted
 
     def _propose_sql_fix(self, canonical: str, asset: str) -> tuple[str, str]:
+        """
+        Executes the _propose_sql_fix workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                canonical (object): Value supplied by the caller and used by the workflow.
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         for row in self.tables.get("sql_overrides", []):
             if asset and asset not in {row.get("context_name", ""), row.get("mapping_name", ""), self._asset_name(row)}:
                 continue
@@ -757,6 +1602,33 @@ class Rule_Based_Validation_Engine:
         return "", ""
 
     def _apply_sql_fix(self, canonical: str, asset: str) -> tuple[bool, str, str]:
+        """
+        Executes the _apply_sql_fix workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                canonical (object): Value supplied by the caller and used by the workflow.
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         for row in self.tables.get("sql_overrides", []):
             if asset and asset not in {row.get("context_name", ""), row.get("mapping_name", ""), self._asset_name(row)}:
                 continue
@@ -773,6 +1645,32 @@ class Rule_Based_Validation_Engine:
         return False, "", ""
 
     def _apply_constraint_fix(self, asset: str) -> tuple[bool, str, str]:
+        """
+        Executes the _apply_constraint_fix workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                asset (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         for row in self.tables.get("targets", []):
             if asset and asset not in {self._asset_name(row), row.get("target_name", ""), row.get("mapping_name", "")}:
                 continue
@@ -784,6 +1682,33 @@ class Rule_Based_Validation_Engine:
         return False, "", ""
 
     def _ordered_select_projection(self, row: dict[str, str], sql: str) -> str:
+        """
+        Executes the _ordered_select_projection workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                row (object): Value supplied by the caller and used by the workflow.
+                sql (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         ports = [
             port.get("port_name", "")
             for port in self.tables.get("ports", [])
@@ -800,6 +1725,32 @@ class Rule_Based_Validation_Engine:
         )
 
     def _revalidate_tables(self) -> list[ValidationIssue]:
+        """
+        Executes the _revalidate_tables workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         validator = ValidationEngine(
             config=self.config,
             logger=self.logger,
@@ -814,6 +1765,32 @@ class Rule_Based_Validation_Engine:
         return validator._deduplicate(issues)
 
     def _build_datatype_findings(self) -> list[Any]:
+        """
+        Executes the _build_datatype_findings workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         harmonizer = DatatypeHarmonizationEngine(
             config=self.config,
             logger=self.logger,
@@ -830,6 +1807,33 @@ class Rule_Based_Validation_Engine:
         )
 
     def _metadata_columns(self, table_name: str, table_type: str) -> list[MetadataColumn]:
+        """
+        Executes the _metadata_columns workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                table_name (object): Value supplied by the caller and used by the workflow.
+                table_type (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         name_key = "source_name" if table_type == "SOURCE" else "target_name"
         return [
             MetadataColumn(
@@ -847,6 +1851,32 @@ class Rule_Based_Validation_Engine:
         ]
 
     def _ports(self) -> list[MetadataColumn]:
+        """
+        Executes the _ports workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         transformation_types = {
             (
                 row.get("file_name", ""),
@@ -875,6 +1905,32 @@ class Rule_Based_Validation_Engine:
         ]
 
     def _write_remediated_metadata(self) -> None:
+        """
+        Executes the _write_remediated_metadata workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         payload = {
             "version": "1.0",
             "source": "PowerCenter metadata_tables",
@@ -896,12 +1952,90 @@ class Rule_Based_Validation_Engine:
             json.dump(payload, json_file, indent=2)
 
     def _find_source_column(self, finding: dict[str, str]) -> dict[str, str] | None:
+        """
+        Executes the _find_source_column workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                finding (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return self._find_column("source_columns", "source_name", finding)
 
     def _find_target_column(self, finding: dict[str, str]) -> dict[str, str] | None:
+        """
+        Executes the _find_target_column workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                finding (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return self._find_column("target_columns", "target_name", finding)
 
     def _find_port(self, finding: dict[str, str]) -> dict[str, str] | None:
+        """
+        Executes the _find_port workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                finding (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         source_file = finding.get("source_file", "")
         mapping = self._normalize_name(finding.get("mapping_name", ""))
         transformation = self._normalize_name(finding.get("transformation", ""))
@@ -918,9 +2052,63 @@ class Rule_Based_Validation_Engine:
         return None
 
     def _find_related_metadata_column(self, finding: dict[str, str]) -> dict[str, str] | None:
+        """
+        Executes the _find_related_metadata_column workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                finding (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return self._find_source_column(finding) or self._find_target_column(finding)
 
     def _find_column(self, table_name: str, asset_field: str, finding: dict[str, str]) -> dict[str, str] | None:
+        """
+        Executes the _find_column workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                table_name (object): Value supplied by the caller and used by the workflow.
+                asset_field (object): Value supplied by the caller and used by the workflow.
+                finding (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         source_file = finding.get("source_file", "")
         column = self._normalize_name(finding.get("column", ""))
         for row in self.tables.get(table_name, []):
@@ -940,6 +2128,38 @@ class Rule_Based_Validation_Engine:
         after: str,
         status: str,
     ) -> RemediationResult:
+        """
+        Executes the _result workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                finding (object): Value supplied by the caller and used by the workflow.
+                issue (object): Value supplied by the caller and used by the workflow.
+                auto_fixed (object): Value supplied by the caller and used by the workflow.
+                fix_applied (object): Value supplied by the caller and used by the workflow.
+                before (object): Value supplied by the caller and used by the workflow.
+                after (object): Value supplied by the caller and used by the workflow.
+                status (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return RemediationResult(
             issue=issue,
             severity=finding.get("severity", "MEDIUM"),
@@ -953,6 +2173,32 @@ class Rule_Based_Validation_Engine:
         )
 
     def _load_rules(self) -> dict[str, dict[str, Any]]:
+        """
+        Executes the _load_rules workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+        None.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         with self.rules_path.open("r", encoding="utf-8") as rules_file:
             payload = json.load(rules_file)
         return {
@@ -962,6 +2208,33 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _canonical_issue(text: str, rule_id: str = "") -> str:
+        """
+        Executes the _canonical_issue workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                text (object): Value supplied by the caller and used by the workflow.
+                rule_id (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         by_rule = {
             "VAL-001": "sql_override",
             "VAL-002": "sql_override",
@@ -1013,6 +2286,32 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _finding_asset(finding: dict[str, str]) -> str:
+        """
+        Executes the _finding_asset workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                finding (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         for field in ["mapping_name", "transformation", "source_file", "file_name"]:
             if finding.get(field):
                 value = finding[field]
@@ -1021,6 +2320,32 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _column_type_display(row: dict[str, str]) -> str:
+        """
+        Executes the _column_type_display workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                row (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         datatype = row.get("datatype", "")
         precision = row.get("precision", "")
         scale = row.get("scale", "")
@@ -1032,6 +2357,32 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _asset_name(row: dict[str, str]) -> str:
+        """
+        Executes the _asset_name workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                row (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         for field in [
             "mapping_name",
             "session_name",
@@ -1050,6 +2401,32 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _transformation_key(row: dict[str, str]) -> tuple[str, str, str, str, str]:
+        """
+        Executes the _transformation_key workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                row (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return (
             row.get("file_name", ""),
             row.get("repository_name", ""),
@@ -1060,10 +2437,62 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _normalize_name(value: str) -> str:
+        """
+        Executes the _normalize_name workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                value (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
     @staticmethod
     def _to_int(value: object) -> int | None:
+        """
+        Executes the _to_int workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                value (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         if value in {None, ""}:
             return None
         try:
@@ -1072,6 +2501,32 @@ class Rule_Based_Validation_Engine:
             return None
 
     def _resolve_path(self, path: str | Path) -> Path:
+        """
+        Executes the _resolve_path workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                path (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         candidate = Path(path)
         if candidate.is_absolute():
             return candidate
@@ -1079,6 +2534,32 @@ class Rule_Based_Validation_Engine:
 
     @staticmethod
     def _open_writable_report(path: Path):
+        """
+        Executes the _open_writable_report workflow for migration validation and readiness logic.
+        
+        Purpose:
+            Support the module responsibility by performing one focused step in the migration assessment process.
+        
+        Workflow:
+            1. Receive inputs from the caller or surrounding service layer.
+            2. Apply the existing project logic without changing business rules.
+            3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+        
+        Parameters:
+                path (object): Value supplied by the caller and used by the workflow.
+        
+        Returns:
+            object:
+                The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+        
+        Raises:
+            Exception:
+                This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+        
+        Implementation Notes:
+            This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+        """
+
         candidates = [
             path,
             path.with_name(f"{path.stem}_latest{path.suffix}"),
@@ -1100,6 +2581,36 @@ def build_remediation_report(
     validation_rules_path: str | Path | None = None,
     remediation_rules_path: str | Path | None = None,
 ) -> tuple[list[RemediationResult], RevalidationSummary]:
+    """
+    Executes the build_remediation_report workflow for migration validation and readiness logic.
+    
+    Purpose:
+        Support the module responsibility by performing one focused step in the migration assessment process.
+    
+    Workflow:
+        1. Receive inputs from the caller or surrounding service layer.
+        2. Apply the existing project logic without changing business rules.
+        3. Return data in the format expected by downstream parser, validation, API, reporting, or test code.
+    
+    Parameters:
+            config (object): Value supplied by the caller and used by the workflow.
+            logger (object): Value supplied by the caller and used by the workflow.
+            output_folder (object): Value supplied by the caller and used by the workflow.
+            validation_rules_path (object): Value supplied by the caller and used by the workflow.
+            remediation_rules_path (object): Value supplied by the caller and used by the workflow.
+    
+    Returns:
+        object:
+            The function returns the value required by existing callers. The concrete type is defined by the function annotation or by the established project contract.
+    
+    Raises:
+        Exception:
+            This function does not add custom exception handling beyond the existing implementation; exceptions propagate according to the current workflow.
+    
+    Implementation Notes:
+        This function belongs to the layer that evaluates rules, remediation outcomes, risk, readiness, AI validation metrics, and XML comparison results. The documentation is intentionally business-readable so both technical reviewers and delivery stakeholders can follow the intent.
+    """
+
     return Rule_Based_Validation_Engine(
         config=config,
         logger=logger,
