@@ -44,14 +44,26 @@ def parse_args() -> argparse.Namespace:
             "reports",
             "enterprise",
             "automation",
+            "iics-package",
             "all",
         ],
         default="canonical",
         help=(
             "Run canonical model build, raw metadata parser, XML structure explorer, complexity classifier, "
             "report builder, MySQL persistence, the enterprise pipeline, automated validation, "
+            "IICS package processing, "
             "or all metadata, validation, remediation, and automation outputs."
         ),
+    )
+    parser.add_argument(
+        "--iics-zip",
+        default=None,
+        help="Path to client-provided IICS export zip. Required when --mode iics-package.",
+    )
+    parser.add_argument(
+        "--fix-checksum",
+        action="store_true",
+        help="With --mode iics-package and --iics-zip, rewrite exportPackage.chksum only.",
     )
     parser.add_argument(
         "--config",
@@ -170,6 +182,47 @@ def main() -> None:
 
         summary = AutomatedValidationFramework(config_path=args.automation_config).run()
         logger.info("Automated validation framework completed. %s", summary)
+    elif args.mode == "iics-package":
+        from business.iics.iics_package_processor import IICSPackageProcessor
+        from business.iics.iics_package_generator import IICSPackageGenerator
+        from business.iics.checksum_utils import rewrite_zip_checksums, validate_zip_checksums
+
+        if args.fix_checksum:
+            if not args.iics_zip:
+                raise ValueError("--iics-zip is required when --fix-checksum is set")
+            out_dir = Path(config.paths.output_folder) / "iics"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            out_zip = out_dir / "iics_checksum_fixed.zip"
+            rewrite_zip_checksums(args.iics_zip, out_zip)
+            ok, errors = validate_zip_checksums(out_zip)
+            if not ok:
+                raise RuntimeError(f"Checksum fix failed validation: {errors[0]}")
+            logger.info("Checksum fixed and validated. output=%s", out_zip)
+        elif args.iics_zip:
+            # Validate/repackage a client-supplied zip
+            processor = IICSPackageProcessor(
+                input_zip=args.iics_zip,
+                output_dir=Path(config.paths.output_folder) / "iics",
+                logger=logger,
+            )
+            summary = processor.process()
+            logger.info(
+                "IICS package processing completed. valid=%s invalid=%s output=%s",
+                summary["valid_assets"], summary["invalid_assets"], summary["output_zip"],
+            )
+        else:
+            # Generate a new IICS package from the 14 parsed PowerCenter XML files
+            generator = IICSPackageGenerator(
+                parsed_json_dir=Path(config.paths.output_folder) / "parsed_json",
+                remediated_xml_dir=Path(config.paths.output_folder) / "remediated_xml",
+                output_dir=Path(config.paths.output_folder) / "iics_generated",
+                logger=logger,
+            )
+            summary = generator.generate()
+            logger.info(
+                "IICS package generation completed. assets=%s output=%s",
+                summary["total_assets"], summary["output_zip"],
+            )
     else:
         from business.parser.xml_parser import XMLParser
         from data.repositories.metadata_repository import CanonicalMetadataBuilder

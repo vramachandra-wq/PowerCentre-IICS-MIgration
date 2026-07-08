@@ -1,0 +1,1532 @@
+"""
+IICS Package Generator
+======================
+Converts all parsed PowerCenter XML files into a single IICS-importable
+export package zip, following exactly the structure of a genuine IICS export.
+
+All internal formats (bin content, JSON schemas, XML) are validated against
+a real IICS export package to ensure import compatibility.
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+import json
+import logging
+import os
+import time
+import uuid
+import zipfile
+from dataclasses import dataclass, field as dc_field
+from pathlib import Path
+from typing import Any
+
+from business.iics.checksum_utils import build_checksum_file, sha256_hex, validate_zip_checksums
+
+
+# ── ID counter (IICS bin uses sequential integers) ─────────────────────────
+class _IdCounter:
+    def __init__(self, start: int = 1) -> None:
+        self._v = start - 1
+
+    def next(self) -> int:
+        self._v += 1
+        return self._v
+
+
+# ── PC → IICS native type ───────────────────────────────────────────────────
+_PC_NATIVE: dict[str, str] = {
+    "varchar2": "nvarchar", "nvarchar2": "nvarchar", "varchar": "nvarchar",
+    "char": "nvarchar", "nchar": "nvarchar", "clob": "nvarchar", "nclob": "nvarchar",
+    "string": "nvarchar", "number(p,s)": "decimal", "number": "decimal",
+    "decimal": "decimal", "integer": "int", "int": "int", "bigint": "bigint",
+    "smallint": "int", "float": "float", "double": "double", "real": "double",
+    "date": "date", "datetime": "datetime", "timestamp": "datetime",
+    "binary": "binary", "boolean": "boolean",
+}
+
+def _native(pc_type: str) -> str:
+    return _PC_NATIVE.get(pc_type.lower().split("(")[0].strip(), "nvarchar")
+
+
+# ── DTEMPLATE bin builder ────────────────────────────────────────────────────
+
+def _build_bin(mapping: dict, folder_data: dict) -> bytes:
+    """
+    Build bin/@2.bin content matching the exact IICS DTEMPLATE format.
+
+    ID scheme:
+      $$ID  = definition (integer, sequential)
+      ##ID  = back-reference to a previously defined $$ID
+    """
+    c = _IdCounter()
+    name = mapping["mapping_name"]
+
+    sources = folder_data.get("sources", [])
+    targets = folder_data.get("targets", [])
+    txs     = mapping.get("transformations", [])
+    sess    = next(
+        (s for s in folder_data.get("sessions", []) if s.get("mapping_name") == name),
+        folder_data.get("sessions", [{}])[0] if folder_data.get("sessions") else {},
+    )
+    attrs   = sess.get("attributes", {}) if sess else {}
+
+    # Fixed annotation IDs
+    ann1_id = c.next()   # 1 - body annotation
+    ann2_id = c.next()   # 2 - TEMPLATE_SETTINGS
+    ann_kv_id = c.next() # 3
+
+    # Assign IDs for every transformation/group upfront so links can ref them
+    # Layout: target, [expressions], source_qualifier
+    # We need to assign group IDs first
+
+    # --- collect target definitions ---
+    target_defs = []
+    for tgt in targets:
+        tgt_tx_id  = c.next()
+        tgt_grp_id = c.next()
+        tgt_da_id  = c.next()   # dataAdapter
+        col_data   = []
+        for col in tgt.get("columns", []):
+            fld_id  = c.next()
+            adapt_id = c.next()
+            ann_id   = c.next()
+            col_data.append({"fld_id": fld_id, "adapt_id": adapt_id, "ann_id": ann_id,
+                             "col": col})
+        target_defs.append({
+            "name": tgt["target_name"], "tx_id": tgt_tx_id,
+            "grp_id": tgt_grp_id, "da_id": tgt_da_id, "cols": col_data,
+        })
+
+    # --- expression/pass-through transformations ---
+    expr_defs = []
+    for tx in txs:
+        tx_id  = c.next()
+        grp_id = c.next()
+        ann_id = c.next()
+        port_data = []
+        for p in tx.get("ports", []):
+            p_id  = c.next()
+            p_ann = c.next()
+            port_data.append({"p_id": p_id, "p_ann": p_ann, "port": p})
+        expr_defs.append({
+            "name": tx["transformation_name"],
+            "type": tx["transformation_type"],
+            "tx_id": tx_id, "grp_id": grp_id, "ann_id": ann_id,
+            "ports": port_data,
+        })
+
+    # --- source qualifier(s) ---
+    src_defs = []
+    for src in sources:
+        sq_id  = c.next()
+        grp_id = c.next()
+        da_id  = c.next()
+        ann_id = c.next()
+        obj_id = c.next()
+        col_data = []
+        for col in src.get("columns", []):
+            f_id   = c.next()
+            fa_id  = c.next()
+            f_ann  = c.next()
+            col_data.append({"f_id": f_id, "fa_id": fa_id, "f_ann": f_ann, "col": col})
+        src_defs.append({
+            "name": f"SQ_{src['source_name']}",
+            "raw_name": src["source_name"],
+            "sq_id": sq_id, "grp_id": grp_id, "da_id": da_id,
+            "ann_id": ann_id, "obj_id": obj_id, "cols": col_data,
+        })
+
+    # connection parameter
+    conn_name = "DBConnection_OLAP"
+    for k, v in attrs.items():
+        if "connection value" in k.lower() and v:
+            conn_name = str(v).lstrip("$")
+            break
+    param_id   = c.next()
+    anon_id    = c.next()
+
+    # session-property IDs
+    sp_ids = {
+        "Reject file directory": c.next(),
+        "Reject filename":       c.next(),
+        "Target load type":      c.next(),
+        "Commit Interval":       c.next(),
+    }
+
+    # ── build links ──────────────────────────────────────────────────────────
+    links = []
+    link_id_counter = _IdCounter(c.next())  # continue from current
+
+    def _make_link(from_grp, from_tx, from_class, to_grp, to_tx, to_class) -> dict:
+        lid = link_id_counter.next()
+        return {
+            "$$ID": lid, "$$class": 4,
+            "name": f"link_{lid}",
+            "fromGroup":        {"##ID": from_grp, "$$class": 5},
+            "fromTransformation":{"##ID": from_tx,  "$$class": from_class},
+            "toGroup":          {"##ID": to_grp,   "$$class": 5},
+            "toTransformation": {"##ID": to_tx,    "$$class": to_class},
+        }
+
+    # SQ → expr[0] (if any)
+    if src_defs:
+        sq = src_defs[0]
+        if expr_defs:
+            ex = expr_defs[0]
+            links.append(_make_link(sq["grp_id"], sq["sq_id"], 6,
+                                    ex["grp_id"], ex["tx_id"], 7))
+            # chain expressions
+            for i in range(len(expr_defs) - 1):
+                links.append(_make_link(
+                    expr_defs[i]["grp_id"], expr_defs[i]["tx_id"], 7,
+                    expr_defs[i+1]["grp_id"], expr_defs[i+1]["tx_id"], 7,
+                ))
+            # last expr → target
+            if target_defs:
+                links.append(_make_link(
+                    expr_defs[-1]["grp_id"], expr_defs[-1]["tx_id"], 7,
+                    target_defs[0]["grp_id"], target_defs[0]["tx_id"], 8,
+                ))
+        elif target_defs:
+            links.append(_make_link(sq["grp_id"], sq["sq_id"], 6,
+                                    target_defs[0]["grp_id"], target_defs[0]["tx_id"], 8))
+
+    # ── build parameters ─────────────────────────────────────────────────────
+    parameters = [{
+        "$$ID": param_id, "$$class": 9,
+        "input": "true", "output": "false",
+        "precision": 0, "scale": 0,
+        "allowRuntimeOverride": "true",
+        "expressionVariable": "false",
+        "label": "",
+        "name": conn_name,
+        "anonymousType": {
+            "$$ID": anon_id, "$$class": 11,
+            "name": "", "isVisible": "false",
+            "subType": "", "typeSystem": "Oracle", "connectionType": "Oracle",
+        },
+    }]
+
+    # ── build transformations list ───────────────────────────────────────────
+    transformations = []
+
+    # targets first (matching client layout)
+    for tdef in target_defs:
+        tgt_name = tdef["name"]
+        rules = []
+        rule1_id = c.next()
+        rule2_id = c.next()
+        rules.append({"$$ID": rule1_id, "$$class": 21, "bulkRename": "false", "include": "true"})
+        names_list = []
+        for cinfo in tdef["cols"]:
+            nm_id = c.next()
+            names_list.append({
+                "$$ID": nm_id, "$$class": 28,
+                "inputName": cinfo["col"]["column_name"],
+                "outputName": cinfo["col"]["column_name"].upper(),
+            })
+        rules.append({
+            "$$ID": rule2_id, "$$class": 22,
+            "bulkRename": "false", "include": "true",
+            "fieldNamesStr": "", "names": names_list,
+        })
+
+        tgt_ann_id = c.next()
+        fields = []
+        for cinfo in tdef["cols"]:
+            col = cinfo["col"]
+            fields.append({
+                "$$ID": cinfo["fld_id"], "$$class": 14,
+                "annotations": [{"$$ID": cinfo["ann_id"], "$$class": 2, "body": ""}],
+                "adapterField": {"##ID": cinfo["adapt_id"], "$$class": 15},
+                "defaultValue": "",
+                "ignoreComparison": "false", "ignoreNullInputs": "false",
+                "isDefaultValueUpdated": "false",
+                "name": col["column_name"].upper(),
+                "platformType": {
+                    "##SID": "smd:com.informatica.metadata.seed.platform.Platform.typesystem/string",
+                    "$$class": 16,
+                },
+                "precision": int(col.get("precision") or 60),
+                "scale": int(col.get("scale") or 0),
+            })
+
+        obj_id = c.next()
+        obj_fields = []
+        for cinfo in tdef["cols"]:
+            col = cinfo["col"]
+            prop1_id = c.next()
+            prop2_id = c.next()
+            obj_fields.append({
+                "$$ID": cinfo["adapt_id"], "$$class": 15,
+                "name": col["column_name"].upper(),
+                "createable": "false", "externalId": "false",
+                "fieldStatus": "UNDEFINED", "fieldType": "UNDEFINED",
+                "filterable": "true", "foreignKey": "false", "generated": "false",
+                "javaType": "", "key": "false", "label": "", "nativeName": "",
+                "nativeType": _native(col.get("datatype", "varchar2")),
+                "newField": "false", "nullable": "true", "original": "false",
+                "passthroughPort": "false",
+                "precision": int(col.get("precision") or 60),
+                "scale": int(col.get("scale") or 0),
+                "sfIdLookup": "false", "unique": "false", "updateable": "false",
+                "properties": [
+                    {"$$ID": prop1_id, "$$class": 30, "name": "parentObjectLabel", "value": tgt_name},
+                    {"$$ID": prop2_id, "$$class": 30, "name": "parentLabel",       "value": tgt_name},
+                ],
+            })
+
+        session_props = [
+            {"$$ID": sp_ids["Reject file directory"], "$$class": 12,
+             "name": "Reject file directory", "value": "$PMBadFileDir\\"},
+            {"$$ID": sp_ids["Reject filename"], "$$class": 12,
+             "name": "Reject filename", "value": f"{tgt_name.lower()}.bad"},
+        ]
+
+        transformations.append({
+            "$$ID": tdef["tx_id"], "$$class": 8,
+            "annotations": [{"$$ID": tgt_ann_id, "$$class": 2, "body": ""}],
+            "augmented": "false", "createTime": "",
+            "name": tgt_name,
+            "groups": [{
+                "$$ID": tdef["grp_id"], "$$class": 5,
+                "input": "true", "name": "DefaultGroup", "output": "false",
+                "rules": rules,
+            }],
+            "sessionProperties": session_props,
+            "createTarget": "false", "fieldMappingMode": "MANUAL",
+            "inputSorted": "false", "schemaProviderType": "SELECTED_OBJECT",
+            "targetFieldsOrdered": "false",
+            "updateColumns": [], "useLabels": "false", "useSequenceFields": "false",
+            "fields": fields,
+            "dataAdapter": {
+                "$$ID": tdef["da_id"], "$$class": 13,
+                "name": "", "codePage": "", "compatibleEngine": "",
+                "connectionId": "",
+                "connectionId$": {"##ID": param_id, "$$class": 9},
+                "connectionSelectionType": "",
+                "excludeDynamicFileNameField": "false",
+                "fwConfigId": "", "multipleObject": "false",
+                "objectType": "SINGLE", "typeSystem": "Oracle",
+                "useDynamicFileName": "false",
+                "object": {
+                    "$$ID": obj_id, "$$class": 23,
+                    "name": tgt_name, "customQuery": "",
+                    "dbSchema": "", "label": tgt_name,
+                    "objectName": "", "objectType": "", "parentPath": "",
+                    "path": tgt_name, "retainMetadata": "false",
+                    "fields": obj_fields,
+                },
+            },
+        })
+
+    # expression transformations
+    for edef in expr_defs:
+        ep_ann = c.next()
+        ports_out = []
+        for pinfo in edef["ports"]:
+            p = pinfo["port"]
+            ports_out.append({
+                "$$ID": pinfo["p_id"], "$$class": 17,
+                "annotations": [{"$$ID": pinfo["p_ann"], "$$class": 2, "body": ""}],
+                "businessLabel": "", "datatype": "string",
+                "description": "", "expression": p.get("expression", p["port_name"]),
+                "expressionType": "EXPRESSION_RETURN",
+                "label": p["port_name"],
+                "name": p["port_name"],
+                "nullable": "true",
+                "portType": "INPUT_OUTPUT",
+                "precision": int(p.get("precision") or 50),
+                "scale": int(p.get("scale") or 0),
+            })
+        transformations.append({
+            "$$ID": edef["tx_id"], "$$class": 7,
+            "annotations": [{"$$ID": ep_ann, "$$class": 2, "body": ""}],
+            "augmented": "false", "createTime": "",
+            "name": edef["name"],
+            "groups": [{
+                "$$ID": edef["grp_id"], "$$class": 5,
+                "input": "true", "name": "DefaultGroup", "output": "true",
+                "rules": [{"$$ID": c.next(), "$$class": 21, "bulkRename": "false", "include": "true"}],
+                "fields": ports_out,
+            }],
+        })
+
+    # source qualifier(s)
+    for sdef in src_defs:
+        sq_ann = c.next()
+        sq_fields = []
+        for cinfo in sdef["cols"]:
+            col = cinfo["col"]
+            sq_fields.append({
+                "$$ID": cinfo["f_id"], "$$class": 18,
+                "annotations": [{"$$ID": cinfo["f_ann"], "$$class": 2, "body": ""}],
+                "businessLabel": "", "datatype": "string",
+                "description": "", "label": col["column_name"],
+                "name": col["column_name"],
+                "nullable": "true", "portType": "OUTPUT",
+                "precision": int(col.get("precision") or 50),
+                "scale": int(col.get("scale") or 0),
+            })
+
+        obj_fields_sq = []
+        for cinfo in sdef["cols"]:
+            col = cinfo["col"]
+            pr1 = c.next(); pr2 = c.next()
+            obj_fields_sq.append({
+                "$$ID": cinfo["fa_id"], "$$class": 15,
+                "name": col["column_name"],
+                "createable": "false", "externalId": "false",
+                "fieldStatus": "UNDEFINED", "fieldType": "UNDEFINED",
+                "filterable": "true", "foreignKey": "false", "generated": "false",
+                "javaType": "", "key": "false", "label": "", "nativeName": "",
+                "nativeType": _native(col.get("datatype", "varchar2")),
+                "newField": "false", "nullable": "true", "original": "false",
+                "passthroughPort": "false",
+                "precision": int(col.get("precision") or 50),
+                "scale": int(col.get("scale") or 0),
+                "sfIdLookup": "false", "unique": "false", "updateable": "false",
+                "properties": [
+                    {"$$ID": pr1, "$$class": 30, "name": "parentObjectLabel", "value": sdef["raw_name"]},
+                    {"$$ID": pr2, "$$class": 30, "name": "parentLabel",       "value": sdef["raw_name"]},
+                ],
+            })
+
+        custom_query = attrs.get("Sql Query", "")
+        transformations.append({
+            "$$ID": sdef["sq_id"], "$$class": 6,
+            "annotations": [{"$$ID": sq_ann, "$$class": 2, "body": ""}],
+            "augmented": "false", "createTime": "",
+            "name": sdef["name"],
+            "groups": [{
+                "$$ID": sdef["grp_id"], "$$class": 5,
+                "input": "false", "name": "DefaultGroup", "output": "true",
+                "rules": [{"$$ID": c.next(), "$$class": 21, "bulkRename": "false", "include": "true"}],
+                "fields": sq_fields,
+            }],
+            "dataAdapter": {
+                "$$ID": sdef["da_id"], "$$class": 13,
+                "name": "", "codePage": "", "compatibleEngine": "",
+                "connectionId": "",
+                "connectionId$": {"##ID": param_id, "$$class": 9},
+                "connectionSelectionType": "",
+                "excludeDynamicFileNameField": "false",
+                "fwConfigId": "", "multipleObject": "false",
+                "objectType": "SINGLE", "typeSystem": "Oracle",
+                "useDynamicFileName": "false",
+                "customQuery": custom_query,
+                "object": {
+                    "$$ID": sdef["obj_id"], "$$class": 23,
+                    "name": sdef["raw_name"], "customQuery": custom_query,
+                    "dbSchema": "", "label": sdef["raw_name"],
+                    "objectName": "", "objectType": "", "parentPath": "",
+                    "path": sdef["raw_name"], "retainMetadata": "false",
+                    "fields": obj_fields_sq,
+                },
+            },
+        })
+
+    # ── assemble final content ────────────────────────────────────────────────
+    content = {
+        "$$IID": "stringIdentity:@2",
+        "$$class": 1,
+        "annotations": [
+            {"$$ID": ann1_id, "$$class": 2, "body": ""},
+            {
+                "$$ID": ann2_id, "$$class": 3,
+                "source": "TEMPLATE_SETTINGS",
+                "nameValuePairs": [{
+                    "$$ID": ann_kv_id, "$$class": 10,
+                    "name": "UNIQUIFY_MAPPLET_TX_NAMES",
+                    "value": {"$$class": 20, "value": "true"},
+                }],
+            },
+        ],
+        "allowMaxFieldLength": "false",
+        "bigIntConvertType": "",
+        "documentType": "",
+        "ecoSystem": "",
+        "name": name,
+        "specialCharacterSupport": "true",
+        "templateOrigin": "",
+        "links": links,
+        "parameters": parameters,
+        "transformations": transformations,
+    }
+    return json.dumps({"content": content}, separators=(",", ":")).encode("utf-8")
+
+
+# ── PowerCenter XML Task builders (matches IICS import validation model) ────
+
+def _resolve_remediated_xml(
+    remediated_dir: Path, json_stem: str, mapping_name: str,
+) -> tuple[Path, str]:
+    for candidate in (f"{mapping_name}_remediated.xml", f"{json_stem}_remediated.xml"):
+        path = remediated_dir / candidate
+        if path.exists():
+            return path, candidate
+    raise FileNotFoundError(
+        f"No remediated XML for mapping '{mapping_name}' (source={json_stem}) in {remediated_dir}"
+    )
+
+
+def _build_pcxml_template_bin(
+    mapping: dict, folder_data: dict, parsed: dict, xml_filename: str,
+) -> bytes:
+    name = mapping["mapping_name"]
+    content = {
+        "$$IID": "stringIdentity:@3",
+        "$$class": 1,
+        "name": name,
+        "description": (
+            f"Packaged remediated PowerCenter XML {xml_filename} "
+            f"for task/conversion execution."
+        ),
+        "sourceXml": xml_filename,
+        "sourceXmlFileRecordId": "@4",
+        "nativeCdiMapping": False,
+        "executionStrategy": "POWERCENTER_XML_TASK",
+        "supportedExecutionPaths": [
+            "Run as PowerCenter XML task payload",
+            "Convert remediated PowerCenter XML to cloud-native CDI objects",
+            "Deploy remediated PowerCenter XML through IICS APIs",
+        ],
+        "conversionNote": (
+            "Modified PowerCenter XML cannot be uploaded directly as a native CDI mapping. "
+            "This package preserves the remediated XML and extracted metadata for supported "
+            "task, conversion, or API workflows."
+        ),
+        "repository": parsed.get("repository", {}),
+        "folder": folder_data.get("folder_name", ""),
+        "parameters": [{
+            "$$class": 10,
+            "input": "true",
+            "output": "false",
+            "name": "DBConnection_OLAP_Oracle",
+            "anonymousType": {
+                "$$class": 12,
+                "typeSystem": "Oracle",
+                "connectionType": "Oracle",
+            },
+        }],
+        "sources": folder_data.get("sources", []),
+        "targets": folder_data.get("targets", []),
+        "transformations": mapping.get("transformations", []),
+        "connectors": mapping.get("connectors", []),
+        "instances": mapping.get("instances", []),
+        "sqlOverrides": mapping.get("sql_overrides", []),
+    }
+    return json.dumps({"content": content}, separators=(",", ":")).encode("utf-8")
+
+
+def _build_dtemplate_zip_pcxml(
+    mapping: dict,
+    folder_data: dict,
+    parsed: dict,
+    remediated_path: Path,
+    xml_filename: str,
+    guid: str,
+) -> bytes:
+    name = mapping["mapping_name"]
+    now = int(time.time() * 1000)
+    preview = f"Generated preview placeholder for {name}\n".encode("utf-8")
+    template_bin = _build_pcxml_template_bin(mapping, folder_data, parsed, xml_filename)
+    xml_bytes = remediated_path.read_bytes()
+
+    mapping_template = [{
+        "@type": "mappingTemplate",
+        "id": "@1",
+        "name": name,
+        "description": f"Remediated PowerCenter XML source for task/conversion : {name}",
+        "autoExpireObject": False,
+        "bundleVersion": "0",
+        "assetFrsGuid": guid,
+        "templateId": "@3",
+        "remediatedPowerCenterXmlFileRecordId": "@4",
+        "executionStrategy": "POWERCENTER_XML_TASK",
+        "nativeCdiMapping": False,
+        "deployTime": now,
+        "hasParameters": True,
+        "valid": True,
+        "fixedConnection": False,
+        "hasParametersDeployed": True,
+        "fixedConnectionDeployed": False,
+        "isSchemaValidationEnabled": False,
+        "tasks": 1,
+        "mappingPreviewFileRecordId": "@2",
+        "documentType": "",
+        "allowMaxFieldLength": False,
+        "specialCharacterSupport": True,
+        "references": [],
+    }]
+    file_record = [
+        {
+            "@type": "fileRecord", "id": "@3", "name": name,
+            "type": "IMFOBJECT", "size": len(template_bin),
+            "attachTime": now,
+            "additionalInfo": "com.informatica.metadata.template.common.Template",
+        },
+        {
+            "@type": "fileRecord", "id": "@2",
+            "name": f"{name}_preview.jpeg", "type": "IMAGE",
+            "size": len(preview), "attachTime": now,
+        },
+        {
+            "@type": "fileRecord", "id": "@4",
+            "name": xml_filename, "type": "POWERCENTER_XML",
+            "size": len(xml_bytes), "attachTime": now,
+            "additionalInfo": (
+                "Remediated PowerCenter XML. Use as PowerCenter task input, "
+                "conversion source, or IICS API payload."
+            ),
+        },
+    ]
+    metadata_meta = [{"@type": "objectRef", "id": "@1", "type": "mappingTemplate"}]
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("mappingTemplate.json", json.dumps(mapping_template, separators=(",", ":")))
+        zf.writestr("fileRecord.json", json.dumps(file_record, separators=(",", ":")))
+        zf.writestr("bin/@2.bin", preview)
+        zf.writestr("bin/@3.bin", template_bin.decode("utf-8"))
+        zf.writestr("bin/@4.bin", xml_bytes)
+        zf.writestr("metadata.meta", json.dumps(metadata_meta, separators=(",", ":")))
+    return buf.getvalue()
+
+
+_STANDARD_SESSION_PROPS = [
+    "Allow Temporary Sequence for Pushdown",
+    "Allow Temporary View for Pushdown",
+    "Data Column Delimiter",
+    "DTM buffer size",
+    "Error Log File Name",
+    "Pushdown Optimization",
+]
+
+
+def _build_session_properties_list(session: dict | None) -> list[dict]:
+    attrs = session.get("attributes", {}) if session else {}
+    props: list[dict] = []
+    seen: set[str] = set()
+    for key in _STANDARD_SESSION_PROPS:
+        if key in attrs:
+            props.append({"name": key, "value": str(attrs[key]), "recommended": False})
+            seen.add(key)
+    for key, val in attrs.items():
+        if key not in seen and val is not None:
+            props.append({"name": key, "value": str(val), "recommended": False})
+    if not any(p["name"] == "Data Column Delimiter" for p in props):
+        props.insert(2, {"name": "Data Column Delimiter", "value": "|", "recommended": False})
+    if not any(p["name"] == "Error Log File Name" for p in props):
+        props.append({"name": "Error Log File Name", "value": "PMError.log", "recommended": False})
+    return props
+
+
+def _build_mtt_zip_pcxml(
+    session: dict | None,
+    mapping: dict,
+    mtt_frs_guid: str,
+    dtemplate_guid: str,
+    agent_group_guid: str,
+    xml_filename: str,
+) -> bytes:
+    name = session.get("session_name", mapping["mapping_name"]) if session else mapping["mapping_name"]
+    short_desc = f"PC XML task wrapper : {name}"
+    if len(short_desc) > 70:
+        short_desc = short_desc[:67] + "..."
+
+    mt_task = [{
+        "@type": "mtTask",
+        "id": "@1",
+        "name": name,
+        "description": f"PowerCenter XML task wrapper for remediated XML : {name}",
+        "autoExpireObject": False,
+        "runtimeEnvironmentId": f"@{agent_group_guid}",
+        "maxLogs": 10,
+        "verbose": False,
+        "mappingId": f"@{dtemplate_guid}",
+        "frsGuid": mtt_frs_guid,
+        "shortDescription": short_desc,
+        "executionStrategy": "POWERCENTER_XML_TASK",
+        "nativeCdiMapping": False,
+        "remediatedPowerCenterXml": {
+            "fileName": xml_filename,
+            "fileRecordId": "@4",
+            "usage": (
+                "Use this payload as a PowerCenter XML task input, "
+                "cloud-native conversion source, or IICS API deployment payload."
+            ),
+        },
+        "sourceXml": xml_filename,
+        "paramFileType": "PARAM_FILE_LOCAL",
+        "mappingSummary": {
+            "transformationCount": mapping.get(
+                "transformation_count", len(mapping.get("transformations", [])),
+            ),
+            "sourceCount": mapping.get("source_count", 0),
+            "targetCount": mapping.get("target_count", 0),
+        },
+        "sessionPropertiesList": _build_session_properties_list(session),
+        "valid": True,
+        "schemaValidationErrorCount": -1,
+        "hidden": False,
+        "enableCrossSchemaPushdown": False,
+        "enableParallelRun": False,
+        "schemaMode": "async",
+        "optimizationPlan": "NONE",
+        "allowMaxFieldLength": False,
+        "specialCharacterSupport": True,
+        "useUserDefinedOrder": False,
+        "taskProperties": [
+            {"@type": "taskProperty", "name": "parameterFileDir", "currentValue": "",
+             "type": "STRING", "label": "label.parameterFileDir", "required": False},
+            {"@type": "taskProperty", "name": "parameterFileName", "currentValue": "",
+             "type": "STRING", "label": "label.parameterFileName", "required": False},
+        ],
+    }]
+    metadata_meta = [{"@type": "objectRef", "id": "@1", "type": "mtTask"}]
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("mtTask.json", json.dumps(mt_task, separators=(",", ":")))
+        zf.writestr("metadata.meta", json.dumps(metadata_meta, separators=(",", ":")))
+    return buf.getvalue()
+
+
+def _build_dtemplate_zip(mapping: dict, folder_data: dict, guid: str) -> bytes:
+    name = mapping["mapping_name"]
+    bin_bytes = _build_bin(mapping, folder_data)
+
+    mapping_template = [{
+        "@type": "mappingTemplate",
+        "id": "@1", "name": name,
+        "description": f"Mapping pushed from PC to ICS : {name}",
+        "autoExpireObject": False,
+        "bundleVersion": "0",
+        "assetFrsGuid": guid,
+        "templateId": "@2",
+        "deployTime": int(time.time() * 1000),
+        "hasParameters": True,
+        "valid": True,
+        "fixedConnection": False,
+        "hasParametersDeployed": True,
+        "fixedConnectionDeployed": False,
+        "isSchemaValidationEnabled": False,
+        "tasks": 1,
+        "allowMaxFieldLength": False,
+        "specialCharacterSupport": False,
+        "references": [],
+    }]
+    file_record = [{
+        "@type": "fileRecord",
+        "id": "@2", "name": name,
+        "type": "IMFOBJECT",
+        "size": len(bin_bytes),
+        "attachTime": int(time.time() * 1000),
+        "additionalInfo": "com.informatica.metadata.template.common.Template",
+    }]
+    metadata_meta = [{"@type": "objectRef", "id": "@1", "type": "mappingTemplate"}]
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("mappingTemplate.json", json.dumps(mapping_template, separators=(",", ":")))
+        zf.writestr("fileRecord.json",      json.dumps(file_record, separators=(",", ":")))
+        zf.writestr("bin/@2.bin",           bin_bytes.decode("utf-8"))
+        zf.writestr("metadata.meta",        json.dumps(metadata_meta, separators=(",", ":")))
+    return buf.getvalue()
+
+
+# ── MTT builder ──────────────────────────────────────────────────────────────
+
+def _build_mtt_zip(
+    session: dict,
+    mtt_frs_guid: str,
+    dtemplate_guid: str,
+    agent_group_guid: str,
+    conn_guids: dict[str, str],
+    folder_data: dict,
+) -> bytes:
+    name   = session["session_name"]
+    attrs  = session.get("attributes", {})
+    sources = folder_data.get("sources", [])
+
+    conn_name = "DBConnection_OLAP"
+    for k, v in attrs.items():
+        if "source connection value" in k.lower() and v:
+            raw = str(v).lstrip("$")
+            if raw in conn_guids:
+                conn_name = raw
+            break
+    if conn_name not in conn_guids:
+        conn_name = next(iter(conn_guids), "DBConnection_OLAP")
+    conn_guid = conn_guids.get(conn_name, "")
+
+    # Build parameters array (one per source qualifier)
+    parameters = []
+    for src in sources:
+        sq_name = f"SQ_{src['source_name']}"
+        po_name = sq_name.replace("_", "-")
+        param_id = abs(hash(f"{name}_{sq_name}")) % (2 ** 31)
+        src_obj_name = f"DUMMY_{sq_name}"
+        src_obj_label = src["source_name"]
+
+        src_field_list = []
+        for col in src.get("columns", []):
+            src_field_list.append({
+                "name":      col["column_name"],
+                "nativeType": _native(col.get("datatype", "varchar2")),
+                "precision": int(col.get("precision") or 50),
+                "scale":     int(col.get("scale") or 0),
+                "nullable":  True,
+            })
+
+        parameters.append({
+            "@type": "mtTaskParameter",
+            "id": param_id,
+            "name": f"${sq_name}$",
+            "type": "SOURCE",
+            "label": sq_name,
+            "uiProperties": {
+                "cnxtype": "Oracle",
+                "connectionParameterized": "true",
+                "paramName": conn_name,
+                "paramLabel": "",
+                "paramType-mapping": "Connection",
+                "logcnx": conn_name,
+                "isSelectDistinct": "false",
+                "objectParameterized": "false",
+                "visible": "false",
+                "isCustomQueryRetainMetaData": "true",
+                "flags": "SUPPORTS_MULTI_SCHEMA",
+                "originalPath": sq_name,
+            },
+            "sourceConnectionId": f"@{conn_guid}",
+            "sourceObject": src_obj_name,
+            "newFlatFile": False,
+            "newObject": False,
+            "showBusinessNames": True,
+            "naturalOrder": True,
+            "truncateTarget": False,
+            "bulkApiDBTarget": False,
+            "srcFFAttrs": {
+                "@type": "flatFileAttrs", "id": param_id + 1,
+                "delimiter": "|", "textQualifier": "NONE",
+                "escapeChar": "", "headerLineNo": 1, "firstDataRow": 2,
+                "rowDelimiter": 0, "consecutiveDelimiter": False,
+                "multiDelimitersAsAnd": False, "firstDataRowAsHeader": False,
+                "codePage": "", "customRowDelimiter": "",
+                "headerAndDataDelimiter": 0,
+            },
+            "customFuncCfg": {
+                "@type": "customFuncConfig", "id": -1,
+                "connections": [], "inputMap": [], "outputFields": [],
+            },
+            "targetRefsV2": {},
+        })
+
+    session_props = [
+        {"name": "Allow Temporary Sequence for Pushdown",
+         "value": attrs.get("Allow Temporary Sequence for Pushdown", "NO"), "recommended": False},
+        {"name": "Allow Temporary View for Pushdown",
+         "value": attrs.get("Allow Temporary View for Pushdown", "NO"), "recommended": False},
+        {"name": "Data Column Delimiter", "value": "|", "recommended": False},
+        {"name": "DTM buffer size",
+         "value": str(attrs.get("DTM buffer size", "24000000")), "recommended": False},
+        {"name": "Error Log File Name", "value": "PMError.log", "recommended": False},
+        {"name": "Pushdown Optimization",
+         "value": attrs.get("Pushdown Optimization", "None"), "recommended": False},
+    ]
+
+    task_properties = [
+        {"@type": "taskProperty", "name": "parameterFileDir",  "currentValue": "",
+         "type": "STRING", "label": "label.parameterFileDir",  "required": False},
+        {"@type": "taskProperty", "name": "parameterFileName", "currentValue": "",
+         "type": "STRING", "label": "label.parameterFileName", "required": False},
+        {"@type": "taskProperty", "name": "outboundMessageUrlQueueTime", "currentValue": "",
+         "type": "NUMBER", "label": "label.outboundMessageUrlQueueTime", "required": False},
+        {"@type": "taskProperty", "name": "outboundMessageUrlToken", "currentValue": "",
+         "type": "STRING", "label": "label.outboundMessageUrlToken", "required": False},
+    ]
+
+    short_desc = f"Session pushed from PC to ICS : {name}"
+    if len(short_desc) > 70:
+        short_desc = short_desc[:67] + "..."
+
+    mt_task = [{
+        "@type": "mtTask",
+        "id": "@1",
+        "name": name,
+        "description": f"Session pushed from PC to ICS : {name}",
+        "autoExpireObject": False,
+        "runtimeEnvironmentId": f"@{agent_group_guid}",
+        "maxLogs": 10,
+        "verbose": False,
+        "mappingId": f"@{dtemplate_guid}",
+        "frsGuid": mtt_frs_guid,
+        "shortDescription": short_desc,
+        "sessionPropertiesList": session_props,
+        "hidden": False,
+        "enableCrossSchemaPushdown": False,
+        "enableParallelRun": False,
+        "autoTunedApplied": False,
+        "autoTunedAppliedType": "NONE",
+        "schemaMode": "async",
+        "valid": True,
+        "schemaValidationErrorCount": -1,
+        "serverlessProperties": {},
+        "taskProperties": task_properties,
+        "optimizationPlan": "NONE",
+        "isMidstreamPreview": False,
+        "allowMaxFieldLength": False,
+        "specialCharacterSupport": True,
+        "useUserDefinedOrder": False,
+        "parameters": parameters,
+    }]
+
+    metadata_meta = [{"@type": "objectRef", "id": "@1", "type": "mtTask"}]
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("mtTask.json",   json.dumps(mt_task, separators=(",", ":")))
+        zf.writestr("metadata.meta", json.dumps(metadata_meta, separators=(",", ":")))
+    return buf.getvalue()
+
+
+# ── TASKFLOW XML builder ─────────────────────────────────────────────────────
+
+_PM_VARS = [
+    "PMBadFileDir", "PMCacheDir", "PMExtProcDir", "PMFailureEmailUser",
+    "PMFolderName", "PMIntegrationServiceName", "PMLookupFileDir",
+    "PMRepositoryServiceName", "PMRepositoryUserName", "PMRootDir",
+    "PMSessionLogDir", "PMSessionRunMode", "PMSourceFileDir", "PMStorageDir",
+    "PMSuccessEmailUser", "PMTargetFileDir", "PMTempDir", "PMWorkflowLogDir",
+    "PMWorkflowName", "PMWorkflowRunId", "PMWorkflowRunInstanceName",
+    "SYSDATE", "WORKFLOWSTARTTIME",
+]
+
+_PM_FORMULAS = {
+    "PMFolderName":           "util:getAssetLocation()",
+    "PMRepositoryUserName":   "util:getUserName()",
+    "PMWorkflowName":         "util:getAssetName()",
+    "PMWorkflowRunId":        "util:getProcessId()",
+    "SYSDATE":                "fn:current-date()",
+    "WORKFLOWSTARTTIME":      "util:getInstanceStartTime()",
+}
+
+_PM_TYPES = {"PMWorkflowRunId": "int", "SYSDATE": "datetime", "WORKFLOWSTARTTIME": "datetime"}
+
+
+def _hyphenate(name: str) -> str:
+    """Convert underscore-based task names to hyphen form for processObject."""
+    return name.replace("_", "-")
+
+
+def _h() -> str:
+    return uuid.uuid4().hex[:8]
+
+
+def _build_taskflow_xml(
+    workflow: dict,
+    mtt_frs_guid: str,
+    mtt_name: str,
+    tf_guid: str,
+    repo_handle: str,
+) -> str:
+    wf_name = workflow["workflow_name"]
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    mtt_hyphen = _hyphenate(mtt_name)
+
+    # Build tempFields XML
+    tempFields_xml = ""
+    for var in [mtt_name] + _PM_VARS:
+        vtype = _PM_TYPES.get(var, "string")
+        if var == mtt_name:
+            vtype = "reference"
+            opts = (
+                f'<option name="failOnNotRun">false</option>'
+                f'<option name="failOnFault">true</option>'
+                f'<option name="referenceTo">$po:{mtt_hyphen}</option>'
+                f'<option name="required">false</option>'
+                f'<option name="isCopy">true</option>'
+            )
+        else:
+            formula = _PM_FORMULAS.get(var)
+            if formula:
+                opts = f'<option name="required">false</option><option name="initialvalue">{formula}</option>'
+            else:
+                opts = f'<option name="required">false</option><option name="initialvalue"/>'
+        tempFields_xml += f'\n               <field description="" name="{var}" type="{vtype}"><options>{opts}</options></field>'
+
+    # Build assignment operations for all PM vars
+    assign_ops = ""
+    for var in _PM_VARS:
+        formula = _PM_FORMULAS.get(var)
+        if formula:
+            assign_ops += f'\n                  <operation source="formula" to="temp.{var}"><expression language="XQuery">{formula}</expression></operation>'
+        else:
+            assign_ops += f'\n                  <operation source="constant" to="temp.{var}"/>'
+
+    # Build service call XML
+    sid_cont = _h()
+    sid_svc  = _h()
+    sid_link = _h()
+    sid_cerr = _h()
+    sid_cwrn = _h()
+
+    service_xml = f"""
+               <eventContainer id="{sid_cont}">
+                  <service id="{sid_svc}">
+                     <title>{mtt_name}</title>
+                     <serviceName>ICSExecuteDataTask</serviceName>
+                     <serviceGUID/>
+                     <serviceInput>
+                        <parameter name="Task Name" source="constant" updatable="true">{mtt_name}</parameter>
+                        <parameter name="Wait for Task to Complete" source="constant" updatable="true">true</parameter>
+                        <parameter name="Max Wait" source="constant" updatable="true">86400</parameter>
+                        <parameter name="GUID" source="constant" updatable="true">{mtt_frs_guid}</parameter>
+                        <parameter name="Has Inout Parameters" source="constant" updatable="true">false</parameter>
+                        <parameter name="Task Type" source="constant" updatable="true">MCT</parameter>
+                        <parameter name="taskField" source="nested">
+                           <operation source="field" to="{mtt_hyphen}">temp.{mtt_name}</operation>
+                           <operation source="field" to="{mtt_hyphen}/taskProperties[1]/parameterFileDir">input.InputMappingTaskParameterFileDir</operation>
+                           <operation source="field" to="temp.{mtt_name}[1]/taskProperties[1]/parameterFileDir">input.InputMappingTaskParameterFileDir</operation>
+                           <operation source="field" to="{mtt_hyphen}/taskProperties[1]/parameterFileName">input.InputMappingTaskParameterFileName</operation>
+                           <operation source="field" to="temp.{mtt_name}[1]/taskProperties[1]/parameterFileName">input.InputMappingTaskParameterFileName</operation>
+                        </parameter>
+                     </serviceInput>
+                     <serviceOutput>
+                        <operation source="field" to="temp.{mtt_name}/output/Run_Id">Run Id</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Start_Time">Start Time</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/End_Time">End Time</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Object_Name">Object Name</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Log_Id">Log Id</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Task_Id">Task Id</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Task_Status">Task Status</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Success_Source_Rows">Success Source Rows</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Failed_Source_Rows">Failed Source Rows</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Success_Target_Rows">Success Target Rows</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Failed_Target_Rows">Failed Target Rows</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Error_Message">Error Message</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/TotalTransErrors">Total Transformation Errors</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/FirstErrorCode">First Error Code</operation>
+                     </serviceOutput>
+                  </service>
+                  <link id="{sid_link}" targetId="end_node"/>
+                  <events>
+                     <catch faultField="temp.{mtt_name}/fault" id="{sid_cerr}" interrupting="true" name="error"/>
+                     <catch faultField="temp.{mtt_name}/fault" id="{sid_cwrn}" interrupting="true" name="warning"/>
+                  </events>
+               </eventContainer>"""
+
+    start_link = _h()
+    asgn1_id   = _h()
+    asgn2_link = _h()
+    asgn2_id   = _h()
+    asgn3_link = _h()
+
+    xml = f"""<aetgt:getResponse xmlns:aetgt="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd"
+                   xmlns:types1="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd">
+   <types1:Item>
+      <types1:EntryId>{repo_handle}</types1:EntryId>
+      <types1:Name>{wf_name}</types1:Name>
+      <types1:MimeType>application/xml+taskflow</types1:MimeType>
+      <types1:Description>These workflows are created from the Workflow Generation Wizard.</types1:Description>
+      <types1:AppliesTo/>
+      <types1:Tags/>
+      <types1:VersionLabel>1.0</types1:VersionLabel>
+      <types1:State>CURRENT</types1:State>
+      <types1:ProcessGroup/>
+      <types1:CreatedBy>PC2IICS-Migration</types1:CreatedBy>
+      <types1:CreationDate>{now_iso}</types1:CreationDate>
+      <types1:ModifiedBy/>
+      <types1:PublicationStatus>unpublished</types1:PublicationStatus>
+      <types1:Entry>
+         <taskflow xmlns="http://schemas.active-endpoints.com/appmodules/screenflow/2010/10/avosScreenflow.xsd"
+                   xmlns:tfm="http://schemas.active-endpoints.com/appmodules/screenflow/2021/04/taskflowModel.xsd"
+                   xmlns:list="urn:activevos:spi:list:functions"
+                   xmlns:ns2="http://informatica.com/HumanTask/2022/12/schema/model/humanTaskCommon.xsd"
+                   GUID="{tf_guid}"
+                   displayName="{wf_name}"
+                   name="{wf_name}"
+                   overrideAPIName="false">
+            <appliesTo/>
+            <description>These workflows are created from the Workflow Generation Wizard.</description>
+            <tags/>
+            <generator>PC2Cloud Workflow Converter v1</generator>
+            <input>
+               <parameter name="InputMappingTaskParameterFileDir" type="string">
+                  <options><option name="required">false</option></options>
+               </parameter>
+               <parameter name="InputMappingTaskParameterFileName" type="string">
+                  <options><option name="required">false</option></options>
+               </parameter>
+            </input>
+            <tempFields>{tempFields_xml}
+            </tempFields>
+            <notes/>
+            <deployment suspendOnFault="false" tracingLevel="verbose">
+               <rest>
+                  <allowedGroups><group>CDI_TFlow_API_group</group></allowedGroups>
+               </rest>
+            </deployment>
+            <flow id="a">
+               <start id="b">
+                  <title>Start</title>
+                  <link id="{start_link}" targetId="{asgn1_id}"/>
+               </start>
+               <assignment id="{asgn1_id}">
+                  <title>Assignment_Workflow_Init</title>
+                  {assign_ops}
+                  <link id="{asgn2_link}" targetId="{asgn2_id}"/>
+               </assignment>
+               <assignment id="{asgn2_id}">
+                  <title>Assignment_PC_Workflow_Parameter_File</title>
+                  <operation source="formula" to="input.InputMappingTaskParameterFileDir">
+                     <expression language="XQuery">if (fn:empty($input.InputMappingTaskParameterFileDir)) then '' else $input.InputMappingTaskParameterFileDir</expression>
+                  </operation>
+                  <operation source="formula" to="input.InputMappingTaskParameterFileName">
+                     <expression language="XQuery">if (fn:empty($input.InputMappingTaskParameterFileName)) then '' else $input.InputMappingTaskParameterFileName</expression>
+                  </operation>
+                  <link id="{asgn3_link}" targetId="{sid_cont}"/>
+               </assignment>
+               {service_xml}
+               <end id="end_node"/>
+            </flow>
+            <dependencies>
+               <processObject xmlns="http://schemas.active-endpoints.com/appmodules/screenflow/2011/06/avosHostEnvironment.xsd"
+                              xmlns:processObject="http://schemas.active-endpoints.com/appmodules/screenflow/2011/06/avosHostEnvironment.xsd"
+                              displayName="{mtt_hyphen}"
+                              isByCopy="true"
+                              name="{mtt_hyphen}">
+                  <description/>
+                  <tags/>
+                  <detail>
+                     <field label="Input Parameters"           name="input"          type="reference"/>
+                     <field label="InOut Parameters"           name="inout"          type="reference"/>
+                     <field label="TaskProperties Parameters"  name="taskProperties" type="reference"/>
+                     <field label="Output Parameters"          name="output"         type="reference"/>
+                     <field label="Fault"                      name="fault"          type="reference"/>
+                  </detail>
+               </processObject>
+            </dependencies>
+         </taskflow>
+      </types1:Entry>
+      <types1:GUID>{tf_guid}</types1:GUID>
+      <types1:DisplayName>{wf_name}</types1:DisplayName>
+   </types1:Item>
+   <types1:CurrentServerDateTime>{now_iso}</types1:CurrentServerDateTime>
+</aetgt:getResponse>"""
+    return xml
+
+
+# ── Connection builder ───────────────────────────────────────────────────────
+
+def _build_connection_zip(
+    conn_name: str, conn_guid: str,
+    agent_group_guid: str, org_id: str, agent_id: str,
+) -> bytes:
+    conn_json = [{
+        "@type": "connection",
+        "id": "@1",
+        "name": conn_name,
+        "runtimeEnvironmentId": f"@{agent_group_guid}",
+        "instanceDisplayName": "Oracle",
+        "host": "default-host",
+        "database": "orcl",
+        "codepage": "UTF-8",
+        "adjustedJdbcHostName": "default-host",
+        "type": "Oracle",
+        "baseType": "Oracle",
+        "port": 1521,
+        "password": "********",
+        "username": "default-username",
+        "majorUpdateTime": "2025-12-11T00:51:01.000Z",
+        "timeout": 60,
+        "connParams": {
+            "agentId": agent_id,
+            "oracleSubType": "oracleonpremise",
+            "agentGroupId": agent_group_guid,
+            "orgId": org_id,
+        },
+        "internal": False,
+        "federatedId": conn_guid,
+        "retryNetworkError": False,
+        "supportsCCIMultiGroup": False,
+        "metadataBrowsable": True,
+        "supportLabels": False,
+        "vaultEnabled": False,
+        "vaultEnabledParams": [],
+        "isRtAttrsRefreshRequired": False,
+        "connectorStatus": "ACTIVE",
+    }]
+    meta = [{"@type": "objectRef", "id": "@1", "type": "connection"}]
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("connection.json", json.dumps(conn_json, separators=(",", ":")))
+        zf.writestr("metadata.meta",   json.dumps(meta, separators=(",", ":")))
+    return buf.getvalue()
+
+
+def _build_agent_group_zip(group_name: str, group_guid: str) -> bytes:
+    ag_json = [{
+        "@type": "agentGroup",
+        "id": "@1",
+        "name": group_name,
+        "description": "Secure Agent Group for PowerCenter migrated jobs",
+        "frsGuid": group_guid,
+        "valid": True,
+    }]
+    meta = [{"@type": "objectRef", "id": "@1", "type": "agentGroup"}]
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("agentGroup.json", json.dumps(ag_json, separators=(",", ":")))
+        zf.writestr("metadata.meta",   json.dumps(meta, separators=(",", ":")))
+    return buf.getvalue()
+
+
+# ── Project / Folder builders ────────────────────────────────────────────────
+
+def _build_folder_json(folder_name: str, folder_guid: str) -> str:
+    obj = {
+        "annotations": [], "baseURI": None,
+        "id": f"Folders({folder_guid})",
+        "title": None, "associationLinks": [], "navigationLinks": [],
+        "type": "OData.frs.Folder", "editLink": None,
+        "mediaEditLinks": [], "operations": [],
+        "properties": [
+            {"name": "id",           "value": folder_guid,  "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            {"name": "name",         "value": folder_name,  "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            {"name": "description",  "value": "",           "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            {"name": "documentType", "value": "Folder",     "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            {"name": "contentType",  "value": "Binary",     "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            {"name": "documentState","value": "COMPLETE",   "valueType": "PRIMITIVE", "null": False, "primitive": True},
+        ],
+        "mediaContentSource": None, "mediaContentType": None,
+    }
+    return json.dumps(obj)
+
+
+def _build_project_json(project_name: str, project_guid: str) -> str:
+    obj = {
+        "annotations": [], "baseURI": None,
+        "id": f"Projects({project_guid})",
+        "title": None, "associationLinks": [], "navigationLinks": [],
+        "type": "OData.frs.Project", "editLink": None,
+        "mediaEditLinks": [], "operations": [],
+        "properties": [
+            {"name": "id",           "value": project_guid, "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            {"name": "name",         "value": project_name, "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            {"name": "description",  "value": "Migrated project from PowerCenter", "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            {"name": "documentType", "value": "Project",    "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            {"name": "contentType",  "value": "Binary",     "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            {"name": "documentState","value": "COMPLETE",   "valueType": "PRIMITIVE", "null": False, "primitive": True},
+        ],
+        "mediaContentSource": None, "mediaContentType": None,
+    }
+    return json.dumps(obj)
+
+
+# ── Metadata helpers ─────────────────────────────────────────────────────────
+
+_CONTEXT_ATTR = [{"name": "id", "value": "@1"}]
+
+def _meta_with_ctx(
+    repo_handle: str | None,
+    object_refs: list[str],
+    description: str | None,
+    content_type: str,
+    doc_state: str,
+    context_attrs,  # list | None | []
+) -> dict:
+    return {
+        "modelVersion": {"major": 0, "minor": 0},
+        "repoInfo": {"repoHandle": repo_handle} if repo_handle else None,
+        "objectRefs": object_refs,
+        "contextAttributes": context_attrs,
+        "additionalInfo": {
+            "description": description,
+            "contentType": content_type,
+            "documentState": doc_state,
+        },
+    }
+
+
+# ── GUID helpers ─────────────────────────────────────────────────────────────
+
+def _new_guid() -> str:
+    import base64
+    raw = uuid.uuid4().bytes
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")[:22]
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return sha256_hex(data)
+
+
+# ── Main generator ────────────────────────────────────────────────────────────
+
+class IICSPackageGenerator:
+    """Generate a complete IICS import package from all parsed PC XML files."""
+
+    PROJECT_NAME     = "BIAINFADEV2_FLEX"
+    FOLDER_NAME      = "Custom_Project"
+    CONNECTION_NAME  = "DBConnection_OLAP_Oracle"
+    AGENT_GROUP_NAME = "PC Secure Agent Group"
+    ORG_NAME         = "PC_IICS_MIGRATION"
+    ORG_ID           = "generated"
+    AGENT_ID         = "010CW70800000000000B"
+
+    def __init__(
+        self,
+        parsed_json_dir: str | Path = "output/parsed_json",
+        remediated_xml_dir: str | Path = "output/remediated_xml",
+        output_dir: str | Path = "output/iics_generated",
+        logger: logging.Logger | None = None,
+    ) -> None:
+        self.parsed_json_dir = Path(parsed_json_dir)
+        self.remediated_xml_dir = Path(remediated_xml_dir)
+        self.output_dir      = Path(output_dir)
+        self.logger = logger or logging.getLogger(__name__)
+
+    def generate(self) -> dict[str, Any]:
+        self.logger.info("IICS Package Generator starting. source=%s", self.parsed_json_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        json_files = sorted(self.parsed_json_dir.glob("*.json"))
+        self.logger.info("Found %d parsed JSON files.", len(json_files))
+
+        project_guid     = _new_guid()
+        agent_group_guid = _new_guid()
+
+        folder_guid      = _new_guid()
+        conn_guid        = _new_guid()
+        folder_path      = f"/Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}"
+
+        connections: dict[str, str] = {self.CONNECTION_NAME: conn_guid}
+        mapping_objects: list[dict] = []
+        zip_contents: dict[str, bytes] = {}
+
+        project_obj = {
+            "objectGuid": project_guid,
+            "objectName": self.PROJECT_NAME,
+            "objectType": "Project",
+            "path": "/Explore",
+            "providerName": None,
+            "metadata": _meta_with_ctx(None, [], "Migrated project from PowerCenter", "Binary", "COMPLETE", []),
+        }
+        zip_contents[f"Explore/{self.PROJECT_NAME}.Project.json"] = \
+            _build_project_json(self.PROJECT_NAME, project_guid).encode("utf-8")
+
+        folder_obj = {
+            "objectGuid": folder_guid,
+            "objectName": self.FOLDER_NAME,
+            "objectType": "Folder",
+            "path": f"/Explore/{self.PROJECT_NAME}",
+            "providerName": None,
+            "metadata": _meta_with_ctx(None, [], None, "Binary", "COMPLETE", []),
+        }
+        zip_contents[f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}.Folder.json"] = \
+            _build_folder_json(self.FOLDER_NAME, folder_guid).encode("utf-8")
+
+        ag_handle = _h() * 2
+        agent_obj = {
+            "objectGuid": agent_group_guid,
+            "objectName": self.AGENT_GROUP_NAME,
+            "objectType": "AgentGroup",
+            "path": "/SYS",
+            "providerName": None,
+            "metadata": _meta_with_ctx(ag_handle, [], None, "JSON", "VALID", _CONTEXT_ATTR),
+        }
+        zip_contents[f"SYS/{self.AGENT_GROUP_NAME}.AgentGroup.zip"] = \
+            _build_agent_group_zip(self.AGENT_GROUP_NAME, agent_group_guid)
+
+        conn_handle = _h() + "0000000000" + _h()[:4]
+        conn_obj = {
+            "objectGuid": conn_guid,
+            "objectName": self.CONNECTION_NAME,
+            "objectType": "Connection",
+            "path": "/SYS",
+            "providerName": None,
+            "metadata": _meta_with_ctx(
+                conn_handle, [agent_group_guid],
+                None, "JSON", "COMPLETE", _CONTEXT_ATTR,
+            ),
+        }
+        zip_contents[f"SYS/{self.CONNECTION_NAME}.Connection.zip"] = \
+            _build_connection_zip(
+                self.CONNECTION_NAME, conn_guid,
+                agent_group_guid, self.ORG_ID, self.AGENT_ID,
+            )
+
+        # ── Process each parsed XML ───────────────────────────────────────────
+        for json_file in json_files:
+            if json_file.name.startswith("."):
+                continue
+            self.logger.info("Processing %s ...", json_file.name)
+            with open(json_file, encoding="utf-8") as fh:
+                parsed = json.load(fh)
+
+            for folder_data in parsed.get("folders", []):
+                # ── Per mapping (all placed in Custom_Project) ────────────────
+                for mapping in folder_data.get("mappings", []):
+                    m_name       = mapping["mapping_name"]
+                    dtemplate_guid = _new_guid()
+                    mtt_frs_guid   = _new_guid()
+
+                    sessions   = folder_data.get("sessions", [])
+                    session    = next(
+                        (s for s in sessions if s.get("session_name") == m_name
+                         or s.get("mapping_name") == m_name),
+                        sessions[0] if sessions else None,
+                    )
+                    workflows  = folder_data.get("workflows", [])
+                    workflow   = next(
+                        (w for w in workflows if w.get("workflow_name") == m_name),
+                        workflows[0] if workflows else None,
+                    )
+
+                    conn_name = self.CONNECTION_NAME
+                    conn_guid = connections[conn_name]
+
+                    remediated_path, xml_filename = _resolve_remediated_xml(
+                        self.remediated_xml_dir, json_file.stem, m_name,
+                    )
+
+                    # DTEMPLATE (PowerCenter XML Task model)
+                    dt_handle = _h() + "0000000000" + _h()[:4]
+                    dtemplate_zip = _build_dtemplate_zip_pcxml(
+                        mapping, folder_data, parsed,
+                        remediated_path, xml_filename, dtemplate_guid,
+                    )
+                    dt_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.DTEMPLATE.zip"
+                    zip_contents[dt_path] = dtemplate_zip
+                    dtemplate_obj = {
+                        "objectGuid": dtemplate_guid,
+                        "objectName": m_name,
+                        "objectType": "DTEMPLATE",
+                        "path": folder_path,
+                        "providerName": None,
+                        "metadata": _meta_with_ctx(
+                            dt_handle, [], f"Remediated PowerCenter XML conversion source : {m_name}",
+                            "JSON", "VALID", _CONTEXT_ATTR,
+                        ),
+                    }
+
+                    mtt_handle = _h() + "0000000000" + _h()[:4]
+                    mtt_zip = _build_mtt_zip_pcxml(
+                        session, mapping, mtt_frs_guid,
+                        dtemplate_guid, agent_group_guid, xml_filename,
+                    )
+                    mtt_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.MTT.zip"
+                    zip_contents[mtt_path] = mtt_zip
+                    mtt_obj = {
+                        "objectGuid": mtt_frs_guid,
+                        "objectName": m_name,
+                        "objectType": "MTT",
+                        "path": folder_path,
+                        "providerName": None,
+                        "metadata": _meta_with_ctx(
+                            mtt_handle,
+                            [dtemplate_guid, conn_guid, agent_group_guid],
+                            f"PowerCenter XML task wrapper for remediated XML : {m_name}",
+                            "JSON", "VALID", _CONTEXT_ATTR,
+                        ),
+                    }
+
+                    tf_obj = None
+                    if workflow:
+                        tf_guid    = _new_guid()
+                        from datetime import datetime
+                        now_str    = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.") + \
+                                     f"{datetime.utcnow().microsecond // 1000:03d}Z"
+                        repo_handle = f"{_h()}-gt-{abs(hash(m_name)) % 99999999}-{now_str}::tf.xml"
+                        tf_xml = _build_taskflow_xml(
+                            workflow, mtt_frs_guid, m_name, tf_guid, repo_handle,
+                        )
+                        tf_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.TASKFLOW.xml"
+                        zip_contents[tf_path] = tf_xml.encode("utf-8")
+                        tf_obj = {
+                            "objectGuid": tf_guid,
+                            "objectName": m_name,
+                            "objectType": "TASKFLOW",
+                            "path": folder_path,
+                            "providerName": None,
+                            "metadata": _meta_with_ctx(
+                                repo_handle, [mtt_frs_guid],
+                                "These workflows are created from the Workflow Generation Wizard.",
+                                "application/json; charset=utf-8",
+                                "VALID",
+                                _CONTEXT_ATTR,
+                            ),
+                        }
+
+                    # IICS import order: MTT → DTEMPLATE → TASKFLOW per mapping
+                    mapping_objects.append(mtt_obj)
+                    mapping_objects.append(dtemplate_obj)
+                    if tf_obj:
+                        mapping_objects.append(tf_obj)
+
+        # Manifest order matches working client export: Project, Connection, mappings, Folder, AgentGroup
+        exported_objects = [project_obj, conn_obj] + mapping_objects + [folder_obj, agent_obj]
+        job_name = f"job-{int(time.time() * 1000)}"
+        manifest = {
+            "name": job_name,
+            "sourceOrgId": self.ORG_ID,
+            "sourceOrgName": self.ORG_NAME,
+            "exportedObjects": exported_objects,
+        }
+        manifest_bytes = json.dumps(manifest, indent=2).replace("\n", "\r\n").encode("utf-8")
+
+        csv_buf = io.StringIO()
+        writer  = csv.writer(csv_buf)
+        writer.writerow(["objectPath", "objectName", "objectType", "id"])
+        for obj in exported_objects:
+            writer.writerow([obj["path"], obj["objectName"], obj["objectType"], obj["objectGuid"]])
+        csv_filename = f"ContentsofExportPackage_{job_name}.csv"
+        csv_bytes    = csv_buf.getvalue().encode("utf-8")
+
+        checksums: dict[str, str] = {}
+        output_zip_path = self.output_dir / "iics_generated_package_checksum.zip"
+
+        with zipfile.ZipFile(output_zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zout:
+            zout.writestr("exportMetadata.v2.json", manifest_bytes)
+            checksums["exportMetadata.v2.json"] = _sha256_bytes(manifest_bytes)
+
+            zout.writestr(csv_filename, csv_bytes)
+            # ContentsofExportPackage CSV is NOT included in checksums (matches client format)
+
+            for rel_path, content in sorted(zip_contents.items()):
+                zout.writestr(rel_path, content)
+                checksums[rel_path] = sha256_hex(content)
+
+            zout.writestr("exportPackage.chksum", build_checksum_file(checksums))
+
+        (self.output_dir / csv_filename).write_bytes(csv_bytes)
+        (self.output_dir / "exportMetadata.v2.json").write_bytes(manifest_bytes)
+
+        ok, chk_errors = validate_zip_checksums(output_zip_path)
+        if not ok:
+            self.logger.error("Checksum validation failed: %s", chk_errors[:10])
+            raise RuntimeError(f"Generated package failed checksum validation: {chk_errors[0]}")
+
+        summary = {
+            "job_name": job_name,
+            "total_assets": len(exported_objects),
+            "asset_types": {
+                t: sum(1 for o in exported_objects if o["objectType"] == t)
+                for t in sorted({o["objectType"] for o in exported_objects})
+            },
+            "output_zip": str(output_zip_path),
+            "output_zip_size_bytes": output_zip_path.stat().st_size,
+            "checksum_validated": ok,
+            "iics_import_instructions": "Admin → Import → Upload ZIP → Select objects → Import",
+        }
+        (self.output_dir / "generation_summary.json").write_text(
+            json.dumps(summary, indent=2), encoding="utf-8"
+        )
+        self.logger.info(
+            "Generation complete. objects=%d zip=%d bytes path=%s",
+            len(exported_objects), output_zip_path.stat().st_size, output_zip_path,
+        )
+        return summary
