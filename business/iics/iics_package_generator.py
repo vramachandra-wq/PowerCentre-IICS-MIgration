@@ -944,6 +944,11 @@ def _h() -> str:
     return uuid.uuid4().hex[:8]
 
 
+def _repo_handle() -> str:
+    """20-char uppercase hex repoHandle matching IICS export format."""
+    return (_h() + _h() + _h()[:4]).upper()
+
+
 def _build_taskflow_xml(
     workflow: dict,
     mtt_frs_guid: str,
@@ -1106,9 +1111,10 @@ def _meta_with_ctx(
     content_type: str,
     doc_state: str,
     context_attrs,  # list | None | []
+    model_version: dict | None = None,
 ) -> dict:
     return {
-        "modelVersion": {"major": 0, "minor": 0},
+        "modelVersion": model_version or {"major": 0, "minor": 0},
         "repoInfo": {"repoHandle": repo_handle} if repo_handle else None,
         "objectRefs": object_refs,
         "contextAttributes": context_attrs,
@@ -1198,7 +1204,7 @@ class IICSPackageGenerator:
         zip_contents[f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}.Folder.json"] = \
             _build_folder_json(self.FOLDER_NAME, folder_guid).encode("utf-8")
 
-        ag_handle = _h() * 2
+        ag_handle = _repo_handle()
         agent_obj = {
             "objectGuid": agent_group_guid,
             "objectName": self.AGENT_GROUP_NAME,
@@ -1210,7 +1216,7 @@ class IICSPackageGenerator:
         zip_contents[f"SYS/{self.AGENT_GROUP_NAME}.AgentGroup.zip"] = \
             _build_agent_group_zip(self.AGENT_GROUP_NAME, agent_group_guid)
 
-        conn_handle = _h() + "0000000000" + _h()[:4]
+        conn_handle = _repo_handle()
         conn_obj = {
             "objectGuid": conn_guid,
             "objectName": self.CONNECTION_NAME,
@@ -1263,7 +1269,7 @@ class IICSPackageGenerator:
                     )
 
                     # DTEMPLATE (PowerCenter XML Task model)
-                    dt_handle = _h() + "0000000000" + _h()[:4]
+                    dt_handle = _repo_handle()
                     dtemplate_zip = _build_dtemplate_zip_pcxml(
                         mapping, folder_data, parsed,
                         remediated_path, xml_filename, dtemplate_guid,
@@ -1283,7 +1289,7 @@ class IICSPackageGenerator:
                         ),
                     }
 
-                    mtt_handle = _h() + "0000000000" + _h()[:4]
+                    mtt_handle = _repo_handle()
                     mtt_zip = _build_mtt_zip_pcxml(
                         session, mapping, folder_data, mtt_frs_guid,
                         dtemplate_guid, agent_group_guid, conn_guid,
@@ -1311,9 +1317,10 @@ class IICSPackageGenerator:
                         from datetime import datetime
                         now_str    = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.") + \
                                      f"{datetime.utcnow().microsecond // 1000:03d}Z"
-                        repo_handle = f"{_h()}-gt-{abs(hash(m_name)) % 99999999}-{now_str}::tf.xml"
+                        tf_manifest_handle = _repo_handle()
+                        entry_id = f"{_h()}-gt-{abs(hash(m_name)) % 99999999}-{now_str}::tf.xml"
                         tf_xml = _build_taskflow_xml(
-                            workflow, mtt_frs_guid, m_name, tf_guid, repo_handle, xml_filename,
+                            workflow, mtt_frs_guid, m_name, tf_guid, entry_id, xml_filename,
                         )
                         tf_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.TASKFLOW.xml"
                         zip_contents[tf_path] = tf_xml.encode("utf-8")
@@ -1324,11 +1331,12 @@ class IICSPackageGenerator:
                             "path": folder_path,
                             "providerName": None,
                             "metadata": _meta_with_ctx(
-                                repo_handle, [mtt_frs_guid],
+                                tf_manifest_handle, [mtt_frs_guid],
                                 "These workflows are created from the Workflow Generation Wizard.",
                                 "application/json; charset=utf-8",
                                 "VALID",
                                 _CONTEXT_ATTR,
+                                model_version={"major": 1, "minor": 0},
                             ),
                         }
 
