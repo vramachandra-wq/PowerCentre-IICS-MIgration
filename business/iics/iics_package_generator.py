@@ -140,10 +140,6 @@ def _build_bin(mapping: dict, folder_data: dict) -> bytes:
 
     # connection parameter
     conn_name = "DBConnection_OLAP"
-    for k, v in attrs.items():
-        if "connection value" in k.lower() and v:
-            conn_name = str(v).lstrip("$")
-            break
     param_id   = c.next()
     anon_id    = c.next()
 
@@ -780,27 +776,23 @@ def _build_dtemplate_zip(mapping: dict, folder_data: dict, guid: str) -> bytes:
 # ── MTT builder ──────────────────────────────────────────────────────────────
 
 def _build_mtt_zip(
-    session: dict,
+    session: dict | None,
     mtt_frs_guid: str,
     dtemplate_guid: str,
     agent_group_guid: str,
     conn_guids: dict[str, str],
     folder_data: dict,
+    mapping_name: str,
 ) -> bytes:
-    name   = session["session_name"]
+    if session is None:
+        session = {"session_name": mapping_name, "mapping_name": mapping_name, "attributes": {}}
+    name   = session.get("session_name", mapping_name)
     attrs  = session.get("attributes", {})
     sources = folder_data.get("sources", [])
+    targets = folder_data.get("targets", [])
 
     conn_name = "DBConnection_OLAP"
-    for k, v in attrs.items():
-        if "source connection value" in k.lower() and v:
-            raw = str(v).lstrip("$")
-            if raw in conn_guids:
-                conn_name = raw
-            break
-    if conn_name not in conn_guids:
-        conn_name = next(iter(conn_guids), "DBConnection_OLAP")
-    conn_guid = conn_guids.get(conn_name, "")
+    conn_guid = conn_guids.get(conn_name) or conn_guids.get("DBConnection_OLAP_Oracle", "")
 
     # Build parameters array (one per source qualifier)
     parameters = []
@@ -861,6 +853,38 @@ def _build_mtt_zip(
             "customFuncCfg": {
                 "@type": "customFuncConfig", "id": -1,
                 "connections": [], "inputMap": [], "outputFields": [],
+            },
+            "targetRefsV2": {},
+        })
+
+    for tgt in targets:
+        tgt_name = tgt.get("target_name") or tgt.get("name", "")
+        if not tgt_name:
+            continue
+        param_id = abs(hash(f"{name}_TGT_{tgt_name}")) % (2 ** 31)
+        parameters.append({
+            "@type": "mtTaskParameter",
+            "id": param_id,
+            "name": f"${tgt_name}$",
+            "type": "TARGET",
+            "label": tgt_name,
+            "objectName": tgt_name,
+            "objectLabel": tgt_name,
+            "operationType": "Insert",
+            "truncateTarget": False,
+            "bulkApiDBTarget": True,
+            "newFlatFile": False,
+            "newObject": False,
+            "naturalOrder": True,
+            "showBusinessNames": True,
+            "targetConnectionId": f"@{conn_guid}",
+            "targetObject": tgt_name,
+            "targetObjectLabel": tgt_name,
+            "runtimeParameterData": {
+                "@type": "mtTaskRuntimeParameterData",
+                "isConnectionRuntimeParameter": True,
+                "isObjectRuntimeParameter": False,
+                "connectionParameterName": conn_name,
             },
             "targetRefsV2": {},
         })
@@ -933,7 +957,29 @@ def _build_mtt_zip(
     return buf.getvalue()
 
 
-# ── TASKFLOW XML builder (minimal PC XML task shell — matches client export) ──
+# ── TASKFLOW XML builder (full CDI workflow — matches teammate export) ───────
+
+_PM_VARS = [
+    "PMBadFileDir", "PMCacheDir", "PMExtProcDir", "PMFailureEmailUser",
+    "PMFolderName", "PMIntegrationServiceName", "PMLookupFileDir",
+    "PMRepositoryServiceName", "PMRepositoryUserName", "PMRootDir",
+    "PMSessionLogDir", "PMSessionRunMode", "PMSourceFileDir", "PMStorageDir",
+    "PMSuccessEmailUser", "PMTargetFileDir", "PMTempDir", "PMWorkflowLogDir",
+    "PMWorkflowName", "PMWorkflowRunId", "PMWorkflowRunInstanceName",
+    "SYSDATE", "WORKFLOWSTARTTIME",
+]
+
+_PM_FORMULAS = {
+    "PMFolderName":           "util:getAssetLocation()",
+    "PMRepositoryUserName":   "util:getUserName()",
+    "PMWorkflowName":         "util:getAssetName()",
+    "PMWorkflowRunId":        "util:getProcessId()",
+    "SYSDATE":                "fn:current-date()",
+    "WORKFLOWSTARTTIME":      "util:getInstanceStartTime()",
+}
+
+_PM_TYPES = {"PMWorkflowRunId": "int", "SYSDATE": "datetime", "WORKFLOWSTARTTIME": "datetime"}
+
 
 def _hyphenate(name: str) -> str:
     """Convert underscore-based task names to hyphen form for processObject."""
@@ -955,11 +1001,95 @@ def _build_taskflow_xml(
     mtt_name: str,
     tf_guid: str,
     repo_handle: str,
-    xml_filename: str,
 ) -> str:
     wf_name = workflow.get("workflow_name", mtt_name)
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     mtt_hyphen = _hyphenate(mtt_name)
-    now_iso = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
+
+    tempFields_xml = ""
+    for var in [mtt_name] + _PM_VARS:
+        vtype = _PM_TYPES.get(var, "string")
+        if var == mtt_name:
+            vtype = "reference"
+            opts = (
+                f'<option name="failOnNotRun">false</option>'
+                f'<option name="failOnFault">true</option>'
+                f'<option name="referenceTo">$po:{mtt_hyphen}</option>'
+                f'<option name="required">false</option>'
+                f'<option name="isCopy">true</option>'
+            )
+        else:
+            formula = _PM_FORMULAS.get(var)
+            if formula:
+                opts = f'<option name="required">false</option><option name="initialvalue">{formula}</option>'
+            else:
+                opts = f'<option name="required">false</option><option name="initialvalue"/>'
+        tempFields_xml += f'\n               <field description="" name="{var}" type="{vtype}"><options>{opts}</options></field>'
+
+    assign_ops = ""
+    for var in _PM_VARS:
+        formula = _PM_FORMULAS.get(var)
+        if formula:
+            assign_ops += f'\n                  <operation source="formula" to="temp.{var}"><expression language="XQuery">{formula}</expression></operation>'
+        else:
+            assign_ops += f'\n                  <operation source="constant" to="temp.{var}"/>'
+
+    sid_cont = _h()
+    sid_svc  = _h()
+    sid_link = _h()
+    sid_cerr = _h()
+    sid_cwrn = _h()
+
+    service_xml = f"""
+               <eventContainer id="{sid_cont}">
+                  <service id="{sid_svc}">
+                     <title>{mtt_name}</title>
+                     <serviceName>ICSExecuteDataTask</serviceName>
+                     <serviceGUID/>
+                     <serviceInput>
+                        <parameter name="Task Name" source="constant" updatable="true">{mtt_name}</parameter>
+                        <parameter name="Wait for Task to Complete" source="constant" updatable="true">true</parameter>
+                        <parameter name="Max Wait" source="constant" updatable="true">86400</parameter>
+                        <parameter name="GUID" source="constant" updatable="true">{mtt_frs_guid}</parameter>
+                        <parameter name="Has Inout Parameters" source="constant" updatable="true">false</parameter>
+                        <parameter name="Task Type" source="constant" updatable="true">MCT</parameter>
+                        <parameter name="taskField" source="nested">
+                           <operation source="field" to="{mtt_hyphen}">temp.{mtt_name}</operation>
+                           <operation source="field" to="{mtt_hyphen}/taskProperties[1]/parameterFileDir">input.InputMappingTaskParameterFileDir</operation>
+                           <operation source="field" to="temp.{mtt_name}[1]/taskProperties[1]/parameterFileDir">input.InputMappingTaskParameterFileDir</operation>
+                           <operation source="field" to="{mtt_hyphen}/taskProperties[1]/parameterFileName">input.InputMappingTaskParameterFileName</operation>
+                           <operation source="field" to="temp.{mtt_name}[1]/taskProperties[1]/parameterFileName">input.InputMappingTaskParameterFileName</operation>
+                        </parameter>
+                     </serviceInput>
+                     <serviceOutput>
+                        <operation source="field" to="temp.{mtt_name}/output/Run_Id">Run Id</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Start_Time">Start Time</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/End_Time">End Time</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Object_Name">Object Name</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Log_Id">Log Id</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Task_Id">Task Id</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Task_Status">Task Status</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Success_Source_Rows">Success Source Rows</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Failed_Source_Rows">Failed Source Rows</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Success_Target_Rows">Success Target Rows</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Failed_Target_Rows">Failed Target Rows</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/Error_Message">Error Message</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/TotalTransErrors">Total Transformation Errors</operation>
+                        <operation source="field" to="temp.{mtt_name}/output/FirstErrorCode">First Error Code</operation>
+                     </serviceOutput>
+                  </service>
+                  <link id="{sid_link}" targetId="end_node"/>
+                  <events>
+                     <catch faultField="temp.{mtt_name}/fault" id="{sid_cerr}" interrupting="true" name="error"/>
+                     <catch faultField="temp.{mtt_name}/fault" id="{sid_cwrn}" interrupting="true" name="warning"/>
+                  </events>
+               </eventContainer>"""
+
+    start_link = _h()
+    asgn1_id   = _h()
+    asgn2_link = _h()
+    asgn2_id   = _h()
+    asgn3_link = _h()
 
     xml = f"""<aetgt:getResponse xmlns:aetgt="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd"
                    xmlns:types1="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd">
@@ -967,37 +1097,91 @@ def _build_taskflow_xml(
       <types1:EntryId>{repo_handle}</types1:EntryId>
       <types1:Name>{wf_name}</types1:Name>
       <types1:MimeType>application/xml+taskflow</types1:MimeType>
-      <types1:Description>PowerCenter XML task wrapper for remediated XML. Convert or deploy through supported IICS APIs before native CDI execution.</types1:Description>
+      <types1:Description>These workflows are created from the Workflow Generation Wizard.</types1:Description>
+      <types1:AppliesTo/>
+      <types1:Tags/>
       <types1:VersionLabel>1.0</types1:VersionLabel>
       <types1:State>CURRENT</types1:State>
+      <types1:ProcessGroup/>
+      <types1:CreatedBy>PC2IICS-Migration</types1:CreatedBy>
       <types1:CreationDate>{now_iso}</types1:CreationDate>
-      <types1:PublicationStatus>published</types1:PublicationStatus>
-      <types1:PublishedContributionId>project:/tf.{wf_name}/{wf_name}.tf.xml</types1:PublishedContributionId>
+      <types1:ModifiedBy/>
+      <types1:PublicationStatus>unpublished</types1:PublicationStatus>
       <types1:Entry>
          <taskflow xmlns="http://schemas.active-endpoints.com/appmodules/screenflow/2010/10/avosScreenflow.xsd"
                    xmlns:tfm="http://schemas.active-endpoints.com/appmodules/screenflow/2021/04/taskflowModel.xsd"
+                   xmlns:list="urn:activevos:spi:list:functions"
+                   xmlns:ns2="http://informatica.com/HumanTask/2022/12/schema/model/humanTaskCommon.xsd"
                    GUID="{tf_guid}"
                    displayName="{wf_name}"
                    name="{wf_name}"
                    overrideAPIName="false">
-            <description>PowerCenter XML task wrapper for remediated XML. This is not a direct native CDI mapping upload.</description>
+            <appliesTo/>
+            <description>These workflows are created from the Workflow Generation Wizard.</description>
+            <tags/>
             <generator>PC2Cloud Workflow Converter v1</generator>
             <input>
-               <parameter name="InputMappingTaskParameterFileDir" type="string"/>
-               <parameter name="InputMappingTaskParameterFileName" type="string"/>
-               <parameter name="InputPowerCenterXmlFileName" type="string"/>
+               <parameter name="InputMappingTaskParameterFileDir" type="string">
+                  <options><option name="required">false</option></options>
+               </parameter>
+               <parameter name="InputMappingTaskParameterFileName" type="string">
+                  <options><option name="required">false</option></options>
+               </parameter>
             </input>
-            <tempFields>
-               <field description="" name="{mtt_name}" type="reference">
-                  <options>
-                     <option name="referenceTo">$po:{mtt_hyphen}</option>
-                     <option name="required">false</option>
-                  </options>
-               </field>
+            <tempFields>{tempFields_xml}
             </tempFields>
+            <notes/>
+            <deployment suspendOnFault="false" tracingLevel="verbose">
+               <rest>
+                  <allowedGroups><group>CDI_TFlow_API_group</group></allowedGroups>
+               </rest>
+            </deployment>
+            <flow id="a">
+               <start id="b">
+                  <title>Start</title>
+                  <link id="{start_link}" targetId="{asgn1_id}"/>
+               </start>
+               <assignment id="{asgn1_id}">
+                  <title>Assignment_Workflow_Init</title>
+                  {assign_ops}
+                  <link id="{asgn2_link}" targetId="{asgn2_id}"/>
+               </assignment>
+               <assignment id="{asgn2_id}">
+                  <title>Assignment_PC_Workflow_Parameter_File</title>
+                  <operation source="formula" to="input.InputMappingTaskParameterFileDir">
+                     <expression language="XQuery">if (fn:empty($input.InputMappingTaskParameterFileDir)) then '' else $input.InputMappingTaskParameterFileDir</expression>
+                  </operation>
+                  <operation source="formula" to="input.InputMappingTaskParameterFileName">
+                     <expression language="XQuery">if (fn:empty($input.InputMappingTaskParameterFileName)) then '' else $input.InputMappingTaskParameterFileName</expression>
+                  </operation>
+                  <link id="{asgn3_link}" targetId="{sid_cont}"/>
+               </assignment>
+               {service_xml}
+               <end id="end_node"/>
+            </flow>
+            <dependencies>
+               <processObject xmlns="http://schemas.active-endpoints.com/appmodules/screenflow/2011/06/avosHostEnvironment.xsd"
+                              xmlns:processObject="http://schemas.active-endpoints.com/appmodules/screenflow/2011/06/avosHostEnvironment.xsd"
+                              displayName="{mtt_hyphen}"
+                              isByCopy="true"
+                              name="{mtt_hyphen}">
+                  <description/>
+                  <tags/>
+                  <detail>
+                     <field label="Input Parameters"           name="input"          type="reference"/>
+                     <field label="InOut Parameters"           name="inout"          type="reference"/>
+                     <field label="TaskProperties Parameters"  name="taskProperties" type="reference"/>
+                     <field label="Output Parameters"          name="output"         type="reference"/>
+                     <field label="Fault"                      name="fault"          type="reference"/>
+                  </detail>
+               </processObject>
+            </dependencies>
          </taskflow>
       </types1:Entry>
+      <types1:GUID>{tf_guid}</types1:GUID>
+      <types1:DisplayName>{wf_name}</types1:DisplayName>
    </types1:Item>
+   <types1:CurrentServerDateTime>{now_iso}</types1:CurrentServerDateTime>
 </aetgt:getResponse>"""
     return xml.replace("\n", "\r\n")
 
@@ -1178,9 +1362,19 @@ class IICSPackageGenerator:
         conn_guid        = _new_guid()
         folder_path      = f"/Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}"
 
-        connections: dict[str, str] = {self.CONNECTION_NAME: conn_guid}
+        connections: dict[str, str] = {
+            self.CONNECTION_NAME: conn_guid,
+            self.CONNECTION_PARAM: conn_guid,
+        }
         mapping_objects: list[dict] = []
         zip_contents: dict[str, bytes] = {}
+        mapping_name_counts: dict[str, int] = {}
+
+        def _unique_mapping_name(base: str) -> str:
+            mapping_name_counts[base] = mapping_name_counts.get(base, 0) + 1
+            if mapping_name_counts[base] == 1:
+                return base
+            return f"{base}_{mapping_name_counts[base]}"
 
         project_obj = {
             "objectGuid": project_guid,
@@ -1245,36 +1439,32 @@ class IICSPackageGenerator:
             for folder_data in parsed.get("folders", []):
                 # ── Per mapping (all placed in Custom_Project) ────────────────
                 for mapping in folder_data.get("mappings", []):
-                    m_name       = mapping["mapping_name"]
+                    m_name       = _unique_mapping_name(mapping["mapping_name"])
                     dtemplate_guid = _new_guid()
                     mtt_frs_guid   = _new_guid()
 
                     sessions   = folder_data.get("sessions", [])
                     session    = next(
                         (s for s in sessions if s.get("session_name") == m_name
-                         or s.get("mapping_name") == m_name),
-                        sessions[0] if sessions else None,
+                         or s.get("mapping_name") == m_name
+                         or s.get("mapping_name") == mapping["mapping_name"]),
+                        next(
+                            (s for s in sessions if s.get("mapping_name") == mapping["mapping_name"]),
+                            sessions[0] if sessions else None,
+                        ),
                     )
                     workflows  = folder_data.get("workflows", [])
                     workflow   = next(
-                        (w for w in workflows if w.get("workflow_name") == m_name),
+                        (w for w in workflows if w.get("workflow_name") == m_name
+                         or w.get("workflow_name") == mapping["mapping_name"]),
                         workflows[0] if workflows else None,
                     )
 
-                    conn_name = self.CONNECTION_NAME
-                    conn_guid = connections[conn_name]
+                    conn_guid = connections[self.CONNECTION_NAME]
 
-                    remediated_path, xml_filename = _resolve_remediated_xml(
-                        self.remediated_xml_dir, json_file.stem, m_name,
-                    )
-
-                    # DTEMPLATE (PowerCenter XML Task model)
+                    # DTEMPLATE (native CDI mapping)
                     dt_handle = _repo_handle()
-                    dtemplate_zip = _build_dtemplate_zip_pcxml(
-                        mapping, folder_data, parsed,
-                        remediated_path, xml_filename, dtemplate_guid,
-                        self.CONNECTION_PARAM,
-                    )
+                    dtemplate_zip = _build_dtemplate_zip(mapping, folder_data, dtemplate_guid)
                     dt_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.DTEMPLATE.zip"
                     zip_contents[dt_path] = dtemplate_zip
                     dtemplate_obj = {
@@ -1284,16 +1474,15 @@ class IICSPackageGenerator:
                         "path": folder_path,
                         "providerName": None,
                         "metadata": _meta_with_ctx(
-                            dt_handle, [], f"Remediated PowerCenter XML conversion source : {m_name}",
+                            dt_handle, [], f"Mapping pushed from PC to ICS : {m_name}",
                             "JSON", "VALID", _CONTEXT_ATTR,
                         ),
                     }
 
                     mtt_handle = _repo_handle()
-                    mtt_zip = _build_mtt_zip_pcxml(
-                        session, mapping, folder_data, mtt_frs_guid,
-                        dtemplate_guid, agent_group_guid, conn_guid,
-                        xml_filename, self.CONNECTION_PARAM,
+                    mtt_zip = _build_mtt_zip(
+                        session, mtt_frs_guid, dtemplate_guid,
+                        agent_group_guid, connections, folder_data, m_name,
                     )
                     mtt_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.MTT.zip"
                     zip_contents[mtt_path] = mtt_zip
@@ -1306,7 +1495,7 @@ class IICSPackageGenerator:
                         "metadata": _meta_with_ctx(
                             mtt_handle,
                             [dtemplate_guid, conn_guid, agent_group_guid],
-                            f"PowerCenter XML task wrapper for remediated XML : {m_name}",
+                            f"Session pushed from PC to ICS : {m_name}",
                             "JSON", "VALID", _CONTEXT_ATTR,
                         ),
                     }
@@ -1320,7 +1509,7 @@ class IICSPackageGenerator:
                         tf_manifest_handle = _repo_handle()
                         entry_id = f"{_h()}-gt-{abs(hash(m_name)) % 99999999}-{now_str}::tf.xml"
                         tf_xml = _build_taskflow_xml(
-                            workflow, mtt_frs_guid, m_name, tf_guid, entry_id, xml_filename,
+                            workflow, mtt_frs_guid, m_name, tf_guid, entry_id,
                         )
                         tf_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.TASKFLOW.xml"
                         zip_contents[tf_path] = tf_xml.encode("utf-8")
@@ -1340,9 +1529,9 @@ class IICSPackageGenerator:
                             ),
                         }
 
-                    # IICS import order: MTT → DTEMPLATE → TASKFLOW per mapping
-                    mapping_objects.append(mtt_obj)
+                    # Teammate export order: DTEMPLATE -> MTT -> TASKFLOW
                     mapping_objects.append(dtemplate_obj)
+                    mapping_objects.append(mtt_obj)
                     if tf_obj:
                         mapping_objects.append(tf_obj)
 
