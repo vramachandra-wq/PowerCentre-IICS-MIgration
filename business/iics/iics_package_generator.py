@@ -474,6 +474,7 @@ def _resolve_remediated_xml(
 
 def _build_pcxml_template_bin(
     mapping: dict, folder_data: dict, parsed: dict, xml_filename: str,
+    conn_param_name: str = "DBConnection_OLAP",
 ) -> bytes:
     name = mapping["mapping_name"]
     content = {
@@ -504,7 +505,7 @@ def _build_pcxml_template_bin(
             "$$class": 10,
             "input": "true",
             "output": "false",
-            "name": "DBConnection_OLAP_Oracle",
+            "name": conn_param_name,
             "anonymousType": {
                 "$$class": 12,
                 "typeSystem": "Oracle",
@@ -528,11 +529,14 @@ def _build_dtemplate_zip_pcxml(
     remediated_path: Path,
     xml_filename: str,
     guid: str,
+    conn_param_name: str = "DBConnection_OLAP",
 ) -> bytes:
     name = mapping["mapping_name"]
     now = int(time.time() * 1000)
     preview = f"Generated preview placeholder for {name}\n".encode("utf-8")
-    template_bin = _build_pcxml_template_bin(mapping, folder_data, parsed, xml_filename)
+    template_bin = _build_pcxml_template_bin(
+        mapping, folder_data, parsed, xml_filename, conn_param_name,
+    )
     xml_bytes = remediated_path.read_bytes()
 
     mapping_template = [{
@@ -624,13 +628,48 @@ def _build_session_properties_list(session: dict | None) -> list[dict]:
     return props
 
 
+def _build_mtt_parameters(
+    folder_data: dict,
+    conn_guid: str,
+    conn_param_name: str = "DBConnection_OLAP",
+) -> list[dict]:
+    """Build MTT connection parameters — one TARGET entry per target table."""
+    parameters: list[dict] = []
+    for idx, tgt in enumerate(folder_data.get("targets", []), start=1):
+        obj_name = tgt.get("target_name") or tgt.get("name", "")
+        if not obj_name:
+            continue
+        parameters.append({
+            "@type": "mtTaskParameter",
+            "id": idx,
+            "name": f"${obj_name}$",
+            "type": "TARGET",
+            "label": conn_param_name,
+            "targetConnectionId": f"@{conn_guid}",
+            "targetObject": obj_name,
+            "targetObjectLabel": obj_name,
+            "operationType": "Insert",
+            "truncateTarget": False,
+            "runtimeParameterData": {
+                "@type": "mtTaskRuntimeParameterData",
+                "isConnectionRuntimeParameter": True,
+                "isObjectRuntimeParameter": False,
+                "connectionParameterName": conn_param_name,
+            },
+        })
+    return parameters
+
+
 def _build_mtt_zip_pcxml(
     session: dict | None,
     mapping: dict,
+    folder_data: dict,
     mtt_frs_guid: str,
     dtemplate_guid: str,
     agent_group_guid: str,
+    conn_guid: str,
     xml_filename: str,
+    conn_param_name: str = "DBConnection_OLAP",
 ) -> bytes:
     name = session.get("session_name", mapping["mapping_name"]) if session else mapping["mapping_name"]
     short_desc = f"PC XML task wrapper : {name}"
@@ -661,6 +700,10 @@ def _build_mtt_zip_pcxml(
         },
         "sourceXml": xml_filename,
         "paramFileType": "PARAM_FILE_LOCAL",
+        "parameters": _build_mtt_parameters(folder_data, conn_guid, conn_param_name),
+        "inOutParameters": [],
+        "connRuntimeAttrs": [],
+        "sequences": [],
         "mappingSummary": {
             "transformationCount": mapping.get(
                 "transformation_count", len(mapping.get("transformations", [])),
@@ -676,14 +719,11 @@ def _build_mtt_zip_pcxml(
         "enableParallelRun": False,
         "schemaMode": "async",
         "optimizationPlan": "NONE",
-        "allowMaxFieldLength": False,
-        "specialCharacterSupport": True,
-        "useUserDefinedOrder": False,
         "taskProperties": [
             {"@type": "taskProperty", "name": "parameterFileDir", "currentValue": "",
-             "type": "STRING", "label": "label.parameterFileDir", "required": False},
+             "type": "STRING", "required": False},
             {"@type": "taskProperty", "name": "parameterFileName", "currentValue": "",
-             "type": "STRING", "label": "label.parameterFileName", "required": False},
+             "type": "STRING", "required": False},
         ],
     }]
     metadata_meta = [{"@type": "objectRef", "id": "@1", "type": "mtTask"}]
@@ -1144,20 +1184,12 @@ def _build_connection_zip(
         "majorUpdateTime": "2025-12-11T00:51:01.000Z",
         "timeout": 60,
         "connParams": {
-            "agentId": agent_id,
-            "oracleSubType": "oracleonpremise",
             "agentGroupId": agent_group_guid,
-            "orgId": org_id,
         },
         "internal": False,
         "federatedId": conn_guid,
         "retryNetworkError": False,
-        "supportsCCIMultiGroup": False,
         "metadataBrowsable": True,
-        "supportLabels": False,
-        "vaultEnabled": False,
-        "vaultEnabledParams": [],
-        "isRtAttrsRefreshRequired": False,
         "connectorStatus": "ACTIVE",
     }]
     meta = [{"@type": "objectRef", "id": "@1", "type": "connection"}]
@@ -1173,9 +1205,8 @@ def _build_agent_group_zip(group_name: str, group_guid: str) -> bytes:
         "@type": "agentGroup",
         "id": "@1",
         "name": group_name,
-        "description": "Secure Agent Group for PowerCenter migrated jobs",
-        "frsGuid": group_guid,
-        "valid": True,
+        "description": "Generated runtime environment placeholder",
+        "federatedId": group_guid,
     }]
     meta = [{"@type": "objectRef", "id": "@1", "type": "agentGroup"}]
     buf = io.BytesIO()
@@ -1272,6 +1303,7 @@ class IICSPackageGenerator:
     PROJECT_NAME     = "BIAINFADEV2_FLEX"
     FOLDER_NAME      = "Custom_Project"
     CONNECTION_NAME  = "DBConnection_OLAP_Oracle"
+    CONNECTION_PARAM = "DBConnection_OLAP"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
     ORG_NAME         = "PC_IICS_MIGRATION"
     ORG_ID           = "generated"
@@ -1398,6 +1430,7 @@ class IICSPackageGenerator:
                     dtemplate_zip = _build_dtemplate_zip_pcxml(
                         mapping, folder_data, parsed,
                         remediated_path, xml_filename, dtemplate_guid,
+                        self.CONNECTION_PARAM,
                     )
                     dt_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.DTEMPLATE.zip"
                     zip_contents[dt_path] = dtemplate_zip
@@ -1415,8 +1448,9 @@ class IICSPackageGenerator:
 
                     mtt_handle = _h() + "0000000000" + _h()[:4]
                     mtt_zip = _build_mtt_zip_pcxml(
-                        session, mapping, mtt_frs_guid,
-                        dtemplate_guid, agent_group_guid, xml_filename,
+                        session, mapping, folder_data, mtt_frs_guid,
+                        dtemplate_guid, agent_group_guid, conn_guid,
+                        xml_filename, self.CONNECTION_PARAM,
                     )
                     mtt_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.MTT.zip"
                     zip_contents[mtt_path] = mtt_zip
