@@ -112,9 +112,14 @@ class MySQLReportPersistence:
             for relative_path, table_name in CSV_REPORTS:
                 path = self._existing_report_path(relative_path)
                 rows = self._read_csv(path, include_report_row_number=table_name == "remediation_report")
-                if table_name == "remediation_report":
-                    self._clear_table(connection, table_name)
-                counts[table_name] = self._persist_rows(connection, table_name, rows, timestamp, source_name=str(path))
+                counts[table_name] = self._persist_rows(
+                    connection,
+                    table_name,
+                    rows,
+                    timestamp,
+                    source_name=str(path),
+                    refresh_table=True,
+                )
 
             validation_path = self._existing_report_path("automation/validation_summary.json")
             rows = self._read_json(validation_path)
@@ -124,6 +129,7 @@ class MySQLReportPersistence:
                 rows,
                 timestamp,
                 source_name=str(validation_path),
+                refresh_table=True,
             )
 
             parsed_json_folder = self.output_folder / "parsed_json"
@@ -137,6 +143,7 @@ class MySQLReportPersistence:
                         rows,
                         timestamp,
                         source_name=str(json_path),
+                        refresh_table=True,
                     )
             else:
                 self.logger.warning("Parsed JSON folder not found: %s", parsed_json_folder)
@@ -148,6 +155,7 @@ class MySQLReportPersistence:
                 log_rows,
                 timestamp,
                 source_name="automation.log",
+                append_only=True,
             )
             connection.commit()
             self.logger.info("MySQL report persistence completed. table_counts=%s", counts)
@@ -201,8 +209,12 @@ class MySQLReportPersistence:
         rows: list[dict[str, Any]],
         timestamp: str,
         source_name: str,
+        refresh_table: bool = False,
+        append_only: bool = False,
     ) -> int:
         table_name = self._safe_identifier(table_name)
+        if refresh_table:
+            self._drop_table(connection, table_name)
         if not rows:
             self.logger.warning("No rows available for MySQL table %s from %s", table_name, source_name)
             self._ensure_table(connection, table_name, ["source_file"])
@@ -212,12 +224,15 @@ class MySQLReportPersistence:
         columns = sorted({column for row in normalized_rows for column in row.keys()})
         self._ensure_table(connection, table_name, columns)
         self._ensure_columns(connection, table_name, columns)
-        affected = self._upsert_rows(connection, table_name, columns, normalized_rows, timestamp)
+        if append_only:
+            affected = self._insert_ignore_rows(connection, table_name, columns, normalized_rows, timestamp)
+        else:
+            affected = self._upsert_rows(connection, table_name, columns, normalized_rows, timestamp)
         self.logger.info("Persisted %s row(s) into MySQL table %s.", len(normalized_rows), table_name)
         return affected
 
-    def _clear_table(self, connection, table_name: str) -> None:
-        """Clear a generated latest-state report table before reloading it."""
+    def _drop_table(self, connection, table_name: str) -> None:
+        """Drop a generated latest-state report table before recreating it."""
 
         table_name = self._safe_identifier(table_name)
         cursor = connection.cursor()
@@ -225,9 +240,10 @@ class MySQLReportPersistence:
             cursor.execute("SHOW TABLES LIKE %s", (table_name,))
             if cursor.fetchone() is None:
                 return
-            cursor.execute(f"DELETE FROM `{table_name}`")
+            cursor.execute(f"DROP TABLE `{table_name}`")
+            self.logger.info("Dropped MySQL report table before refresh: %s", table_name)
         except Exception:
-            self.logger.exception("Unable to clear MySQL table before reload: %s", table_name)
+            self.logger.exception("Unable to drop MySQL table before refresh: %s", table_name)
             raise
         finally:
             cursor.close()
@@ -320,6 +336,42 @@ class MySQLReportPersistence:
             for start in range(0, len(values), batch_size):
                 cursor.executemany(sql, values[start : start + batch_size])
             return len(values)
+        finally:
+            cursor.close()
+
+    def _insert_ignore_rows(
+        self,
+        connection,
+        table_name: str,
+        columns: list[str],
+        rows: list[dict[str, Any]],
+        timestamp: str,
+    ) -> int:
+        if not rows:
+            return 0
+        cursor = connection.cursor()
+        safe_columns = [self._safe_identifier(column) for column in columns]
+        insert_columns = ["row_hash", "timestamp", *safe_columns]
+        placeholders = ", ".join(["%s"] * len(insert_columns))
+        sql = (
+            f"INSERT IGNORE INTO `{table_name}` ({', '.join(f'`{column}`' for column in insert_columns)}) "
+            f"VALUES ({placeholders})"
+        )
+        values = [
+            (
+                self._row_hash(row),
+                timestamp,
+                *[self._stringify(row.get(column, "")) for column in columns],
+            )
+            for row in rows
+        ]
+        inserted = 0
+        try:
+            batch_size = max(self.config.batch_size, 1)
+            for start in range(0, len(values), batch_size):
+                cursor.executemany(sql, values[start : start + batch_size])
+                inserted += max(cursor.rowcount, 0)
+            return inserted
         finally:
             cursor.close()
 
