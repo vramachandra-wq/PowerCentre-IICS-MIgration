@@ -7,6 +7,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -22,6 +23,15 @@ CSV_REPORTS = [
     ("automation/ai_evaluation_matrix.csv", "ai_evaluation_matrix"),
     ("automation/ai_recommendation_report.csv", "ai_recommendation_report"),
 ]
+
+def resolve_mysql_persistence_enabled(config_enabled: bool) -> bool:
+    """Allow local override via PC_IICS_MYSQL_PERSISTENCE=false."""
+
+    value = os.getenv("PC_IICS_MYSQL_PERSISTENCE")
+    if value is None:
+        return config_enabled
+    return value.strip().lower() not in {"0", "false", "no", "off"}
+
 
 LOG_PATTERN = re.compile(
     r"^(?P<timestamp>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+"
@@ -84,7 +94,7 @@ class MySQLReportPersistence:
                 database_payload = json.load(config_file).get("database", {})
 
         config = MySQLPersistenceConfig(
-            enabled=bool(mysql_payload.get("enabled", True)),
+            enabled=resolve_mysql_persistence_enabled(bool(mysql_payload.get("enabled", True))),
             host=str(mysql_payload.get("host", database_payload.get("host", "localhost"))),
             port=int(mysql_payload.get("port", database_payload.get("port", 3306))),
             username=str(mysql_payload.get("username", database_payload.get("username", ""))),
