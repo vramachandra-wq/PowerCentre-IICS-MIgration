@@ -16,12 +16,23 @@ def create_app():
     """Create app for the migration workflow."""
     from fastapi import FastAPI
 
-    from api.routes import evaluation_router, recommendation_router
+    from api.routes import (
+        evaluation_router,
+        health_router,
+        job_router,
+        migration_router,
+        recommendation_router,
+        report_router,
+    )
 
     fastapi_app = FastAPI(
         title="PowerCenter to IDMC Migration Accelerator API",
         version="1.0.0",
     )
+    fastapi_app.include_router(health_router)
+    fastapi_app.include_router(migration_router)
+    fastapi_app.include_router(job_router)
+    fastapi_app.include_router(report_router)
     fastapi_app.include_router(recommendation_router)
     fastapi_app.include_router(evaluation_router)
     return fastapi_app

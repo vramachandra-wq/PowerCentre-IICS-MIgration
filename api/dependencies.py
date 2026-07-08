@@ -9,15 +9,23 @@ from functools import lru_cache
 from pathlib import Path
 
 from automation.evaluation_matrix import ReportRepository
+from business.migration_orchestrator import MigrationOrchestrator
 from common.config.config import ConfigLoader
 from common.logger.logger import LoggerFactory
+
+
+@lru_cache(maxsize=1)
+def get_config():
+    """Return application configuration for the migration workflow."""
+
+    return ConfigLoader(Path("common/config/config.json")).load()
 
 
 @lru_cache(maxsize=1)
 def get_logger():
     """Return logger for the migration workflow."""
 
-    config = ConfigLoader(Path("common/config/config.json")).load()
+    config = get_config()
     return LoggerFactory.create_logger(config.logging, config.paths.log_folder)
 
 
@@ -25,3 +33,9 @@ def get_repository() -> ReportRepository:
     """Return repository for the migration workflow."""
 
     return ReportRepository()
+
+
+def get_migration_orchestrator() -> MigrationOrchestrator:
+    """Return the migration orchestrator used by REST controllers."""
+
+    return MigrationOrchestrator(config=get_config(), logger=get_logger())

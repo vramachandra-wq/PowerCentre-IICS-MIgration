@@ -130,6 +130,90 @@ Use `data/database/mysql_workbench_full_load.sql` in MySQL Workbench to create t
 
 Use `data/database/verification_queries.sql` to validate table counts and inspect loaded data.
 
+## REST APIs
+
+Start the FastAPI application:
+
+```bash
+uvicorn app:create_app --factory --reload
+```
+
+Health:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/health
+```
+
+Start a complete migration from `input_xml/`:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/migrate \
+  -H "Content-Type: application/json" \
+  -d '{"use_input_folder": true}'
+```
+
+Start a migration with uploaded XML content:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/migrate \
+  -H "Content-Type: application/json" \
+  -d '{"uploaded_xml_name": "sample.xml", "uploaded_xml_content": "<POWERMART></POWERMART>"}'
+```
+
+Sample migration response:
+
+```json
+{
+  "job_id": "7b2d8f7e4d0f4e6c9c8f6b3b0f1b0a11",
+  "status": "Completed",
+  "readiness_score": 96.42,
+  "validation_summary": {
+    "total_issues": 42,
+    "open_issues": 3,
+    "resolved_issues": 39,
+    "severity_counts": {
+      "HIGH": 4,
+      "MEDIUM": 30,
+      "LOW": 8
+    }
+  },
+  "auto_fix_accuracy": 92.5,
+  "generated_report_locations": {
+    "validation_report": "output/validation_report.csv",
+    "remediation_report": "output/remediation_report.csv",
+    "dashboard_dataset_json": "output/automation/dashboard_dataset.json"
+  },
+  "iics_deployment": {
+    "provider": "MockIICSProvider",
+    "status": {
+      "state": "COMPLETED"
+    }
+  }
+}
+```
+
+Check job progress:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/jobs/{job_id}
+```
+
+List generated reports:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/reports/{job_id}
+```
+
+Return the dashboard dataset for Streamlit:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/dashboard/{job_id}
+```
+
+The REST controllers are intentionally thin. They validate API input, call `MigrationOrchestrator`, and return response models. The orchestrator coordinates the existing parser, canonical repository builder, complexity classifier, datatype harmonization, validation, rule-based remediation, readiness/risk/effectiveness reports, automation datasets, and the pluggable `IICSAdapter`.
+
+IICS deployment defaults to `MockIICSProvider`, which performs no external API calls. Set `IICS_PROVIDER=real` only after implementing the TODO methods in `RealIICSProvider`.
+
 ## Central Repository Tables in SQL
 
 | Table | Purpose |
