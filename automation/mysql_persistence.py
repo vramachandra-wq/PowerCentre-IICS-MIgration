@@ -5,7 +5,6 @@ Persist generated automation reports into MySQL.
 from __future__ import annotations
 
 import csv
-import hashlib
 import json
 import logging
 import re
@@ -48,7 +47,7 @@ class MySQLPersistenceConfig:
 class MySQLReportPersistence:
     """Persists generated report files into MySQL tables."""
 
-    METADATA_COLUMNS = {"id", "row_hash", "timestamp"}
+    METADATA_COLUMNS = {"id", "timestamp"}
 
     def __init__(
         self,
@@ -111,7 +110,7 @@ class MySQLReportPersistence:
 
             for relative_path, table_name in CSV_REPORTS:
                 path = self._existing_report_path(relative_path)
-                rows = self._read_csv(path, include_report_row_number=table_name == "remediation_report")
+                rows = self._read_csv(path)
                 counts[table_name] = self._persist_rows(
                     connection,
                     table_name,
@@ -221,7 +220,7 @@ class MySQLReportPersistence:
             return 0
 
         normalized_rows = [self._normalize_row(row, source_name) for row in rows]
-        columns = sorted({column for row in normalized_rows for column in row.keys()})
+        columns = self._ordered_columns(normalized_rows)
         self._ensure_table(connection, table_name, columns)
         self._ensure_columns(connection, table_name, columns)
         if append_only:
@@ -250,19 +249,21 @@ class MySQLReportPersistence:
 
     def _ensure_table(self, connection, table_name: str, columns: Iterable[str]) -> None:
         cursor = connection.cursor()
-        column_sql = ", ".join(f"`{self._safe_identifier(column)}` LONGTEXT NULL" for column in columns)
+        column_sql = ", ".join(self._column_definition(column) for column in columns)
         if column_sql:
             column_sql = ", " + column_sql
         try:
-            unique_key = self._safe_identifier(f"uq_{table_name}_row_hash")
+            unique_key = self._safe_identifier(f"uq_{table_name}_log_line")
+            unique_sql = ""
+            if table_name == "automation_log":
+                unique_sql = f", UNIQUE KEY `{unique_key}` (`source_row_number`)"
             cursor.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS `{table_name}` (
-                    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-                    `row_hash` CHAR(64) NOT NULL,
-                    `timestamp` DATETIME NOT NULL
+                    `id` BIGINT AUTO_INCREMENT PRIMARY KEY
                     {column_sql},
-                    UNIQUE KEY `{unique_key}` (`row_hash`)
+                    `timestamp` DATETIME NOT NULL
+                    {unique_sql}
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
                 """
             )
@@ -279,27 +280,59 @@ class MySQLReportPersistence:
                 for column in existing_raw
                 if column.lower() == self._safe_identifier(column).lower()
             }
-            if "row_hash" not in existing_safe:
-                cursor.execute(f"ALTER TABLE `{table_name}` ADD COLUMN `row_hash` CHAR(64) NULL")
-                existing_safe.add("row_hash")
+            if "row_hash" in existing_safe:
+                self._drop_legacy_row_hash(cursor, table_name)
+                existing_safe.remove("row_hash")
+            if "id" not in existing_safe:
+                cursor.execute(f"ALTER TABLE `{table_name}` ADD COLUMN `id` BIGINT AUTO_INCREMENT PRIMARY KEY FIRST")
+                existing_safe.add("id")
             if "timestamp" not in existing_safe:
                 cursor.execute(f"ALTER TABLE `{table_name}` ADD COLUMN `timestamp` DATETIME NULL")
                 existing_safe.add("timestamp")
             for column in columns:
                 safe_column = self._safe_identifier(column)
                 if safe_column not in existing_safe and safe_column not in self.METADATA_COLUMNS:
-                    cursor.execute(f"ALTER TABLE `{table_name}` ADD COLUMN `{safe_column}` LONGTEXT NULL")
+                    cursor.execute(f"ALTER TABLE `{table_name}` ADD COLUMN {self._column_definition(safe_column)}")
                     existing_safe.add(safe_column)
-            self._ensure_unique_row_hash_index(cursor, table_name)
+            if table_name == "automation_log":
+                self._backfill_log_source_row_number(cursor, table_name)
+                self._ensure_unique_log_line_index(cursor, table_name)
         finally:
             cursor.close()
 
-    def _ensure_unique_row_hash_index(self, cursor, table_name: str) -> None:
-        unique_key = self._safe_identifier(f"uq_{table_name}_row_hash")
+    def _ensure_unique_log_line_index(self, cursor, table_name: str) -> None:
+        unique_key = self._safe_identifier(f"uq_{table_name}_log_line")
         cursor.execute(f"SHOW INDEX FROM `{table_name}`")
         existing_indexes = {self._safe_identifier(str(row[2])) for row in cursor.fetchall()}
         if unique_key not in existing_indexes:
-            cursor.execute(f"ALTER TABLE `{table_name}` ADD UNIQUE KEY `{unique_key}` (`row_hash`)")
+            cursor.execute(f"ALTER TABLE `{table_name}` ADD UNIQUE KEY `{unique_key}` (`source_row_number`)")
+
+    def _drop_legacy_row_hash(self, cursor, table_name: str) -> None:
+        cursor.execute(f"SHOW INDEX FROM `{table_name}`")
+        row_hash_indexes = {
+            str(row[2])
+            for row in cursor.fetchall()
+            if str(row[4]).lower() == "row_hash" and str(row[2]).upper() != "PRIMARY"
+        }
+        for index_name in row_hash_indexes:
+            cursor.execute(f"ALTER TABLE `{table_name}` DROP INDEX `{index_name}`")
+        cursor.execute(f"ALTER TABLE `{table_name}` DROP COLUMN `row_hash`")
+
+    def _backfill_log_source_row_number(self, cursor, table_name: str) -> None:
+        cursor.execute(
+            f"""
+            UPDATE `{table_name}`
+            SET `source_row_number` = CAST(`line_number` AS UNSIGNED)
+            WHERE `source_row_number` IS NULL
+              AND `line_number` REGEXP '^[0-9]+$'
+            """
+        )
+
+    def _column_definition(self, column: str) -> str:
+        safe_column = self._safe_identifier(column)
+        if safe_column == "source_row_number":
+            return "`source_row_number` BIGINT NULL"
+        return f"`{safe_column}` LONGTEXT NULL"
 
     def _upsert_rows(
         self,
@@ -313,11 +346,9 @@ class MySQLReportPersistence:
             return 0
         cursor = connection.cursor()
         safe_columns = [self._safe_identifier(column) for column in columns]
-        insert_columns = ["row_hash", "timestamp", *safe_columns]
+        insert_columns = [*safe_columns, "timestamp"]
         placeholders = ", ".join(["%s"] * len(insert_columns))
-        update_columns = ["`timestamp` = VALUES(`timestamp`)", *[
-            f"`{column}` = VALUES(`{column}`)" for column in safe_columns
-        ]]
+        update_columns = [f"`{column}` = VALUES(`{column}`)" for column in [*safe_columns, "timestamp"]]
         sql = (
             f"INSERT INTO `{table_name}` ({', '.join(f'`{column}`' for column in insert_columns)}) "
             f"VALUES ({placeholders}) "
@@ -325,9 +356,8 @@ class MySQLReportPersistence:
         )
         values = [
             (
-                self._row_hash(row),
-                timestamp,
                 *[self._stringify(row.get(column, "")) for column in columns],
+                timestamp,
             )
             for row in rows
         ]
@@ -351,7 +381,7 @@ class MySQLReportPersistence:
             return 0
         cursor = connection.cursor()
         safe_columns = [self._safe_identifier(column) for column in columns]
-        insert_columns = ["row_hash", "timestamp", *safe_columns]
+        insert_columns = [*safe_columns, "timestamp"]
         placeholders = ", ".join(["%s"] * len(insert_columns))
         sql = (
             f"INSERT IGNORE INTO `{table_name}` ({', '.join(f'`{column}`' for column in insert_columns)}) "
@@ -359,9 +389,8 @@ class MySQLReportPersistence:
         )
         values = [
             (
-                self._row_hash(row),
-                timestamp,
                 *[self._stringify(row.get(column, "")) for column in columns],
+                timestamp,
             )
             for row in rows
         ]
@@ -375,7 +404,7 @@ class MySQLReportPersistence:
         finally:
             cursor.close()
 
-    def _read_csv(self, path: Path, include_report_row_number: bool = False) -> list[dict[str, Any]]:
+    def _read_csv(self, path: Path) -> list[dict[str, Any]]:
         if not path.exists():
             self.logger.warning("CSV report not found for MySQL persistence: %s", path)
             return []
@@ -385,13 +414,10 @@ class MySQLReportPersistence:
                 if not reader.fieldnames:
                     self.logger.warning("CSV report has no header: %s", path)
                     return []
-                rows = [dict(row) for row in reader]
-                if include_report_row_number:
-                    return [
-                        {"report_row_number": index, **row}
-                        for index, row in enumerate(rows, start=1)
-                    ]
-                return rows
+                return [
+                    {**dict(row), "source_row_number": index}
+                    for index, row in enumerate(reader, start=1)
+                ]
         except csv.Error as exc:
             self.logger.exception("Unable to parse CSV report: %s", path)
             raise ValueError(f"Unable to parse CSV report: {path}") from exc
@@ -431,6 +457,7 @@ class MySQLReportPersistence:
                         "module": match.group("module"),
                         "message": match.group("message"),
                         "line_number": line_number,
+                        "source_row_number": line_number,
                     }
                     rows.append(current)
                 elif current:
@@ -443,6 +470,7 @@ class MySQLReportPersistence:
                             "module": "",
                             "message": line,
                             "line_number": line_number,
+                            "source_row_number": line_number,
                         }
                     )
         return rows
@@ -511,42 +539,28 @@ class MySQLReportPersistence:
         return f"{prefix}_{key}" if prefix else str(key)
 
     def _normalize_row(self, row: dict[str, Any], source_name: str) -> dict[str, Any]:
-        normalized: dict[str, Any] = {"source_file": source_name}
+        normalized: dict[str, Any] = {}
         for key, value in row.items():
             column = self._safe_identifier(str(key))
             if column in self.METADATA_COLUMNS:
                 column = f"data_{column}"
             normalized[column] = value
+        if "source_file" in normalized:
+            normalized["report_source_file"] = source_name
+        else:
+            normalized["source_file"] = source_name
         return normalized
 
     @staticmethod
-    def _row_hash(row: dict[str, Any]) -> str:
-        identity_fields = {
-            "source_file",
-            "xml",
-            "xml_name",
-            "workflow",
-            "session",
-            "mapping",
-            "mapping_name",
-            "rule_name",
-            "issue",
-            "asset",
-            "line_number",
-            "report_row_number",
-            "array_index",
-            "name",
-            "id",
-        }
-        identity = {
-            key: value
-            for key, value in row.items()
-            if key in identity_fields or key.endswith("_id") or key.endswith("_index")
-        }
-        if not identity or set(identity) == {"source_file"}:
-            identity = row
-        payload = json.dumps(identity, sort_keys=True, default=str, ensure_ascii=False)
-        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    def _ordered_columns(rows: Iterable[dict[str, Any]]) -> list[str]:
+        columns: list[str] = []
+        seen: set[str] = set()
+        for row in rows:
+            for column in row:
+                if column not in seen:
+                    seen.add(column)
+                    columns.append(column)
+        return columns
 
     @staticmethod
     def _stringify(value: Any) -> str:
