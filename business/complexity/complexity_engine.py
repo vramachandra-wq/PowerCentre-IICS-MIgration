@@ -6,6 +6,7 @@ Parses, validates, assesses, and remediates PowerCenter metadata.
 from __future__ import annotations
 
 import csv
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -328,9 +329,28 @@ class ComplexityClassifier:
             return candidate
         return self.project_root / candidate
 
+    def _mysql_persistence_enabled(self) -> bool:
+        """Return whether automation config enables MySQL report persistence."""
+
+        config_path = self.project_root / "config" / "automation_config.json"
+        if not config_path.exists():
+            return False
+        try:
+            with config_path.open("r", encoding="utf-8-sig") as config_file:
+                payload = json.load(config_file)
+        except (OSError, json.JSONDecodeError):
+            return False
+        mysql_payload = payload.get("mysql_persistence", {})
+        config_enabled = bool(mysql_payload.get("enabled", False)) if isinstance(mysql_payload, dict) else False
+        from automation.mysql_persistence import resolve_mysql_persistence_enabled
+
+        return resolve_mysql_persistence_enabled(config_enabled)
+
     def _persist_report_to_mysql(self, csv_path: Path) -> None:
         """Persist the generated complexity report without blocking CSV output."""
 
+        if not self._mysql_persistence_enabled():
+            return
         try:
             from data.repositories.mapping_repository import MySqlMetadataRepository
 
@@ -338,4 +358,4 @@ class ComplexityClassifier:
             count = repository.persist_complexity_report(csv_path)
             self.logger.info("Complexity classification report loaded into MySQL. rows=%s", count)
         except Exception as exc:
-            self.logger.error("Unable to load complexity classification report into MySQL: %s", exc)
+            self.logger.warning("Skipping MySQL complexity report load: %s", exc)

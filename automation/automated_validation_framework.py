@@ -288,7 +288,7 @@ class AutomatedValidationFramework:
             )
             return persistence.persist_all(runtime_timestamp)
         except Exception as exc:
-            self.logger.exception("Generated reports were not persisted to MySQL: %s", exc)
+            self.logger.warning("Generated reports were not persisted to MySQL: %s", exc)
             return {"error": str(exc)}
 
     def _create_logger(self) -> logging.Logger:
