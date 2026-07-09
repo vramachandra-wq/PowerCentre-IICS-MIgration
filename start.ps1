@@ -3,13 +3,18 @@ param(
     [ValidateSet('canonical','parse','explore','classify','persist','reports','enterprise','automation','all')]
     [string]$Mode   = $(if ($env:MODE)   { $env:MODE }   else { 'all' }),
     [string]$Config = $(if ($env:CONFIG) { $env:CONFIG } else { 'common/config/config.json' }),
-    [string]$LogDir = $(if ($env:LOG_DIR){ $env:LOG_DIR } else { 'output' })
+    [string]$LogDir = $(if ($env:LOG_DIR){ $env:LOG_DIR } else { 'output' }),
+    [bool]$PersistToMySql = $(if ($null -ne $env:PERSIST_TO_MYSQL) {
+        $env:PERSIST_TO_MYSQL -notin @('0', 'false', 'False', 'FALSE', 'no', 'No', 'NO', 'off', 'Off', 'OFF')
+    } else {
+        $true
+    })
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+# helpers
 
 function Resolve-FullPath ([string]$RelOrAbs, [string]$Root) {
     if ([System.IO.Path]::IsPathRooted($RelOrAbs)) {
@@ -149,7 +154,7 @@ function Start-Service ([string]$Label, [string]$Exe, [string[]]$SArgs,
     }
 }
 
-# ── main ─────────────────────────────────────────────────────────────────────
+# main
 
 try {
     $rootDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -250,10 +255,18 @@ try {
 
     Write-Host ''
     Write-Host "  --> Migration Pipeline (mode: $Mode)" -ForegroundColor White
+    $pipelineArgs = @('app.py', '--mode', $Mode, '--config', $Config)
+    if ($PersistToMySql -and $Mode -in @('all', 'enterprise')) {
+        $pipelineArgs += '--persist'
+        Write-Host '      MySQL persistence: enabled' -ForegroundColor Green
+    }
+    elseif ($Mode -in @('all', 'enterprise')) {
+        Write-Host '      MySQL persistence: disabled by PERSIST_TO_MYSQL' -ForegroundColor Yellow
+    }
     Start-Service `
         -Label   'Migration Pipeline' `
         -Exe     $pyExe `
-        -SArgs   @('app.py', '--mode', $Mode, '--config', $Config) `
+        -SArgs   $pipelineArgs `
         -WorkDir $rootDir `
         -StdOut  (Join-Path $logPath 'app.log') `
         -StdErr  (Join-Path $logPath 'app.err') `
