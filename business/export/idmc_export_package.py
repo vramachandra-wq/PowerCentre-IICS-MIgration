@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import io
 import json
 import shutil
 import zipfile
@@ -57,6 +58,8 @@ class IdmcExportPackageGenerator:
         remediated_folder: str | Path | None = None,
         output_folder: str | Path | None = None,
         package_name: str = "Custom_Project_Export.zip",
+        execution_strategy: str = "POWERCENTER_XML_TASK",
+        reference_package: str | Path | None = None,
     ) -> None:
         """Initialize the package generator using existing app configuration."""
 
@@ -66,6 +69,8 @@ class IdmcExportPackageGenerator:
         self.output_folder = self._resolve_path(output_folder or config.paths.output_folder)
         self.remediated_folder = self._resolve_path(remediated_folder or self.output_folder / "remediated_xml")
         self.package_name = package_name
+        self.execution_strategy = execution_strategy
+        self.reference_package = self._default_reference_package(reference_package)
         self.package_path = self.output_folder / package_name
         self.staging_folder = self.output_folder / "idmc_export_package"
         self.parser = XMLParser(config=config, logger=logger)
@@ -77,16 +82,14 @@ class IdmcExportPackageGenerator:
         if not xml_files:
             raise FileNotFoundError(f"No XML files found in {self.remediated_folder}")
 
-        if self.staging_folder.exists():
-            shutil.rmtree(self.staging_folder)
-        self.staging_folder.mkdir(parents=True, exist_ok=True)
+        now = datetime.now(timezone.utc)
+        self._prepare_staging_folder(now)
 
         parsed_files = self._parse_xml_files(xml_files)
         mapping_assets = self._mapping_assets(parsed_files)
         if not mapping_assets:
             raise ValueError(f"No mappings found in XML files under {self.remediated_folder}")
 
-        now = datetime.now(timezone.utc)
         ids = self._base_ids()
         self._write_system_artifacts(ids, now)
         self._write_container_artifacts(ids, now, len(mapping_assets))
@@ -100,51 +103,111 @@ class IdmcExportPackageGenerator:
             {"objectPath": "/SYS", "objectName": self.CONNECTION_NAME, "objectType": "Connection", "id": ids.connection},
         ]
 
-        for asset in mapping_assets:
-            asset_ids = self._asset_ids(asset["name"])
-            self._write_mapping_artifacts(asset, asset_ids, now)
-            object_path = f"/Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}"
-            exported_objects.extend(
-                [
-                    self._exported_object(
-                        asset_ids.mtt,
-                        asset["name"],
-                        "MTT",
-                        object_path,
-                        "JSON",
-                        "VALID",
-                        f"Session pushed from PC to ICS : {asset['name']}",
-                        [asset_ids.dtemplate, ids.connection, ids.agent_group],
-                    ),
-                    self._exported_object(
-                        asset_ids.dtemplate,
-                        asset["name"],
-                        "DTEMPLATE",
-                        object_path,
-                        "JSON",
-                        "VALID",
-                        f"Mapping pushed from PC to ICS : {asset['name']}",
-                    ),
-                    self._exported_object(
-                        asset_ids.taskflow,
-                        asset["name"],
-                        "TASKFLOW",
-                        object_path,
-                        "application/json; charset=utf-8",
-                        "VALID",
-                        "These workflows are created from the Workflow Generation Wizard.",
-                        [asset_ids.mtt],
-                        model_version={"major": 1, "minor": 0},
-                    ),
-                ]
-            )
-            contents_rows.extend(
-                [
-                    {"objectPath": object_path, "objectName": asset["name"], "objectType": "MTT", "id": asset_ids.mtt},
-                    {"objectPath": object_path, "objectName": asset["name"], "objectType": "DTEMPLATE", "id": asset_ids.dtemplate},
-                    {"objectPath": object_path, "objectName": asset["name"], "objectType": "TASKFLOW", "id": asset_ids.taskflow},
-                ]
-            )
+        if self.execution_strategy == "POWERCENTER_XML_TASK":
+            self._write_pcxml_source_bundle(xml_files, mapping_assets, now)
+            sample_templates = self._sample_asset_templates()
+            if sample_templates:
+                for index, asset in enumerate(mapping_assets):
+                    asset_ids = self._asset_ids(asset["name"])
+                    self._write_sample_backed_mapping_artifacts(
+                        asset,
+                        asset_ids,
+                        sample_templates[index % len(sample_templates)],
+                        ids,
+                        now,
+                    )
+                    object_path = f"/Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}"
+                    exported_objects.extend(
+                        [
+                            self._exported_object(
+                                asset_ids.dtemplate,
+                                asset["name"],
+                                "DTEMPLATE",
+                                object_path,
+                                "JSON",
+                                "VALID",
+                                f"Sample-backed CDI conversion placeholder for remediated XML : {asset['name']}",
+                            ),
+                            self._exported_object(
+                                asset_ids.mtt,
+                                asset["name"],
+                                "MTT",
+                                object_path,
+                                "JSON",
+                                "VALID",
+                                f"Sample-backed mapping task wrapper for remediated XML : {asset['name']}",
+                                [asset_ids.dtemplate, ids.connection, ids.agent_group],
+                            ),
+                            self._exported_object(
+                                asset_ids.taskflow,
+                                asset["name"],
+                                "TASKFLOW",
+                                object_path,
+                                "application/json; charset=utf-8",
+                                "VALID",
+                                "PowerCenter XML conversion taskflow wrapper generated from the reference export package.",
+                                [asset_ids.mtt],
+                                model_version={"major": 1, "minor": 0},
+                            ),
+                        ]
+                    )
+                    contents_rows.extend(
+                        [
+                            {"objectPath": object_path, "objectName": asset["name"], "objectType": "DTEMPLATE", "id": asset_ids.dtemplate},
+                            {"objectPath": object_path, "objectName": asset["name"], "objectType": "MTT", "id": asset_ids.mtt},
+                            {"objectPath": object_path, "objectName": asset["name"], "objectType": "TASKFLOW", "id": asset_ids.taskflow},
+                        ]
+                    )
+            else:
+                self.logger.warning(
+                    "No reference IDMC export package was found. Generated PCXML bundle only; the IDMC UI may show no selectable assets."
+                )
+        else:
+            for asset in mapping_assets:
+                asset_ids = self._asset_ids(asset["name"])
+                self._write_mapping_artifacts(asset, asset_ids, now)
+                object_path = f"/Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}"
+                exported_objects.extend(
+                    [
+                        self._exported_object(
+                            asset_ids.mtt,
+                            asset["name"],
+                            "MTT",
+                            object_path,
+                            "JSON",
+                            "VALID",
+                            f"PowerCenter XML task package for remediated XML : {asset['name']}",
+                            [asset_ids.dtemplate, ids.connection, ids.agent_group],
+                        ),
+                        self._exported_object(
+                            asset_ids.dtemplate,
+                            asset["name"],
+                            "DTEMPLATE",
+                            object_path,
+                            "JSON",
+                            "VALID",
+                            f"Remediated PowerCenter XML conversion source : {asset['name']}",
+                        ),
+                        self._exported_object(
+                            asset_ids.taskflow,
+                            asset["name"],
+                            "TASKFLOW",
+                            object_path,
+                            "application/json; charset=utf-8",
+                            "VALID",
+                            "These workflows are created from the Workflow Generation Wizard.",
+                            [asset_ids.mtt],
+                            model_version={"major": 1, "minor": 0},
+                        ),
+                    ]
+                )
+                contents_rows.extend(
+                    [
+                        {"objectPath": object_path, "objectName": asset["name"], "objectType": "MTT", "id": asset_ids.mtt},
+                        {"objectPath": object_path, "objectName": asset["name"], "objectType": "DTEMPLATE", "id": asset_ids.dtemplate},
+                        {"objectPath": object_path, "objectName": asset["name"], "objectType": "TASKFLOW", "id": asset_ids.taskflow},
+                    ]
+                )
 
         exported_objects.append(
             self._exported_object(ids.folder, self.FOLDER_NAME, "Folder", f"/Explore/{self.PROJECT_NAME}", "Binary", "COMPLETE", "")
@@ -177,6 +240,19 @@ class IdmcExportPackageGenerator:
             staging_folder=str(self.staging_folder),
         )
 
+    def _prepare_staging_folder(self, now: datetime) -> None:
+        if self.staging_folder.exists():
+            try:
+                shutil.rmtree(self.staging_folder)
+            except PermissionError:
+                fallback = self.output_folder / f"idmc_export_package_{self._epoch_millis(now)}"
+                self.logger.warning(
+                    "Existing IDMC export staging folder is locked. Using fallback staging folder: %s",
+                    fallback,
+                )
+                self.staging_folder = fallback
+        self.staging_folder.mkdir(parents=True, exist_ok=True)
+
     def _parse_xml_files(self, xml_files: list[Path]) -> list[ParsedXmlMetadata]:
         parsed_files: list[ParsedXmlMetadata] = []
         for xml_file in xml_files:
@@ -198,6 +274,7 @@ class IdmcExportPackageGenerator:
                         {
                             "name": unique_name,
                             "source_xml": parsed.file_name,
+                            "source_xml_path": self.remediated_folder / parsed.file_name,
                             "repository": parsed.repository,
                             "folder": folder.folder_name,
                             "mapping": mapping,
@@ -302,12 +379,195 @@ class IdmcExportPackageGenerator:
             encoding="utf-8",
         )
 
+    def _write_pcxml_source_bundle(self, xml_files: list[Path], mapping_assets: list[dict[str, Any]], now: datetime) -> None:
+        bundle_folder = self.staging_folder / "PCXML" / self.FOLDER_NAME
+        bundle_folder.mkdir(parents=True, exist_ok=True)
+        for xml_file in xml_files:
+            shutil.copy2(xml_file, bundle_folder / xml_file.name)
+
+        by_xml: dict[str, list[str]] = {}
+        for asset in mapping_assets:
+            by_xml.setdefault(asset["source_xml"], []).append(asset["name"])
+
+        manifest = {
+            "name": f"{self.FOLDER_NAME}_PowerCenterXml_Source_Bundle",
+            "createdTime": self._timestamp(now),
+            "executionStrategy": self.execution_strategy,
+            "nativeCdiMapping": False,
+            "importBehavior": (
+                "This bundle intentionally does not declare DTEMPLATE, MTT, or TASKFLOW objects in exportMetadata.v2.json. "
+                "Remediated PowerCenter XML cannot be imported directly as native CDI mappings; use these XML files as "
+                "PowerCenter XML task inputs, conversion sources, or IICS API payloads."
+            ),
+            "xmlFiles": [
+                {
+                    "fileName": xml_file.name,
+                    "relativePath": f"PCXML/{self.FOLDER_NAME}/{xml_file.name}",
+                    "mappings": sorted(by_xml.get(xml_file.name, [])),
+                    "sha256": hashlib.sha256(xml_file.read_bytes()).hexdigest().upper(),
+                }
+                for xml_file in xml_files
+            ],
+            "mappingCount": len(mapping_assets),
+        }
+        (bundle_folder / "pc_xml_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    def _sample_asset_templates(self) -> list[dict[str, Any]]:
+        if not self.reference_package or not self.reference_package.exists():
+            return []
+
+        with zipfile.ZipFile(self.reference_package) as package:
+            metadata = json.loads(package.read("exportMetadata.v2.json"))
+            objects = metadata.get("exportedObjects", [])
+            connection = next((item for item in objects if item.get("objectType") == "Connection"), {})
+            agent_group = next((item for item in objects if item.get("objectType") == "AgentGroup"), {})
+            templates: list[dict[str, Any]] = []
+            dtemplates = [item for item in objects if item.get("objectType") == "DTEMPLATE"]
+            for dtemplate in dtemplates:
+                name = dtemplate.get("objectName", "")
+                mtt = next((item for item in objects if item.get("objectType") == "MTT" and item.get("objectName") == name), None)
+                taskflow = next((item for item in objects if item.get("objectType") == "TASKFLOW" and item.get("objectName") == name), None)
+                if not name or not mtt or not taskflow:
+                    continue
+                base_path = dtemplate.get("path", "").strip("/")
+                artifact_prefix = f"{base_path}/{name}" if base_path else name
+                dtemplate_zip = f"{artifact_prefix}.DTEMPLATE.zip"
+                mtt_zip = f"{artifact_prefix}.MTT.zip"
+                taskflow_xml = f"{artifact_prefix}.TASKFLOW.xml"
+                if not all(item in package.namelist() for item in [dtemplate_zip, mtt_zip, taskflow_xml]):
+                    continue
+                templates.append(
+                    {
+                        "name": name,
+                        "dtemplate_id": dtemplate.get("objectGuid", ""),
+                        "mtt_id": mtt.get("objectGuid", ""),
+                        "taskflow_id": taskflow.get("objectGuid", ""),
+                        "connection_id": connection.get("objectGuid", ""),
+                        "agent_group_id": agent_group.get("objectGuid", ""),
+                        "dtemplate_zip": package.read(dtemplate_zip),
+                        "mtt_zip": package.read(mtt_zip),
+                        "taskflow_xml": package.read(taskflow_xml).decode("utf-8"),
+                    }
+                )
+            return templates
+
+    def _write_sample_backed_mapping_artifacts(
+        self,
+        asset: dict[str, Any],
+        ids: _AssetIds,
+        template: dict[str, Any],
+        base_ids: _AssetIds,
+        now: datetime,
+    ) -> None:
+        mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.FOLDER_NAME
+        mapping_folder.mkdir(parents=True, exist_ok=True)
+        mapping_name = asset["name"]
+        replacements = {
+            template["name"]: mapping_name,
+            template["dtemplate_id"]: ids.dtemplate,
+            template["mtt_id"]: ids.mtt,
+            template["taskflow_id"]: ids.taskflow,
+            template["connection_id"]: base_ids.connection,
+            template["agent_group_id"]: base_ids.agent_group,
+        }
+
+        self._rewrite_sample_zip(
+            template["dtemplate_zip"],
+            mapping_folder / f"{mapping_name}.DTEMPLATE.zip",
+            replacements,
+            self._rewrite_dtemplate_member,
+            mapping_name,
+            ids,
+            now,
+        )
+        self._rewrite_sample_zip(
+            template["mtt_zip"],
+            mapping_folder / f"{mapping_name}.MTT.zip",
+            replacements,
+            self._rewrite_mtt_member,
+            mapping_name,
+            ids,
+            now,
+        )
+        taskflow_text = self._replace_text(template["taskflow_xml"], replacements)
+        taskflow_text = taskflow_text.replace(
+            "<types1:Description>These workflows are created from the Workflow Generation Wizard.</types1:Description>",
+            "<types1:Description>Sample-backed taskflow wrapper for remediated PowerCenter XML.</types1:Description>",
+        )
+        (mapping_folder / f"{mapping_name}.TASKFLOW.xml").write_text(taskflow_text, encoding="utf-8")
+
+    def _rewrite_sample_zip(
+        self,
+        source_bytes: bytes,
+        output_path: Path,
+        replacements: dict[str, str],
+        member_rewriter,
+        mapping_name: str,
+        ids: _AssetIds,
+        now: datetime,
+    ) -> None:
+        with zipfile.ZipFile(Path(output_path), "w", compression=zipfile.ZIP_DEFLATED) as output_zip:
+            with zipfile.ZipFile(io.BytesIO(source_bytes)) as source_zip:
+                for member in source_zip.namelist():
+                    content = source_zip.read(member)
+                    output_zip.writestr(member, member_rewriter(member, content, replacements, mapping_name, ids, now))
+
+    def _rewrite_dtemplate_member(
+        self,
+        member: str,
+        content: bytes,
+        replacements: dict[str, str],
+        mapping_name: str,
+        ids: _AssetIds,
+        now: datetime,
+    ) -> bytes:
+        if member in {"mappingTemplate.json", "fileRecord.json"}:
+            payload = json.loads(content.decode("utf-8"))
+            payload = self._replace_json_strings(payload, replacements)
+            if member == "mappingTemplate.json" and payload:
+                payload[0]["name"] = mapping_name
+                payload[0]["description"] = f"Sample-backed conversion placeholder for remediated XML : {mapping_name}"
+                payload[0]["assetFrsGuid"] = ids.dtemplate
+                payload[0]["deployTime"] = self._epoch_millis(now)
+            return self._json_bytes(payload)
+        if member == "bin/@3.bin":
+            try:
+                payload = json.loads(content.decode("utf-8"))
+                payload = self._replace_json_strings(payload, replacements)
+                if isinstance(payload, dict) and isinstance(payload.get("content"), dict):
+                    payload["content"]["name"] = mapping_name
+                return self._json_bytes(payload)
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                return self._replace_text_bytes(content, replacements)
+        return self._replace_text_bytes(content, replacements)
+
+    def _rewrite_mtt_member(
+        self,
+        member: str,
+        content: bytes,
+        replacements: dict[str, str],
+        mapping_name: str,
+        ids: _AssetIds,
+        now: datetime,
+    ) -> bytes:
+        if member == "mtTask.json":
+            payload = json.loads(content.decode("utf-8"))
+            payload = self._replace_json_strings(payload, replacements)
+            if payload:
+                payload[0]["name"] = mapping_name
+                payload[0]["description"] = f"Sample-backed mapping task wrapper for remediated XML : {mapping_name}"
+                payload[0]["mappingId"] = f"@{ids.dtemplate}"
+                payload[0]["frsGuid"] = ids.mtt
+            return self._json_bytes(payload)
+        return self._replace_text_bytes(content, replacements)
+
     def _write_mapping_artifacts(self, asset: dict[str, Any], ids: _AssetIds, now: datetime) -> None:
         mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.FOLDER_NAME
         mapping_name = asset["name"]
         template_payload = self._template_payload(asset)
         template_bytes = self._json_bytes(template_payload)
         preview_bytes = self._preview_bytes(mapping_name)
+        source_xml_bytes = Path(asset["source_xml_path"]).read_bytes()
 
         self._write_zip(
             mapping_folder / f"{mapping_name}.DTEMPLATE.zip",
@@ -318,11 +578,14 @@ class IdmcExportPackageGenerator:
                             "@type": "mappingTemplate",
                             "id": "@1",
                             "name": mapping_name,
-                            "description": f"Mapping pushed from PC to ICS : {mapping_name}",
+                            "description": f"Remediated PowerCenter XML source for task/conversion : {mapping_name}",
                             "autoExpireObject": False,
                             "bundleVersion": "0",
                             "assetFrsGuid": ids.dtemplate,
                             "templateId": "@3",
+                            "remediatedPowerCenterXmlFileRecordId": "@4",
+                            "executionStrategy": self.execution_strategy,
+                            "nativeCdiMapping": False,
                             "deployTime": self._epoch_millis(now),
                             "hasParameters": True,
                             "valid": True,
@@ -358,10 +621,20 @@ class IdmcExportPackageGenerator:
                             "size": len(preview_bytes),
                             "attachTime": self._epoch_millis(now),
                         },
+                        {
+                            "@type": "fileRecord",
+                            "id": "@4",
+                            "name": asset["source_xml"],
+                            "type": "POWERCENTER_XML",
+                            "size": len(source_xml_bytes),
+                            "attachTime": self._epoch_millis(now),
+                            "additionalInfo": "Remediated PowerCenter XML. Use as PowerCenter task input, conversion source, or IICS API payload.",
+                        },
                     ]
                 ),
                 "bin/@2.bin": preview_bytes,
                 "bin/@3.bin": template_bytes,
+                "bin/@4.bin": source_xml_bytes,
                 "metadata.meta": self._json_bytes([{"@type": "objectRef", "id": "@1", "type": "mappingTemplate"}]),
             },
         )
@@ -385,8 +658,20 @@ class IdmcExportPackageGenerator:
                 "$$IID": "stringIdentity:@3",
                 "$$class": 1,
                 "name": asset["name"],
-                "description": f"Generated from remediated XML {asset['source_xml']}",
+                "description": f"Packaged remediated PowerCenter XML {asset['source_xml']} for task/conversion execution.",
                 "sourceXml": asset["source_xml"],
+                "sourceXmlFileRecordId": "@4",
+                "nativeCdiMapping": False,
+                "executionStrategy": self.execution_strategy,
+                "supportedExecutionPaths": [
+                    "Run as PowerCenter XML task payload",
+                    "Convert remediated PowerCenter XML to cloud-native CDI objects",
+                    "Deploy remediated PowerCenter XML through IICS APIs",
+                ],
+                "conversionNote": (
+                    "Modified PowerCenter XML cannot be uploaded directly as a native CDI mapping. "
+                    "This package preserves the remediated XML and extracted metadata for supported task, conversion, or API workflows."
+                ),
                 "repository": asset["repository"],
                 "folder": asset["folder"],
                 "parameters": [
@@ -442,14 +727,21 @@ class IdmcExportPackageGenerator:
             "@type": "mtTask",
             "id": "@1",
             "name": asset["name"],
-            "description": f"Session pushed from PC to ICS : {asset['name']}",
+            "description": f"PowerCenter XML task wrapper for remediated XML : {asset['name']}",
             "autoExpireObject": False,
             "runtimeEnvironmentId": f"@{ids.agent_group}",
             "maxLogs": 10,
             "verbose": False,
             "mappingId": f"@{ids.dtemplate}",
             "frsGuid": ids.mtt,
-            "shortDescription": f"Session pushed from PC to ICS : {asset['name']}"[:60],
+            "shortDescription": f"PC XML task wrapper : {asset['name']}"[:60],
+            "executionStrategy": self.execution_strategy,
+            "nativeCdiMapping": False,
+            "remediatedPowerCenterXml": {
+                "fileName": asset["source_xml"],
+                "fileRecordId": "@4",
+                "usage": "Use this payload as a PowerCenter XML task input, cloud-native conversion source, or IICS API deployment payload.",
+            },
             "sessionPropertiesList": self._session_properties(session),
             "hidden": False,
             "enableCrossSchemaPushdown": False,
@@ -497,7 +789,7 @@ class IdmcExportPackageGenerator:
       <types1:EntryId>{entry_id}</types1:EntryId>
       <types1:Name>{escaped_name}</types1:Name>
       <types1:MimeType>application/xml+taskflow</types1:MimeType>
-      <types1:Description>These workflows are created from the Workflow Generation Wizard.</types1:Description>
+      <types1:Description>PowerCenter XML task wrapper for remediated XML. Convert or deploy through supported IICS APIs before native CDI execution.</types1:Description>
       <types1:VersionLabel>1.0</types1:VersionLabel>
       <types1:State>CURRENT</types1:State>
       <types1:CreationDate>{self._timestamp(now)}</types1:CreationDate>
@@ -510,11 +802,12 @@ class IdmcExportPackageGenerator:
                    displayName="{escaped_name}"
                    name="{escaped_name}"
                    overrideAPIName="false">
-            <description>These workflows are created from the Workflow Generation Wizard.</description>
+            <description>PowerCenter XML task wrapper for remediated XML. This is not a direct native CDI mapping upload.</description>
             <generator>PC2Cloud Workflow Converter v1</generator>
             <input>
                <parameter name="InputMappingTaskParameterFileDir" type="string"/>
                <parameter name="InputMappingTaskParameterFileName" type="string"/>
+               <parameter name="InputPowerCenterXmlFileName" type="string"/>
             </input>
             <tempFields>
                <field description="" name="{escaped_name}" type="reference">
@@ -547,16 +840,41 @@ class IdmcExportPackageGenerator:
             writer.writerows(rows)
 
     def _write_checksum(self) -> None:
-        rows = []
+        rows = [
+            "#",
+            f"#{datetime.now(timezone.utc).strftime('%a %b %d %H:%M:%S UTC %Y')}",
+        ]
         for path in sorted(file for file in self.staging_folder.rglob("*") if file.is_file() and file.name != "exportPackage.chksum"):
-            digest = hashlib.sha256(path.read_bytes()).hexdigest()
-            rows.append(f"{digest}  {path.relative_to(self.staging_folder).as_posix()}")
+            relative_path = path.relative_to(self.staging_folder).as_posix()
+            if path.name.startswith("ContentsofExportPackage_") and path.suffix.lower() == ".csv":
+                continue
+            digest = hashlib.sha256(path.read_bytes()).hexdigest().upper()
+            rows.append(f"{self._checksum_key(relative_path)}={digest}")
         (self.staging_folder / "exportPackage.chksum").write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def _checksum_key(relative_path: str) -> str:
+        return (
+            relative_path.replace("\\", "\\\\")
+            .replace(" ", "\\ ")
+            .replace(":", "\\:")
+            .replace("=", "\\=")
+        )
 
     def _zip_staging_folder(self) -> None:
         self.output_folder.mkdir(parents=True, exist_ok=True)
         if self.package_path.exists():
-            self.package_path.unlink()
+            try:
+                self.package_path.unlink()
+            except PermissionError:
+                fallback = self.package_path.with_name(
+                    f"{self.package_path.stem}_{self._epoch_millis(datetime.now(timezone.utc))}{self.package_path.suffix}"
+                )
+                self.logger.warning(
+                    "Existing IDMC export ZIP is locked. Writing fallback package: %s",
+                    fallback,
+                )
+                self.package_path = fallback
         with zipfile.ZipFile(self.package_path, "w", compression=zipfile.ZIP_DEFLATED) as package:
             for path in sorted(file for file in self.staging_folder.rglob("*") if file.is_file()):
                 package.write(path, path.relative_to(self.staging_folder).as_posix())
@@ -741,6 +1059,42 @@ class IdmcExportPackageGenerator:
     def _preview_bytes(mapping_name: str) -> bytes:
         return f"Generated preview placeholder for {mapping_name}\n".encode("utf-8")
 
+    def _replace_json_strings(self, value: Any, replacements: dict[str, str]) -> Any:
+        if isinstance(value, str):
+            return self._replace_text(value, replacements)
+        if isinstance(value, list):
+            return [self._replace_json_strings(item, replacements) for item in value]
+        if isinstance(value, dict):
+            return {key: self._replace_json_strings(item, replacements) for key, item in value.items()}
+        return value
+
+    @staticmethod
+    def _replace_text(value: str, replacements: dict[str, str]) -> str:
+        updated = value
+        for before, after in replacements.items():
+            if before:
+                updated = updated.replace(before, after)
+        return updated
+
+    def _replace_text_bytes(self, value: bytes, replacements: dict[str, str]) -> bytes:
+        try:
+            return self._replace_text(value.decode("utf-8"), replacements).encode("utf-8")
+        except UnicodeDecodeError:
+            return value
+
+    def _default_reference_package(self, reference_package: str | Path | None) -> Path | None:
+        candidates = []
+        if reference_package:
+            candidates.append(self._resolve_path(reference_package))
+        candidates.extend(
+            [
+                self.project_root / "reference_export_package.zip",
+                Path("D:/Download/Custom_SDE_PBCS_Export 1.zip"),
+                Path("D:/Download/Custom_SDE_PBCS_Export.zip"),
+            ]
+        )
+        return next((candidate for candidate in candidates if candidate.exists()), None)
+
     @staticmethod
     def _timestamp(value: datetime) -> str:
         return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
@@ -793,6 +1147,8 @@ def generate_idmc_export_package(
     remediated_folder: str | Path | None = None,
     output_folder: str | Path | None = None,
     package_name: str = "Custom_Project_Export.zip",
+    execution_strategy: str = "POWERCENTER_XML_TASK",
+    reference_package: str | Path | None = None,
 ) -> IdmcExportSummary:
     """Generate a combined IDMC export ZIP package."""
 
@@ -802,4 +1158,6 @@ def generate_idmc_export_package(
         remediated_folder=remediated_folder,
         output_folder=output_folder,
         package_name=package_name,
+        execution_strategy=execution_strategy,
+        reference_package=reference_package,
     ).generate()

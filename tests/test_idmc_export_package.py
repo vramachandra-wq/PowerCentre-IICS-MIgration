@@ -44,6 +44,9 @@ class IdmcExportPackageTests(unittest.TestCase):
             self.assertIn("Explore/BIAINFADEV2_FLEX/Custom_Project.Folder.json", names)
             self.assertIn("SYS/DBConnection_OLAP_Oracle.Connection.zip", names)
             self.assertIn("SYS/PC Secure Agent Group.AgentGroup.zip", names)
+            self.assertIn("PCXML/Custom_Project/First_remediated.xml", names)
+            self.assertIn("PCXML/Custom_Project/Second_remediated.xml", names)
+            self.assertIn("PCXML/Custom_Project/pc_xml_manifest.json", names)
             for mapping_name in ("m_First", "m_Second"):
                 base = f"Explore/BIAINFADEV2_FLEX/Custom_Project/{mapping_name}"
                 self.assertIn(f"{base}.DTEMPLATE.zip", names)
@@ -55,8 +58,21 @@ class IdmcExportPackageTests(unittest.TestCase):
             self.assertEqual(10, len(exported))
             self.assertEqual(
                 {"m_First", "m_Second"},
+                {item["objectName"] for item in exported if item["objectType"] == "DTEMPLATE"},
+            )
+            self.assertEqual(
+                {"m_First", "m_Second"},
                 {item["objectName"] for item in exported if item["objectType"] == "MTT"},
             )
+            manifest = json.loads(package.read("PCXML/Custom_Project/pc_xml_manifest.json"))
+            self.assertFalse(manifest["nativeCdiMapping"])
+            self.assertEqual("POWERCENTER_XML_TASK", manifest["executionStrategy"])
+            self.assertEqual(2, manifest["mappingCount"])
+            checksum = package.read("exportPackage.chksum").decode("utf-8").splitlines()
+            self.assertEqual("#", checksum[0])
+            self.assertTrue(any(line.startswith("SYS/PC\\ Secure\\ Agent\\ Group.AgentGroup.zip=") for line in checksum))
+            self.assertFalse(any(line.startswith("ContentsofExportPackage_") for line in checksum))
+            self.assertTrue(all("  " not in line for line in checksum if not line.startswith("#")))
 
     @staticmethod
     def _write_xml(path: Path, mapping_name: str) -> None:
