@@ -21,7 +21,7 @@ class AIAPIClient:
     """Wraps external service calls used by the application."""
 
     base_url: str = "http://127.0.0.1:8000"
-    timeout_seconds: int = 120
+    timeout_seconds: int = 300
 
     def recommendations(self, max_records: int | None = None) -> list[dict[str, Any]]:
         """Handle recommendations using the provided max_records."""
@@ -59,6 +59,10 @@ class AIAPIClient:
         except HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             raise FastAPIClientError(f"FastAPI request failed with HTTP {exc.code}: {detail}") from exc
+        except TimeoutError as exc:
+            raise FastAPIClientError(
+                f"FastAPI request timed out after {self.timeout_seconds} seconds. The AI refresh may still be running; try Refresh again once it completes."
+            ) from exc
         except URLError as exc:
             raise FastAPIClientError(
                 f"Unable to reach FastAPI at {self.base_url}. Start it with: uvicorn app:create_app --factory --reload"
