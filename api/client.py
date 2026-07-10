@@ -34,10 +34,11 @@ class AIAPIClient:
             raise FastAPIClientError("Recommendation API returned an invalid response shape.")
         return response
 
-    def evaluation(self) -> dict[str, Any]:
+    def evaluation(self, refresh: bool = False) -> dict[str, Any]:
         """Handle evaluation for the migration workflow."""
 
-        response = self._post("/api/v1/ai/evaluation", {})
+        payload = {"refresh": True} if refresh else {}
+        response = self._post("/api/v1/ai/evaluation", payload)
         if not isinstance(response, dict) or "matrix" not in response:
             raise FastAPIClientError("Evaluation API returned an invalid response shape.")
         return response

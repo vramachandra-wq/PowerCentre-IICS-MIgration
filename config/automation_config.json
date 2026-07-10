@@ -29,26 +29,28 @@
   "mysql_persistence": {
     "enabled": true,
     "config_path": "common/config/config.json",
-    "batch_size": 1000
+    "batch_size": 10000
   },
   "ai_validation": {
     "model_name": "Qwen/Qwen3-8B",
     "hf_token_env": "HF_TOKEN",
-    "max_records": 18,
-    "max_new_tokens": 256,
+    "max_records": 35,
+    "max_new_tokens": 96,
     "temperature": 0.0,
     "timeout_seconds": 60,
     "high_confidence_threshold": 90,
-    "provider": "auto"
+    "provider": "auto",
+    "max_workers": 16
   },
   "ai_recommendation": {
     "enabled": true,
     "model_name": "Qwen/Qwen3-8B",
     "hf_token_env": "HF_TOKEN",
-    "max_records": 18,
-    "max_new_tokens": 512,
+    "max_records": 11,
+    "max_new_tokens": 192,
     "temperature": 0.0,
     "timeout_seconds": 60,
-    "provider": "auto"
+    "provider": "auto",
+    "max_workers": 16
   }
 }

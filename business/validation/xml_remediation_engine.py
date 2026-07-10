@@ -76,6 +76,7 @@ class XmlRemediationEngine:
         self.output_folder = self._resolve_path(output_folder)
         self.remediated_folder = self.output_folder / "remediated_xml"
         self.datatype_report = self._resolve_path(datatype_report or self.output_folder / "datatype_mismatch_report.csv")
+        self._xml_cache: dict[tuple[Path, int], object] = {}
 
     def remediate_all(self) -> list[XmlChange]:
         """Handle remediate all for the migration workflow."""
@@ -229,28 +230,42 @@ class XmlRemediationEngine:
     def _parse_xml(self, path: Path):
         """Parse xml using the provided path."""
 
+        cache_key = (path.resolve(), path.stat().st_mtime_ns)
+        cached = self._xml_cache.get(cache_key)
+        if cached is not None:
+            return cached
         if etree is None:
             import xml.etree.ElementTree as std_etree
 
-            return std_etree.parse(path)
-        parser = etree.XMLParser(remove_blank_text=False, resolve_entities=False, load_dtd=False)
-        return etree.parse(str(path), parser)
+            parsed = std_etree.parse(path)
+        else:
+            parser = etree.XMLParser(remove_blank_text=False, resolve_entities=False, load_dtd=False)
+            parsed = etree.parse(str(path), parser)
+        self._xml_cache[cache_key] = parsed
+        return parsed
 
     def _write_xml(self, tree, path: Path) -> None:
-        """Handle write xml using the provided tree and path."""
+        """Write xml only when generated content differs from the existing output."""
 
+        path.parent.mkdir(parents=True, exist_ok=True)
         if etree is None:
             body = self._stdlib_tostring(tree)
             text = '<?xml version="1.0" encoding="UTF-8"?>\n<!-- Informatica proprietary -->\n<!DOCTYPE POWERMART SYSTEM "powrmart.dtd">\n' + body + "\n"
+            existing = path.read_text(encoding="utf-8") if path.exists() else None
+            if existing == text:
+                return
             path.write_text(text, encoding="utf-8")
             return
-        tree.write(
-            str(path),
+        content = etree.tostring(
+            tree,
             encoding="UTF-8",
             xml_declaration=True,
             doctype='<!DOCTYPE POWERMART SYSTEM "powrmart.dtd">',
             pretty_print=False,
         )
+        if path.exists() and path.read_bytes() == content:
+            return
+        path.write_bytes(content)
 
     @staticmethod
     def _stdlib_tostring(tree) -> str:

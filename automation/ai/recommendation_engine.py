@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -71,20 +72,25 @@ class RecommendationEngine:
             self._log_warning("AI recommendation client unavailable: %s", exc)
             return [self._fallback_result(failure, exc, 0) for failure in failures]
 
-        results: list[RecommendationResult] = []
-        for failure in failures:
-            started = time.perf_counter()
-            try:
-                payload = client.recommend(failure)
-                # Normalize model output before exposing it to API and report layers.
-                recommendation = RecommendationResponseParser.parse(payload)
-                elapsed = int((time.perf_counter() - started) * 1000)
-                results.append(RecommendationResult(failure, recommendation, elapsed))
-            except Exception as exc:
-                elapsed = int((time.perf_counter() - started) * 1000)
-                self._log_warning("AI recommendation failed for %s/%s: %s", failure.mapping, failure.failure_type, exc)
-                results.append(self._fallback_result(failure, exc, elapsed))
-        return results
+        max_workers = max(1, min(self.config.max_workers, len(failures)))
+        if max_workers == 1:
+            return [self._recommend_one(client, failure) for failure in failures]
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            return list(executor.map(lambda failure: self._recommend_one(client, failure), failures))
+
+    def _recommend_one(self, client: RecommendationModelClient, failure: FailureRecord) -> RecommendationResult:
+        """Generate one recommendation and preserve per-record timing."""
+
+        started = time.perf_counter()
+        try:
+            payload = client.recommend(failure)
+            recommendation = RecommendationResponseParser.parse(payload)
+            elapsed = int((time.perf_counter() - started) * 1000)
+            return RecommendationResult(failure, recommendation, elapsed)
+        except Exception as exc:
+            elapsed = int((time.perf_counter() - started) * 1000)
+            self._log_warning("AI recommendation failed for %s/%s: %s", failure.mapping, failure.failure_type, exc)
+            return self._fallback_result(failure, exc, elapsed)
 
     def _from_remediation_report(self) -> list[FailureRecord]:
         """Handle from remediation report for the migration workflow."""

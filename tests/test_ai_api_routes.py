@@ -81,6 +81,8 @@ class AIAPIRoutesTests(unittest.TestCase):
                 "AI Recommendation",
                 "Priority",
                 "AI Summary",
+                "Recommendation Time (sec)",
+                "Full Automation Time (sec)",
             ],
             list(response.json()[0].keys()),
         )
@@ -106,6 +108,7 @@ class AIAPIRoutesTests(unittest.TestCase):
                         "Model Success Rate": 100,
                         "Recall": 60,
                         "Total Evaluations": 4,
+                        "AI Evaluation Time (sec)": 0.4,
                     }
                 }
             ),
@@ -128,6 +131,9 @@ class AIAPIRoutesTests(unittest.TestCase):
                     "Model Success Rate": 100,
                     "Recall": 60,
                     "Total Evaluations": 4,
+                    "AI Evaluation Time (sec)": 0.4,
+                    "Full Automation Time (sec)": 0,
+                    "End-to-End Process Time (with MySQL) (sec)": 0,
                 }
             },
             response.json(),

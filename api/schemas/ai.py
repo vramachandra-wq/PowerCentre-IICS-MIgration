@@ -29,6 +29,8 @@ class RecommendationResponse(BaseModel):
     ai_recommendation: str = Field(alias="AI Recommendation")
     priority: str = Field(alias="Priority")
     ai_summary: str = Field(alias="AI Summary")
+    recommendation_time_seconds: int | float = Field(alias="Recommendation Time (sec)")
+    full_automation_time_seconds: int | float = Field(alias="Full Automation Time (sec)")
 
 
 class EvaluationRequest(BaseModel):
@@ -49,6 +51,9 @@ class EvaluationMatrixResponse(BaseModel):
     model_success_rate: int | float = Field(alias="Model Success Rate")
     recall: int | float = Field(alias="Recall")
     total_evaluations: int | float = Field(alias="Total Evaluations")
+    ai_evaluation_time_seconds: int | float = Field(alias="AI Evaluation Time (sec)")
+    full_automation_time_seconds: int | float = Field(alias="Full Automation Time (sec)")
+    full_automation_mysql_time_seconds: int | float = Field(alias="End-to-End Process Time (with MySQL) (sec)")
 
 
 class EvaluationResponse(BaseModel):

@@ -6,6 +6,7 @@ Prepares metrics, findings, and AI assistance outputs.
 from __future__ import annotations
 
 import os
+import threading
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -47,6 +48,7 @@ class HuggingFaceQwenRecommendationClient:
         self.config = config
         self.token = token
         self.prompt_builder = RecommendationPromptBuilder()
+        self._thread_local = threading.local()
 
     def recommend(self, failure: FailureRecord) -> dict[str, Any]:
         """Recommend migration data using the provided failure."""
@@ -57,15 +59,7 @@ class HuggingFaceQwenRecommendationClient:
             truststore.inject_into_ssl()
         except ImportError:
             pass
-        from huggingface_hub import InferenceClient
-
-        provider = None if self.config.provider == "auto" else self.config.provider
-        client = InferenceClient(
-            model=self._model_name(self.config.model_name),
-            provider=provider,
-            token=self.token,
-            timeout=self.config.timeout_seconds,
-        )
+        client = self._inference_client()
         response = client.chat_completion(
             messages=[
                 {
@@ -89,6 +83,23 @@ class HuggingFaceQwenRecommendationClient:
             "summary": recommendation.summary,
             "confidence": recommendation.confidence,
         }
+
+    def _inference_client(self):
+        """Create one Hugging Face client per worker thread."""
+
+        client = getattr(self._thread_local, "client", None)
+        if client is None:
+            from huggingface_hub import InferenceClient
+
+            provider = None if self.config.provider == "auto" else self.config.provider
+            client = InferenceClient(
+                model=self._model_name(self.config.model_name),
+                provider=provider,
+                token=self.token,
+                timeout=self.config.timeout_seconds,
+            )
+            self._thread_local.client = client
+        return client
 
     @staticmethod
     def _load_env_file(path: Path) -> None:

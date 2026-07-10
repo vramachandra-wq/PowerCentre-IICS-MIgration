@@ -27,6 +27,8 @@ class AIEvaluationSummary:
     f1_score: float
     average_confidence: float
     model_success_rate: float
+    total_processing_time_seconds: float
+    configured_max_records: int = 0
 
 
 class AIEvaluationBuilder:
@@ -39,6 +41,7 @@ class AIEvaluationBuilder:
         "ml_decision",
         "confidence",
         "correct",
+        "processing_time_ms",
     ]
     MATRIX_FIELDNAMES = [
         "Total Evaluations",
@@ -48,6 +51,8 @@ class AIEvaluationBuilder:
         "F1 Score",
         "Average Confidence",
         "Model Success Rate",
+        "AI Evaluation Time (sec)",
+        "Configured Max Records",
     ]
     DASHBOARD_FIELDNAMES = MATRIX_FIELDNAMES
 
@@ -72,11 +77,18 @@ class AIEvaluationBuilder:
                     "ml_decision": ml_decision,
                     "confidence": result.prediction.confidence,
                     "correct": str(ground_truth == ml_decision),
+                    "processing_time_ms": result.processing_time_ms,
                 }
             )
         return rows
 
-    def summarize(self, results: list[AIValidationResult], dataset: list[dict[str, Any]]) -> AIEvaluationSummary:
+    def summarize(
+        self,
+        results: list[AIValidationResult],
+        dataset: list[dict[str, Any]],
+        total_processing_time_ms: int = 0,
+        configured_max_records: int = 0,
+    ) -> AIEvaluationSummary:
         """Summarize migration data using the provided results and dataset."""
 
         valid_rows = [row for row in dataset if row["ml_decision"] in {"PASS", "FAIL"}]
@@ -84,17 +96,20 @@ class AIEvaluationBuilder:
             (row["ground_truth"], row["ml_decision"]) for row in valid_rows
         )
         total_evaluations = len(dataset)
-        correct = sum(1 for row in dataset if row["correct"] == "True")
+        valid_evaluations = len(valid_rows)
+        correct = sum(1 for row in valid_rows if row["correct"] == "True")
         ml_precision = AIMetricsCalculator.precision(matrix)
         recall = AIMetricsCalculator.recall(matrix)
         return AIEvaluationSummary(
             total_evaluations=total_evaluations,
-            ml_accuracy=MetricsCalculator.percentage(correct, total_evaluations),
+            ml_accuracy=MetricsCalculator.percentage(correct, valid_evaluations),
             ml_precision=ml_precision,
             recall=recall,
             f1_score=AIMetricsCalculator.f1_score(ml_precision, recall),
             average_confidence=AIMetricsCalculator.average_confidence(row["confidence"] for row in valid_rows),
-            model_success_rate=MetricsCalculator.percentage(len(valid_rows), total_evaluations),
+            model_success_rate=MetricsCalculator.percentage(valid_evaluations, total_evaluations),
+            total_processing_time_seconds=round(total_processing_time_ms / 1000, 2),
+            configured_max_records=configured_max_records,
         )
 
     def write(self, dataset: list[dict[str, Any]], summary: AIEvaluationSummary) -> dict[str, Path]:
@@ -138,4 +153,6 @@ class AIEvaluationBuilder:
             "F1 Score": summary.f1_score,
             "Average Confidence": summary.average_confidence,
             "Model Success Rate": summary.model_success_rate,
+            "AI Evaluation Time (sec)": summary.total_processing_time_seconds,
+            "Configured Max Records": summary.configured_max_records,
         }
