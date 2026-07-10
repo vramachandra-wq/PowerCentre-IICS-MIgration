@@ -22,6 +22,8 @@ RECOMMENDATION_COLUMNS = [
     "AI Recommendation",
     "Priority",
     "AI Summary",
+    "Recommendation Time (sec)",
+    "Full Automation Time (sec)",
 ]
 MATRIX_COLUMNS = [
     "Average Confidence",
@@ -31,6 +33,9 @@ MATRIX_COLUMNS = [
     "Model Success Rate",
     "Recall",
     "Total Evaluations",
+    "AI Evaluation Time (sec)",
+    "Full Automation Time (sec)",
+    "End-to-End Process Time (with MySQL) (sec)",
 ]
 
 
@@ -55,17 +60,17 @@ def main() -> None:
     evaluation_tab, recommendation_tab = st.tabs(["AI Evaluation", "AI Recommendations"])
 
     with evaluation_tab:
-        render_evaluation(client)
+        render_evaluation(client, refresh=refresh)
 
     with recommendation_tab:
         render_recommendations(client)
 
 
 @st.cache_data(ttl=60, show_spinner=False)
-def load_evaluation(base_url: str) -> dict[str, object]:
+def load_evaluation(base_url: str, refresh: bool = False) -> dict[str, object]:
     """Load evaluation using the provided base_url."""
 
-    return AIAPIClient(base_url=base_url).evaluation()
+    return AIAPIClient(base_url=base_url).evaluation(refresh=refresh)
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -75,12 +80,12 @@ def load_recommendations(base_url: str) -> list[dict[str, object]]:
     return AIAPIClient(base_url=base_url).recommendations()
 
 
-def render_evaluation(client: AIAPIClient) -> None:
+def render_evaluation(client: AIAPIClient, refresh: bool = False) -> None:
     """Render evaluation using the provided client."""
 
     st.subheader("AI Evaluation Matrix")
     try:
-        payload = load_evaluation(client.base_url)
+        payload = load_evaluation(client.base_url, refresh=refresh)
     except FastAPIClientError as exc:
         st.error(str(exc))
         return
@@ -113,6 +118,14 @@ def render_recommendations(client: AIAPIClient) -> None:
         return
 
     dataframe = pd.DataFrame(rows)
+    timing_labels = ["Recommendation Time (sec)", "Full Automation Time (sec)"]
+    timing_columns = st.columns(len(timing_labels))
+    for index, label in enumerate(timing_labels):
+        if label in dataframe:
+            values = pd.to_numeric(dataframe[label], errors="coerce").dropna()
+            if not values.empty:
+                timing_columns[index].metric(label, round(values.iloc[0], 2))
+
     # Display only the stakeholder-facing recommendation columns in the requested order.
     dataframe = dataframe[[column for column in RECOMMENDATION_COLUMNS if column in dataframe.columns]]
 

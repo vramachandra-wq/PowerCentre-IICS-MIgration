@@ -7,6 +7,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import re
 from dataclasses import dataclass
@@ -112,69 +113,103 @@ class MySQLReportPersistence:
             return {}
 
         timestamp = runtime_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        self._prepare_database()
+        tasks = self._persistence_tasks()
         counts: dict[str, int] = {}
-        connection = self._connect()
+        max_workers = max(1, min(6, len(tasks)))
         try:
-            self._ensure_database(connection)
-            connection.database = self.config.database
-
-            for relative_path, table_name in CSV_REPORTS:
-                path = self._existing_report_path(relative_path)
-                rows = self._read_csv(path)
-                counts[table_name] = self._persist_rows(
-                    connection,
-                    table_name,
-                    rows,
-                    timestamp,
-                    source_name=str(path),
-                    refresh_table=True,
-                )
-
-            validation_path = self._existing_report_path("automation/validation_summary.json")
-            rows = self._read_json(validation_path)
-            counts["validation_summary"] = self._persist_rows(
-                connection,
-                "validation_summary",
-                rows,
-                timestamp,
-                source_name=str(validation_path),
-                refresh_table=True,
-            )
-
-            parsed_json_folder = self.output_folder / "parsed_json"
-            if parsed_json_folder.exists():
-                for json_path in sorted(parsed_json_folder.glob("*.json")):
-                    table_name = self._safe_identifier(json_path.stem)
-                    rows = self._read_json(json_path)
-                    counts[table_name] = self._persist_rows(
-                        connection,
-                        table_name,
-                        rows,
-                        timestamp,
-                        source_name=str(json_path),
-                        refresh_table=True,
-                    )
-            else:
-                self.logger.warning("Parsed JSON folder not found: %s", parsed_json_folder)
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_table = {
+                    executor.submit(self._persist_task, task, timestamp): task[1]
+                    for task in tasks
+                }
+                for future in as_completed(future_to_table):
+                    table_name = future_to_table[future]
+                    counts[table_name] = future.result()
 
             log_rows = self._read_automation_log()
-            counts["automation_log"] = self._persist_rows(
-                connection,
+            counts["automation_log"] = self._persist_with_new_connection(
                 "automation_log",
                 log_rows,
                 timestamp,
                 source_name="automation.log",
                 append_only=True,
             )
-            connection.commit()
             self.logger.info("MySQL report persistence completed. table_counts=%s", counts)
             return counts
+        except Exception:
+            self.logger.exception("MySQL report persistence failed.")
+            raise
+
+    def _prepare_database(self) -> None:
+        """Create the configured database before parallel table loads."""
+
+        connection = self._connect()
+        try:
+            self._ensure_database(connection)
+            connection.commit()
+        finally:
+            connection.close()
+
+    def _persistence_tasks(self) -> list[tuple[str, str, str]]:
+        """Collect independent report table persistence tasks."""
+
+        tasks: list[tuple[str, str, str]] = []
+        for relative_path, table_name in CSV_REPORTS:
+            path = self._existing_report_path(relative_path)
+            tasks.append(("csv", table_name, str(path)))
+
+        validation_path = self._existing_report_path("automation/validation_summary.json")
+        tasks.append(("json", "validation_summary", str(validation_path)))
+
+        parsed_json_folder = self.output_folder / "parsed_json"
+        if parsed_json_folder.exists():
+            for json_path in sorted(parsed_json_folder.glob("*.json")):
+                tasks.append(("json", self._safe_identifier(json_path.stem), str(json_path)))
+        else:
+            self.logger.warning("Parsed JSON folder not found: %s", parsed_json_folder)
+        return tasks
+
+    def _persist_task(self, task: tuple[str, str, str], timestamp: str) -> int:
+        kind, table_name, source_path = task
+        path = Path(source_path)
+        rows = self._read_csv(path) if kind == "csv" else self._read_json(path)
+        return self._persist_with_new_connection(
+            table_name,
+            rows,
+            timestamp,
+            source_name=str(path),
+            refresh_table=True,
+        )
+
+    def _persist_with_new_connection(
+        self,
+        table_name: str,
+        rows: list[dict[str, Any]],
+        timestamp: str,
+        source_name: str,
+        refresh_table: bool = False,
+        append_only: bool = False,
+    ) -> int:
+        connection = self._connect()
+        try:
+            connection.database = self.config.database
+            count = self._persist_rows(
+                connection,
+                table_name,
+                rows,
+                timestamp,
+                source_name=source_name,
+                refresh_table=refresh_table,
+                append_only=append_only,
+            )
+            connection.commit()
+            return count
         except Exception:
             try:
                 connection.rollback()
             except Exception:
-                self.logger.exception("Unable to roll back MySQL report persistence transaction.")
-            self.logger.exception("MySQL report persistence failed.")
+                self.logger.exception("Unable to roll back MySQL table persistence: %s", table_name)
             raise
         finally:
             connection.close()
@@ -232,9 +267,12 @@ class MySQLReportPersistence:
         normalized_rows = [self._normalize_row(row, source_name) for row in rows]
         columns = self._ordered_columns(normalized_rows)
         self._ensure_table(connection, table_name, columns)
-        self._ensure_columns(connection, table_name, columns)
+        if not refresh_table:
+            self._ensure_columns(connection, table_name, columns)
         if append_only:
             affected = self._insert_ignore_rows(connection, table_name, columns, normalized_rows, timestamp)
+        elif refresh_table:
+            affected = self._insert_rows(connection, table_name, columns, normalized_rows, timestamp)
         else:
             affected = self._upsert_rows(connection, table_name, columns, normalized_rows, timestamp)
         self.logger.info("Persisted %s row(s) into MySQL table %s.", len(normalized_rows), table_name)
@@ -246,10 +284,7 @@ class MySQLReportPersistence:
         table_name = self._safe_identifier(table_name)
         cursor = connection.cursor()
         try:
-            cursor.execute("SHOW TABLES LIKE %s", (table_name,))
-            if cursor.fetchone() is None:
-                return
-            cursor.execute(f"DROP TABLE `{table_name}`")
+            cursor.execute(f"DROP TABLE IF EXISTS `{table_name}`")
             self.logger.info("Dropped MySQL report table before refresh: %s", table_name)
         except Exception:
             self.logger.exception("Unable to drop MySQL table before refresh: %s", table_name)
@@ -343,6 +378,39 @@ class MySQLReportPersistence:
         if safe_column == "source_row_number":
             return "`source_row_number` BIGINT NULL"
         return f"`{safe_column}` LONGTEXT NULL"
+
+    def _insert_rows(
+        self,
+        connection,
+        table_name: str,
+        columns: list[str],
+        rows: list[dict[str, Any]],
+        timestamp: str,
+    ) -> int:
+        if not rows:
+            return 0
+        cursor = connection.cursor()
+        safe_columns = [self._safe_identifier(column) for column in columns]
+        insert_columns = [*safe_columns, "timestamp"]
+        placeholders = ", ".join(["%s"] * len(insert_columns))
+        sql = (
+            f"INSERT INTO `{table_name}` ({', '.join(f'`{column}`' for column in insert_columns)}) "
+            f"VALUES ({placeholders})"
+        )
+        values = [
+            (
+                *[self._stringify(row.get(column, "")) for column in columns],
+                timestamp,
+            )
+            for row in rows
+        ]
+        try:
+            batch_size = max(self.config.batch_size, 1)
+            for start in range(0, len(values), batch_size):
+                cursor.executemany(sql, values[start : start + batch_size])
+            return len(values)
+        finally:
+            cursor.close()
 
     def _upsert_rows(
         self,

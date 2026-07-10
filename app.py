@@ -287,7 +287,11 @@ def run_all(
     if persist_to_mysql:
         from data.repositories.mapping_repository import MySqlMetadataRepository
 
-        persistence_summary = MySqlMetadataRepository(config=config, logger=logger).persist()
+        try:
+            persistence_summary = MySqlMetadataRepository(config=config, logger=logger).persist()
+        except Exception as exc:
+            logger.warning("MySQL metadata persistence failed; continuing automation run. %s", exc)
+            persistence_summary = {"error": str(exc)}
 
     enterprise_summary = {
         "xml_files": len(parsed_files),

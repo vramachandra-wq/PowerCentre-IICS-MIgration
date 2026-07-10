@@ -59,6 +59,8 @@ class AIAPIServicesTests(unittest.TestCase):
                 "AI Recommendation",
                 "Priority",
                 "AI Summary",
+                "Recommendation Time (sec)",
+                "Full Automation Time (sec)",
             ],
             list(rows[0].keys()),
         )
@@ -92,6 +94,7 @@ class AIAPIServicesTests(unittest.TestCase):
                         "Model Success Rate": 96.0,
                         "Recall": 75.0,
                         "Total Evaluations": 12,
+                        "AI Evaluation Time (sec)": 1.2,
                         "Agreement Rate": 1,
                     }
                 }
@@ -110,6 +113,9 @@ class AIAPIServicesTests(unittest.TestCase):
                 "Model Success Rate",
                 "Recall",
                 "Total Evaluations",
+                "AI Evaluation Time (sec)",
+                "Full Automation Time (sec)",
+                "End-to-End Process Time (with MySQL) (sec)",
             ],
             list(response["matrix"].keys()),
         )
@@ -142,6 +148,7 @@ class AIAPIServicesTests(unittest.TestCase):
                         "Model Success Rate": 100,
                         "Recall": 0,
                         "Total Evaluations": 2,
+                        "AI Evaluation Time (sec)": 0.8,
                     }
                 }
             ),

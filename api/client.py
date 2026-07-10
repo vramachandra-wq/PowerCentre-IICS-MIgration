@@ -34,10 +34,11 @@ class AIAPIClient:
             raise FastAPIClientError("Recommendation API returned an invalid response shape.")
         return response
 
-    def evaluation(self) -> dict[str, Any]:
+    def evaluation(self, refresh: bool = False) -> dict[str, Any]:
         """Handle evaluation for the migration workflow."""
 
-        response = self._post("/api/v1/ai/evaluation", {})
+        payload = {"refresh": True} if refresh else {}
+        response = self._post("/api/v1/ai/evaluation", payload)
         if not isinstance(response, dict) or "matrix" not in response:
             raise FastAPIClientError("Evaluation API returned an invalid response shape.")
         return response
@@ -59,6 +60,10 @@ class AIAPIClient:
         except HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             raise FastAPIClientError(f"FastAPI request failed with HTTP {exc.code}: {detail}") from exc
+        except TimeoutError as exc:
+            raise FastAPIClientError(
+                f"FastAPI request timed out after {self.timeout_seconds} seconds. The AI refresh may still be running; try Refresh again once it completes."
+            ) from exc
         except URLError as exc:
             raise FastAPIClientError(
                 f"Unable to reach FastAPI at {self.base_url}. Start it with: uvicorn app:create_app --factory --reload"

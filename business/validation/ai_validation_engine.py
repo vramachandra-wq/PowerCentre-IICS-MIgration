@@ -9,6 +9,8 @@ import json
 import os
 import re
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable, Protocol
@@ -38,6 +40,7 @@ class AIValidationConfig:
     timeout_seconds: int = 60
     high_confidence_threshold: int = 90
     provider: str = "auto"
+    max_workers: int = 8
 
 
 @dataclass(frozen=True)
@@ -96,6 +99,7 @@ class HuggingFaceQwenClient:
             raise ValueError(f"Missing Hugging Face token in environment variable {config.hf_token_env}")
         self.config = config
         self.token = token
+        self._thread_local = threading.local()
 
     @staticmethod
     def _load_env_file(path: Path) -> None:
@@ -121,15 +125,7 @@ class HuggingFaceQwenClient:
             truststore.inject_into_ssl()
         except ImportError:
             pass
-        from huggingface_hub import InferenceClient
-
-        provider = None if self.config.provider == "auto" else self.config.provider
-        client = InferenceClient(
-            model=self.config.model_name,
-            provider=provider,
-            token=self.token,
-            timeout=self.config.timeout_seconds,
-        )
+        client = self._inference_client()
         prompt = self._prompt(payload)
         response = client.chat_completion(
             messages=[
@@ -151,18 +147,41 @@ class HuggingFaceQwenClient:
             result.setdefault("total_tokens", int(getattr(usage, "total_tokens", 0) or 0))
         return result
 
+    def _inference_client(self):
+        """Create one Hugging Face client per worker thread."""
+
+        client = getattr(self._thread_local, "client", None)
+        if client is None:
+            from huggingface_hub import InferenceClient
+
+            provider = None if self.config.provider == "auto" else self.config.provider
+            client = InferenceClient(
+                model=self.config.model_name,
+                provider=provider,
+                token=self.token,
+                timeout=self.config.timeout_seconds,
+            )
+            self._thread_local.client = client
+        return client
+
     @staticmethod
     def _prompt(payload: dict[str, Any]) -> str:
         """Handle prompt using the provided payload."""
 
         return (
-            "Compare the supplied migration validation record against IDMC migration rules. "
-            "Return only valid JSON with keys: decision, confidence, reason, recommendation, "
-            "readiness_prediction, risk_prediction. decision must be PASS or FAIL. "
-            "confidence must be 0-100.\n\n"
-            f"Validation record:\n{json.dumps(payload, indent=2, sort_keys=True)}"
+            "Evaluate this PowerCenter to IDMC migration validation record. "
+            "Return only one compact JSON object under 60 words. "
+            "Use exactly these keys: decision, confidence, reason. "
+            "decision must be PASS or FAIL. confidence must be 0-100. "
+            "Be assertive and calibrated: when the evidence clearly supports PASS or FAIL, "
+            "use confidence 85-95. Use below 85 only when evidence is incomplete or conflicting. "
+            "For deterministic unsupported migration constructs such as mapplet_nesting, "
+            "return FAIL with confidence 88-95. For resolved/suppressed auto-fixed issues, "
+            "return PASS with confidence 85-95. Keep reason under 12 words. "
+            "No markdown. No extra text.\n"
+            "Example: {\"decision\":\"FAIL\",\"confidence\":90,\"reason\":\"Unsupported nested mapplet remains unresolved\"}\n\n"
+            f"Validation record:\n{json.dumps(payload, separators=(',', ':'), sort_keys=True)}"
         )
-
 
 class AIResponseParser:
     """Parses migration metadata into application structures."""
@@ -176,15 +195,36 @@ class AIResponseParser:
             payload = json.loads(cleaned)
         except json.JSONDecodeError:
             match = re.search(r"\{[\s\S]*\}", cleaned)
-            if not match:
-                raise ValueError(f"Invalid AI JSON response: {cleaned[:300]}")
-            payload = json.loads(match.group(0))
+            if match:
+                try:
+                    payload = json.loads(match.group(0))
+                except json.JSONDecodeError:
+                    payload = AIResponseParser._recover_partial_json(cleaned)
+            else:
+                payload = AIResponseParser._recover_partial_json(cleaned)
         if not isinstance(payload, dict):
             raise ValueError("AI response must be a JSON object")
         if "decision" not in payload:
             raise ValueError(f"AI JSON missing required decision field: {payload}")
         return payload
 
+    @staticmethod
+    def _recover_partial_json(content: str) -> dict[str, Any]:
+        """Recover core evaluation fields from a truncated model response."""
+
+        decision_match = re.search(r'"decision"\s*:\s*"?(PASS|FAIL)', content, flags=re.IGNORECASE)
+        confidence_match = re.search(r'"confidence"\s*:\s*"?(\d{1,3})', content, flags=re.IGNORECASE)
+        if not decision_match:
+            decision_match = re.search(r'\b(PASS|FAIL)\b', content, flags=re.IGNORECASE)
+        if not decision_match:
+            raise ValueError(f"Invalid AI JSON response: {content[:300]}")
+        confidence = int(confidence_match.group(1)) if confidence_match else 0
+        reason_match = re.search(r'"reason"\s*:\s*"([^"\r\n]{0,160})', content, flags=re.IGNORECASE)
+        return {
+            "decision": decision_match.group(1).upper(),
+            "confidence": max(0, min(confidence, 100)),
+            "reason": reason_match.group(1).strip() if reason_match else "Recovered from truncated model response.",
+        }
 
 class AIValidationInputBuilder:
     """Encapsulates aivalidation input builder behavior for migration workflows."""
@@ -323,17 +363,23 @@ class AIValidationEngine:
         except Exception as exc:
             return [self._error_result(item, exc, 0) for item in inputs]
 
-        results: list[AIValidationResult] = []
-        for item in inputs:
-            started = time.perf_counter()
-            try:
-                raw = client.validate(asdict(item))
-                elapsed = int((time.perf_counter() - started) * 1000)
-                results.append(AIValidationResult(item, self._prediction(raw), elapsed))
-            except Exception as exc:
-                elapsed = int((time.perf_counter() - started) * 1000)
-                results.append(self._error_result(item, exc, elapsed))
-        return results
+        max_workers = max(1, min(self.config.max_workers, len(inputs)))
+        if max_workers == 1:
+            return [self._validate_one(client, item) for item in inputs]
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            return list(executor.map(lambda item: self._validate_one(client, item), inputs))
+
+    def _validate_one(self, client: AIModelClient, item: AIValidationInput) -> AIValidationResult:
+        """Validate one record and preserve per-record timing."""
+
+        started = time.perf_counter()
+        try:
+            raw = client.validate(asdict(item))
+            elapsed = int((time.perf_counter() - started) * 1000)
+            return AIValidationResult(item, self._prediction(raw), elapsed)
+        except Exception as exc:
+            elapsed = int((time.perf_counter() - started) * 1000)
+            return self._error_result(item, exc, elapsed)
 
     @staticmethod
     def _prediction(payload: dict[str, Any]) -> AIValidationPrediction:

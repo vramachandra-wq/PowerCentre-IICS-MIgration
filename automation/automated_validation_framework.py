@@ -107,13 +107,15 @@ class AutomatedValidationFramework:
 
             if self.config.enable_ai_evaluation:
                 validation_engine = AIValidationEngine(self.repository, self.config.ai_validation)
+                ai_started = datetime.now(UTC)
                 ai_results = validation_engine.validate()
                 ai_builder = AIEvaluationBuilder(
                     self.repository,
                     high_confidence_threshold=self.config.ai_validation.high_confidence_threshold,
                 )
                 ai_dataset = ai_builder.build_dataset(ai_results)
-                ai_summary = ai_builder.summarize(ai_results, ai_dataset)
+                ai_elapsed_ms = int((datetime.now(UTC) - ai_started).total_seconds() * 1000)
+                ai_summary = ai_builder.summarize(ai_results, ai_dataset, ai_elapsed_ms, self.config.ai_validation.max_records)
                 outputs["ai_evaluation"] = {key: str(path) for key, path in ai_builder.write(ai_dataset, ai_summary).items()}
                 error_rows = [row for row in ai_dataset if row.get("ml_decision") == "ERROR"]
                 if error_rows:
@@ -125,6 +127,7 @@ class AutomatedValidationFramework:
                 self.logger.info("AI evaluation generated. rows=%s accuracy=%s", len(ai_dataset), ai_summary.ml_accuracy)
 
             end_time = datetime.now(UTC)
+            full_automation_seconds = round((end_time - start_time).total_seconds(), 2)
             self.logger.info(
                 "Automated validation framework completed at %s. files_processed=%s outputs=%s",
                 end_time.isoformat(),
@@ -132,9 +135,22 @@ class AutomatedValidationFramework:
                 outputs,
             )
             outputs["mysql_persistence"] = self._persist_reports(start_time)
+            mysql_end_time = datetime.now(UTC)
+            full_with_mysql_seconds = round((mysql_end_time - start_time).total_seconds(), 2)
+            timing_summary = {
+                "Start Time": start_time.isoformat(),
+                "Automation End Time": end_time.isoformat(),
+                "MySQL Persistence End Time": mysql_end_time.isoformat(),
+                "Full Automation Time (sec)": full_automation_seconds,
+                "End-to-End Process Time (with MySQL) (sec)": full_with_mysql_seconds,
+            }
+            outputs["timing_summary"] = str(self.repository.write_json("automation_timing_summary.json", timing_summary))
             return {
                 "start_time": start_time.isoformat(),
                 "end_time": end_time.isoformat(),
+                "mysql_end_time": mysql_end_time.isoformat(),
+                "full_automation_time_seconds": full_automation_seconds,
+                "full_automation_mysql_time_seconds": full_with_mysql_seconds,
                 "files_processed": len({record.xml_name for record in matrix_records if record.xml_name}),
                 "evaluation_records": len(matrix_records),
                 "modules_executed": modules_executed,
@@ -204,6 +220,7 @@ class AutomatedValidationFramework:
             timeout_seconds=int(payload.get("timeout_seconds", 60)),
             high_confidence_threshold=int(payload.get("high_confidence_threshold", 90)),
             provider=str(payload.get("provider", "auto")),
+            max_workers=int(payload.get("max_workers", 8)),
         )
 
     @staticmethod
@@ -219,6 +236,7 @@ class AutomatedValidationFramework:
             timeout_seconds=int(payload.get("timeout_seconds", 60)),
             provider=str(payload.get("provider", "auto")),
             enabled=bool(payload.get("enabled", True)),
+            max_workers=int(payload.get("max_workers", 8)),
         )
 
     def _execute_existing_modules(self) -> list[str]:

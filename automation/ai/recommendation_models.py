@@ -21,6 +21,7 @@ class AIRecommendationConfig:
     provider: str = "auto"
     enabled: bool = True
     issue_definitions_path: str = ""
+    max_workers: int = 8
 
 
 @dataclass(frozen=True)

@@ -54,6 +54,7 @@ class XMLParser:
         self.source_target_parser = SourceTargetParser()
         self.mapping_parser = MappingParser()
         self.workflow_parser = WorkflowParser()
+        self._tree_cache: dict[tuple[Path, int], Any] = {}
 
     def parse_folder(self) -> dict[str, Any]:
         """Parse folder for the migration workflow."""
@@ -88,7 +89,7 @@ class XMLParser:
         """Parse file using the provided xml_path."""
 
         xml_file = self._resolve_path(xml_path)
-        tree = self.loader.parse(xml_file)
+        tree = self._parse_tree(xml_file)
         root = tree.getroot()
         repository = self._repository(root)
         folders: list[FolderMetadata] = []
@@ -108,6 +109,16 @@ class XMLParser:
 
         return ParsedXmlMetadata(file_name=xml_file.name, repository=repository, folders=folders)
 
+    def _parse_tree(self, xml_file: Path):
+        """Parse XML once per file timestamp within this parser instance."""
+
+        cache_key = (xml_file.resolve(), xml_file.stat().st_mtime_ns)
+        cached = self._tree_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        tree = self.loader.parse(xml_file)
+        self._tree_cache[cache_key] = tree
+        return tree
     def to_dataframes(self, parsed_files: list[ParsedXmlMetadata]) -> dict[str, Any]:
         """Handle to dataframes using the provided parsed_files."""
 

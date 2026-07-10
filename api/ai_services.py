@@ -13,9 +13,10 @@ from pathlib import Path
 from typing import Any
 
 from automation.ai import AIRecommendationConfig, AIRecommendationService
-from automation.automated_validation_framework import AutomatedValidationFramework
 from automation.ai.llm_client import RecommendationModelClient
 from automation.evaluation_matrix import ReportRepository
+from business.validation.ai_evaluation import AIEvaluationBuilder
+from business.validation.ai_validation_engine import AIValidationConfig, AIValidationEngine
 
 
 
@@ -43,6 +44,24 @@ class AutomationConfigReader:
 
         return self._max_records("ai_validation")
 
+    def ai_validation_config(self) -> AIValidationConfig:
+        """Read AI evaluation settings from the latest automation config file."""
+
+        payload = self.load().get("ai_validation", {})
+        if not isinstance(payload, dict):
+            payload = {}
+        defaults = AIValidationConfig()
+        return AIValidationConfig(
+            model_name=str(payload.get("model_name", defaults.model_name)),
+            hf_token_env=str(payload.get("hf_token_env", defaults.hf_token_env)),
+            max_records=int(payload.get("max_records", defaults.max_records)),
+            max_new_tokens=int(payload.get("max_new_tokens", defaults.max_new_tokens)),
+            temperature=float(payload.get("temperature", defaults.temperature)),
+            timeout_seconds=int(payload.get("timeout_seconds", defaults.timeout_seconds)),
+            high_confidence_threshold=int(payload.get("high_confidence_threshold", defaults.high_confidence_threshold)),
+            provider=str(payload.get("provider", defaults.provider)),
+            max_workers=int(payload.get("max_workers", defaults.max_workers)),
+        )
     def ai_recommendation_config(self) -> AIRecommendationConfig:
         # Mirror only AI recommendation settings into the automation-layer config object.
         """Handle ai recommendation config for the migration workflow."""
@@ -61,6 +80,7 @@ class AutomationConfigReader:
             provider=str(payload.get("provider", defaults.provider)),
             enabled=bool(payload.get("enabled", defaults.enabled)),
             issue_definitions_path=str(payload.get("issue_definitions_path", defaults.issue_definitions_path)),
+            max_workers=int(payload.get("max_workers", defaults.max_workers)),
         )
 
     def output_folder(self) -> Path:
@@ -154,10 +174,12 @@ class AIRecommendationAPIService:
                 provider=config.provider,
                 enabled=config.enabled,
                 issue_definitions_path=config.issue_definitions_path,
+                max_workers=config.max_workers,
             )
         try:
             service = AIRecommendationService(self.repository, config, self.client, self.logger)
             results, _ = service.run()
+            total_elapsed_ms = int((time.perf_counter() - started) * 1000)
             # Return the same user-facing columns as the generated CSV report.
             rows = [
                 {
@@ -168,6 +190,8 @@ class AIRecommendationAPIService:
                     "AI Recommendation": result.recommendation.recommendation,
                     "Priority": result.recommendation.priority,
                     "AI Summary": result.recommendation.summary,
+                    "Recommendation Time (sec)": round(total_elapsed_ms / 1000, 2),
+                    "Full Automation Time (sec)": self._automation_timing().get("Full Automation Time (sec)", 0),
                 }
                 for result in results
             ]
@@ -179,6 +203,23 @@ class AIRecommendationAPIService:
             self._log_error("AI recommendation API failed: %s", exc)
             raise APIReportError(str(exc), status_code=500) from exc
 
+    def _automation_timing(self) -> dict[str, Any]:
+        """Read the latest automation timing summary if it exists."""
+
+        candidates = [
+            self.repository.reports_folder / "automation_timing_summary.json",
+            self.repository.output_folder / "automation" / "automation_timing_summary.json",
+        ]
+        for path in candidates:
+            if not path.exists():
+                continue
+            try:
+                with path.open("r", encoding="utf-8") as json_file:
+                    payload = json.load(json_file)
+            except ValueError:
+                return {}
+            return payload if isinstance(payload, dict) else {}
+        return {}
     def _validate_report(self, relative_path: str, required_columns: set[str]) -> None:
         """Validate report using the provided relative_path and required_columns."""
 
@@ -226,6 +267,9 @@ class AIEvaluationAPIService:
         "Model Success Rate",
         "Recall",
         "Total Evaluations",
+        "AI Evaluation Time (sec)",
+        "Full Automation Time (sec)",
+        "End-to-End Process Time (with MySQL) (sec)",
     ]
 
     def __init__(
@@ -260,6 +304,7 @@ class AIEvaluationAPIService:
         matrix = payload.get("matrix", {})
         if not isinstance(matrix, dict):
             raise APIReportError("Invalid AI evaluation summary format", status_code=422)
+        timing = self._automation_timing()
         response = {
             "matrix": {
                 "Average Confidence": self._number(matrix.get("Average Confidence")),
@@ -269,6 +314,9 @@ class AIEvaluationAPIService:
                 "Model Success Rate": self._number(matrix.get("Model Success Rate")),
                 "Recall": self._number(matrix.get("Recall")),
                 "Total Evaluations": self._number(matrix.get("Total Evaluations")),
+                "AI Evaluation Time (sec)": self._number(matrix.get("AI Evaluation Time (sec)", matrix.get("Total Processing Time (sec)"))),
+                "Full Automation Time (sec)": self._number(timing.get("Full Automation Time (sec)")),
+                "End-to-End Process Time (with MySQL) (sec)": self._number(timing.get("End-to-End Process Time (with MySQL) (sec)")),
             }
         }
         if self.logger:
@@ -302,6 +350,9 @@ class AIEvaluationAPIService:
                     "Model Success Rate": 0,
                     "Recall": 0,
                     "Total Evaluations": len(rows),
+                    "AI Evaluation Time (sec)": round(max((self._number(row.get("processing_time_ms")) for row in rows), default=0) / 1000, 2),
+                    "Full Automation Time (sec)": self._number(self._automation_timing().get("Full Automation Time (sec)")),
+                    "End-to-End Process Time (with MySQL) (sec)": self._number(self._automation_timing().get("End-to-End Process Time (with MySQL) (sec)")),
                 }
             }
 
@@ -330,6 +381,9 @@ class AIEvaluationAPIService:
                 "Model Success Rate": self._percentage(len(valid_rows), len(rows)),
                 "Recall": recall,
                 "Total Evaluations": len(rows),
+                "AI Evaluation Time (sec)": round(max((self._number(row.get("processing_time_ms")) for row in rows), default=0) / 1000, 2),
+                "Full Automation Time (sec)": self._number(self._automation_timing().get("Full Automation Time (sec)")),
+                "End-to-End Process Time (with MySQL) (sec)": self._number(self._automation_timing().get("End-to-End Process Time (with MySQL) (sec)")),
             }
         }
         if self.logger:
@@ -337,21 +391,57 @@ class AIEvaluationAPIService:
         return response
 
     def _refresh_automation_outputs_if_needed(self, force: bool = False) -> None:
-        """Handle refresh automation outputs if needed using the provided force."""
+        """Refresh only AI evaluation artifacts when explicitly requested by the UI."""
 
-        if not self._uses_configured_repository():
+        if not force:
             return
-        expected_records = self.config_reader.ai_validation_max_records()
-        if not force and (expected_records is None or self._dataset_row_count() == expected_records):
-            return
-        self._log_info(
-            "Refreshing automation outputs from FastAPI. expected_ai_validation_records=%s current_records=%s force=%s",
-            expected_records,
-            self._dataset_row_count(),
-            force,
+        config = self.config_reader.ai_validation_config()
+        started = time.perf_counter()
+        validation_engine = AIValidationEngine(self.repository, config)
+        ai_results = validation_engine.validate()
+        builder = AIEvaluationBuilder(
+            self.repository,
+            high_confidence_threshold=config.high_confidence_threshold,
         )
-        AutomatedValidationFramework(config_path=self.config_reader.config_path).run()
+        ai_dataset = builder.build_dataset(ai_results)
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        ai_summary = builder.summarize(ai_results, ai_dataset, elapsed_ms, config.max_records)
+        builder.write(ai_dataset, ai_summary)
+        error_rows = [row for row in ai_dataset if row.get("ml_decision") == "ERROR"]
+        if error_rows:
+            self._log_info(
+                "AI evaluation refresh completed with error rows. rows=%s errors=%s elapsed_ms=%s max_records=%s",
+                len(ai_dataset),
+                len(error_rows),
+                elapsed_ms,
+                config.max_records,
+            )
+        else:
+            self._log_info(
+                "AI evaluation refresh completed. rows=%s elapsed_ms=%s max_records=%s",
+                len(ai_dataset),
+                elapsed_ms,
+                config.max_records,
+            )
+        return
 
+    def _summary_configured_max_records(self) -> int | None:
+        """Return the max_records value used to generate the current AI summary."""
+
+        path = self._summary_path()
+        if not path.exists():
+            return None
+        try:
+            with path.open("r", encoding="utf-8") as json_file:
+                payload = json.load(json_file)
+        except ValueError:
+            return None
+        matrix = payload.get("matrix", {}) if isinstance(payload, dict) else {}
+        value = matrix.get("Configured Max Records") if isinstance(matrix, dict) else None
+        try:
+            return int(float(str(value)))
+        except (TypeError, ValueError):
+            return None
     def _uses_configured_repository(self) -> bool:
         """Handle uses configured repository for the migration workflow."""
 
@@ -374,6 +464,23 @@ class AIEvaluationAPIService:
 
         if self.logger:
             self.logger.info(message, *args)
+    def _automation_timing(self) -> dict[str, Any]:
+        """Read the latest automation timing summary if it exists."""
+
+        candidates = [
+            self.repository.reports_folder / "automation_timing_summary.json",
+            self.repository.output_folder / "automation" / "automation_timing_summary.json",
+        ]
+        for path in candidates:
+            if not path.exists():
+                continue
+            try:
+                with path.open("r", encoding="utf-8") as json_file:
+                    payload = json.load(json_file)
+            except ValueError:
+                return {}
+            return payload if isinstance(payload, dict) else {}
+        return {}
     def _summary_path(self) -> Path:
         """Handle summary path for the migration workflow."""
 
@@ -449,6 +556,7 @@ class AIEvaluationAPIService:
         except (TypeError, ValueError):
             return False
         return True
+
 
 
 

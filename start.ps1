@@ -105,6 +105,31 @@ function Wait-ForPort ([int]$Port, [int]$TimeoutSec, [string]$Label) {
     return $false
 }
 
+function Invoke-Pipeline ([string]$Label, [string]$Exe, [string[]]$SArgs,
+                          [string]$WorkDir, [string]$StdOut, [string]$StdErr,
+                          [string]$PidPath) {
+
+    Remove-Item -LiteralPath $PidPath -Force -ErrorAction SilentlyContinue
+
+    $proc = Start-Process `
+        -FilePath         $Exe `
+        -WorkingDirectory $WorkDir `
+        -ArgumentList     $SArgs `
+        -RedirectStandardOutput $StdOut `
+        -RedirectStandardError  $StdErr `
+        -PassThru `
+        -Wait `
+        -WindowStyle Hidden
+
+    Remove-Item -LiteralPath $PidPath -Force -ErrorAction SilentlyContinue
+    $exitCode = $proc.ExitCode
+    if ($null -eq $exitCode) { $exitCode = 0 }
+
+    if ($exitCode -ne 0) {
+        throw "$Label failed with exit code $exitCode. Check logs: $StdErr"
+    }
+    Write-Host "  $Label completed successfully" -ForegroundColor Green
+}
 function Start-Service ([string]$Label, [string]$Exe, [string[]]$SArgs,
                         [string]$WorkDir, [string]$StdOut, [string]$StdErr,
                         [string]$PidPath, [int]$HealthPort = 0) {
@@ -225,6 +250,25 @@ try {
     Write-Host '[5/5] Starting services ...' -ForegroundColor White
 
     Write-Host ''
+    Write-Host "  --> Migration Pipeline (mode: $Mode)" -ForegroundColor White
+    $pipelineArgs = @('app.py', '--mode', $Mode, '--config', $Config)
+    if ($PersistToMySql -and $Mode -in @('all', 'enterprise')) {
+        $pipelineArgs += '--persist'
+        Write-Host '      MySQL persistence: enabled' -ForegroundColor Green
+    }
+    elseif ($Mode -in @('all', 'enterprise')) {
+        Write-Host '      MySQL persistence: disabled by PERSIST_TO_MYSQL' -ForegroundColor Yellow
+    }
+    Invoke-Pipeline `
+        -Label   'Migration Pipeline' `
+        -Exe     $pyExe `
+        -SArgs   $pipelineArgs `
+        -WorkDir $rootDir `
+        -StdOut  (Join-Path $logPath 'app.log') `
+        -StdErr  (Join-Path $logPath 'app.err') `
+        -PidPath (Join-Path $logPath 'app.pid')
+
+    Write-Host ''
     Write-Host '  --> FastAPI / Uvicorn (port 8000)' -ForegroundColor White
     Start-Service `
         -Label      'FastAPI/Uvicorn' `
@@ -252,26 +296,6 @@ try {
     else {
         Write-Host '  streamlit_app.py not found - skipping Streamlit.' -ForegroundColor Yellow
     }
-
-    Write-Host ''
-    Write-Host "  --> Migration Pipeline (mode: $Mode)" -ForegroundColor White
-    $pipelineArgs = @('app.py', '--mode', $Mode, '--config', $Config)
-    if ($PersistToMySql -and $Mode -in @('all', 'enterprise')) {
-        $pipelineArgs += '--persist'
-        Write-Host '      MySQL persistence: enabled' -ForegroundColor Green
-    }
-    elseif ($Mode -in @('all', 'enterprise')) {
-        Write-Host '      MySQL persistence: disabled by PERSIST_TO_MYSQL' -ForegroundColor Yellow
-    }
-    Start-Service `
-        -Label   'Migration Pipeline' `
-        -Exe     $pyExe `
-        -SArgs   $pipelineArgs `
-        -WorkDir $rootDir `
-        -StdOut  (Join-Path $logPath 'app.log') `
-        -StdErr  (Join-Path $logPath 'app.err') `
-        -PidPath (Join-Path $logPath 'app.pid')
-
     $elapsed = [int]((Get-Date) - $startTime).TotalSeconds
     Write-Host ''
     Write-Host '==========================================================' -ForegroundColor Cyan
