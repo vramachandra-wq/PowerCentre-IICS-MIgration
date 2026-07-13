@@ -313,7 +313,12 @@ def run_all(
         input_folder=config.paths.xml_folder,
         output_folder=config.paths.output_folder,
     )
-    automation_summary = AutomatedValidationFramework(config_path=automation_config).run()
+    automation_framework = AutomatedValidationFramework(config_path=automation_config)
+    if automation_framework.config.execute_existing_modules:
+        from dataclasses import replace
+
+        automation_framework.config = replace(automation_framework.config, execute_existing_modules=False)
+    automation_summary = automation_framework.run()
 
     return {
         "enterprise": enterprise_summary,

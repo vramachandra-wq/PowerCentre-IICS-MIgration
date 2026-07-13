@@ -46,7 +46,7 @@
     "enabled": true,
     "model_name": "Qwen/Qwen3-8B",
     "hf_token_env": "HF_TOKEN",
-    "max_records": 11,
+    "max_records": 9,
     "max_new_tokens": 192,
     "temperature": 0.0,
     "timeout_seconds": 60,

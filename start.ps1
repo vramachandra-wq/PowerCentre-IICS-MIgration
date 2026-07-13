@@ -76,17 +76,24 @@ print("OK")
 }
 
 function Ensure-Deps ([string]$Exe, [string]$ReqFile) {
+    $stamp = Join-Path (Split-Path -Parent $ReqFile) 'output\.deps-ok'
     if (-not (Test-Path -LiteralPath $ReqFile -PathType Leaf)) {
         Write-Host '  requirements.txt not found - skipping.' -ForegroundColor Yellow
         return
     }
+    if ((Test-Path -LiteralPath $stamp -PathType Leaf) -and ((Get-Item -LiteralPath $stamp).LastWriteTime -ge (Get-Item -LiteralPath $ReqFile).LastWriteTime)) {
+        Write-Host '  Dependency check already verified.' -ForegroundColor Green
+        return
+    }
     if (Test-DepsOk -Exe $Exe) {
+        New-Item -ItemType File -Path $stamp -Force | Out-Null
         Write-Host '  All dependencies present.' -ForegroundColor Green
         return
     }
     Write-Host '  Installing dependencies (this may take a minute) ...' -ForegroundColor Cyan
     Invoke-Python -Exe $Exe -PArgs @('-m', 'pip', 'install', '--upgrade', 'pip', '--quiet')
     Invoke-Python -Exe $Exe -PArgs @('-m', 'pip', 'install', '-r', $ReqFile, '--quiet')
+    New-Item -ItemType File -Path $stamp -Force | Out-Null
     Write-Host '  Dependencies installed.' -ForegroundColor Green
 }
 
@@ -158,7 +165,7 @@ function Start-Service ([string]$Label, [string]$Exe, [string[]]$SArgs,
     Set-Content -LiteralPath $PidPath -Value ([string]$proc.Id) -Encoding ascii -NoNewline
 
     # wait for process to stay alive
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 1
     if (-not (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue)) {
         Remove-Item -LiteralPath $PidPath -Force -ErrorAction SilentlyContinue
         throw "$Label failed to start. Check log: $StdOut"
@@ -166,7 +173,7 @@ function Start-Service ([string]$Label, [string]$Exe, [string[]]$SArgs,
 
     # health-check by probing the port (only for network services)
     if ($HealthPort -gt 0) {
-        $ready = Wait-ForPort -Port $HealthPort -TimeoutSec 20 -Label $Label
+        $ready = Wait-ForPort -Port $HealthPort -TimeoutSec 5 -Label $Label
         if ($ready) {
             Write-Host "  $Label started (PID $($proc.Id)) - port $HealthPort ready" -ForegroundColor Green
         }
