@@ -35,7 +35,7 @@ MATRIX_COLUMNS = [
     "Total Evaluations",
     "AI Evaluation Time (sec)",
     "Full Automation Time (sec)",
-    "End-to-End Process Time (with MySQL) (sec)",
+    # "End-to-End Process Time (with MySQL) (sec)",
 ]
 
 
