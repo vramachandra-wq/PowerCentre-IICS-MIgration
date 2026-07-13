@@ -49,7 +49,6 @@ class MySqlMetadataRepository:
         connectors = self._read_csv("canonical_connectors.csv")
 
         with engine.begin() as connection:
-            self._drop_existing_tables(connection)
             self._create_tables(connection)
 
             connection.execute(
@@ -63,6 +62,15 @@ class MySqlMetadataRepository:
                         :asset_id, :asset_name, :asset_type, :platform, :repository_name,
                         :folder_name, :source_file, :parent_asset_id, :complexity, NULL
                     )
+                    ON DUPLICATE KEY UPDATE
+                        asset_name = VALUES(asset_name),
+                        asset_type = VALUES(asset_type),
+                        platform = VALUES(platform),
+                        repository_name = VALUES(repository_name),
+                        folder_name = VALUES(folder_name),
+                        source_file = VALUES(source_file),
+                        parent_asset_id = VALUES(parent_asset_id),
+                        complexity = VALUES(complexity)
                     """
                 ),
                 assets,
@@ -80,6 +88,17 @@ class MySqlMetadataRepository:
                         :sources, :targets, :transformation_count, :connector_count,
                         :sql_override_count, :complexity
                     )
+                    ON DUPLICATE KEY UPDATE
+                        mapping_name = VALUES(mapping_name),
+                        repository_name = VALUES(repository_name),
+                        folder_name = VALUES(folder_name),
+                        source_file = VALUES(source_file),
+                        sources = VALUES(sources),
+                        targets = VALUES(targets),
+                        transformation_count = VALUES(transformation_count),
+                        connector_count = VALUES(connector_count),
+                        sql_override_count = VALUES(sql_override_count),
+                        complexity = VALUES(complexity)
                     """
                 ),
                 [self._mapping_row(row) for row in mappings],
@@ -95,6 +114,14 @@ class MySqlMetadataRepository:
                         :transformation_id, :mapping_id, :mapping_name, :transformation_name,
                         :transformation_type, :reusable_flag, :attribute_count, :port_count
                     )
+                    ON DUPLICATE KEY UPDATE
+                        mapping_id = VALUES(mapping_id),
+                        mapping_name = VALUES(mapping_name),
+                        transformation_name = VALUES(transformation_name),
+                        transformation_type = VALUES(transformation_type),
+                        reusable_flag = VALUES(reusable_flag),
+                        attribute_count = VALUES(attribute_count),
+                        port_count = VALUES(port_count)
                     """
                 ),
                 [self._transformation_row(row) for row in transformations],
@@ -110,6 +137,17 @@ class MySqlMetadataRepository:
                         :column_id, :asset_id, :table_name, :table_type, :column_name, :datatype,
                         :precision, :scale, :repository_name, :folder_name, :source_file
                     )
+                    ON DUPLICATE KEY UPDATE
+                        asset_id = VALUES(asset_id),
+                        table_name = VALUES(table_name),
+                        table_type = VALUES(table_type),
+                        column_name = VALUES(column_name),
+                        datatype = VALUES(datatype),
+                        precision_val = VALUES(precision_val),
+                        scale_val = VALUES(scale_val),
+                        repository_name = VALUES(repository_name),
+                        folder_name = VALUES(folder_name),
+                        source_file = VALUES(source_file)
                     """
                 ),
                 columns,
@@ -125,6 +163,12 @@ class MySqlMetadataRepository:
                         :sql_override_id, :mapping_id, :mapping_name, :context_type,
                         :context_name, :sql_query, 'NOT_REVIEWED'
                     )
+                    ON DUPLICATE KEY UPDATE
+                        mapping_id = VALUES(mapping_id),
+                        mapping_name = VALUES(mapping_name),
+                        context_type = VALUES(context_type),
+                        context_name = VALUES(context_name),
+                        sql_query = VALUES(sql_query)
                     """
                 ),
                 sql_overrides,
@@ -140,6 +184,15 @@ class MySqlMetadataRepository:
                         :connector_id, :mapping_id, :mapping_name, :from_instance, :from_field,
                         :to_instance, :to_field, :from_instance_type, :to_instance_type
                     )
+                    ON DUPLICATE KEY UPDATE
+                        mapping_id = VALUES(mapping_id),
+                        mapping_name = VALUES(mapping_name),
+                        from_instance = VALUES(from_instance),
+                        from_field = VALUES(from_field),
+                        to_instance = VALUES(to_instance),
+                        to_field = VALUES(to_field),
+                        from_instance_type = VALUES(from_instance_type),
+                        to_instance_type = VALUES(to_instance_type)
                     """
                 ),
                 connectors,
@@ -204,7 +257,7 @@ class MySqlMetadataRepository:
         connection.execute(
             text(
                 """
-                CREATE TABLE assets (
+                CREATE TABLE IF NOT EXISTS assets (
                     asset_id VARCHAR(64) PRIMARY KEY,
                     asset_name VARCHAR(255) NOT NULL,
                     asset_type VARCHAR(50) NOT NULL,
@@ -227,7 +280,7 @@ class MySqlMetadataRepository:
         connection.execute(
             text(
                 """
-                CREATE TABLE mappings (
+                CREATE TABLE IF NOT EXISTS mappings (
                     mapping_id VARCHAR(64) PRIMARY KEY,
                     mapping_name VARCHAR(255) NOT NULL,
                     repository_name VARCHAR(255),
@@ -248,7 +301,7 @@ class MySqlMetadataRepository:
         connection.execute(
             text(
                 """
-                CREATE TABLE transformations (
+                CREATE TABLE IF NOT EXISTS transformations (
                     transformation_id VARCHAR(64) PRIMARY KEY,
                     mapping_id VARCHAR(64) NOT NULL,
                     mapping_name VARCHAR(255),
@@ -266,7 +319,7 @@ class MySqlMetadataRepository:
         connection.execute(
             text(
                 """
-                CREATE TABLE columns_metadata (
+                CREATE TABLE IF NOT EXISTS columns_metadata (
                     column_id VARCHAR(64) PRIMARY KEY,
                     asset_id VARCHAR(64) NOT NULL,
                     table_name VARCHAR(255),
@@ -288,7 +341,7 @@ class MySqlMetadataRepository:
         connection.execute(
             text(
                 """
-                CREATE TABLE sql_overrides (
+                CREATE TABLE IF NOT EXISTS sql_overrides (
                     sql_override_id VARCHAR(64) PRIMARY KEY,
                     mapping_id VARCHAR(64) NOT NULL,
                     mapping_name VARCHAR(255),
@@ -304,7 +357,7 @@ class MySqlMetadataRepository:
         connection.execute(
             text(
                 """
-                CREATE TABLE connectors (
+                CREATE TABLE IF NOT EXISTS connectors (
                     connector_id VARCHAR(64) PRIMARY KEY,
                     mapping_id VARCHAR(64) NOT NULL,
                     mapping_name VARCHAR(255),
@@ -361,7 +414,7 @@ class MySqlMetadataRepository:
 
         db = self.config.database
         url = f"{db.driver}://{quote_plus(db.username)}:{quote_plus(db.password)}@{db.host}:{db.port}"
-        return create_engine(url, future=True)
+        return create_engine(url, future=True, connect_args={"connection_timeout": 5})
 
     def _database_engine(self):
         """Handle database engine for the migration workflow."""
@@ -371,7 +424,7 @@ class MySqlMetadataRepository:
             f"{db.driver}://{quote_plus(db.username)}:{quote_plus(db.password)}"
             f"@{db.host}:{db.port}/{db.database}"
         )
-        return create_engine(url, future=True)
+        return create_engine(url, future=True, connect_args={"connection_timeout": 5})
 
     def _read_csv(self, file_name: str) -> list[dict[str, str]]:
         """Handle read csv using the provided file_name."""

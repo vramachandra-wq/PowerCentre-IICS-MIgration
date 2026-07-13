@@ -5,6 +5,7 @@ Persist generated automation reports into MySQL.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -115,17 +116,26 @@ class MySQLReportPersistence:
         timestamp = runtime_timestamp.strftime("%Y-%m-%d %H:%M:%S")
         self._prepare_database()
         tasks = self._persistence_tasks()
+        manifest = self._load_manifest()
+        signatures = {task[1]: self._task_signature(task) for task in tasks}
+        tasks = [task for task in tasks if manifest.get(task[1]) != signatures[task[1]]]
+        skipped = sorted(set(signatures) - {task[1] for task in tasks})
+        if skipped:
+            self.logger.info("Skipped unchanged MySQL report table(s): %s", skipped)
         counts: dict[str, int] = {}
         max_workers = max(1, min(6, len(tasks)))
         try:
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                future_to_table = {
-                    executor.submit(self._persist_task, task, timestamp): task[1]
-                    for task in tasks
-                }
-                for future in as_completed(future_to_table):
-                    table_name = future_to_table[future]
-                    counts[table_name] = future.result()
+            if tasks:
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    future_to_table = {
+                        executor.submit(self._persist_task, task, timestamp): task[1]
+                        for task in tasks
+                    }
+                    for future in as_completed(future_to_table):
+                        table_name = future_to_table[future]
+                        counts[table_name] = future.result()
+                        manifest[table_name] = signatures[table_name]
+                self._write_manifest(manifest)
 
             log_rows = self._read_automation_log()
             counts["automation_log"] = self._persist_with_new_connection(
@@ -141,6 +151,35 @@ class MySQLReportPersistence:
             self.logger.exception("MySQL report persistence failed.")
             raise
 
+    def _load_manifest(self) -> dict[str, str]:
+        path = self.reports_folder / "mysql_persistence_manifest.json"
+        if not path.exists():
+            return {}
+        try:
+            with path.open("r", encoding="utf-8-sig") as manifest_file:
+                payload = json.load(manifest_file)
+        except (OSError, json.JSONDecodeError):
+            self.logger.warning("Ignoring invalid MySQL persistence manifest: %s", path)
+            return {}
+        return {str(key): str(value) for key, value in payload.items()}
+
+    def _write_manifest(self, manifest: dict[str, str]) -> None:
+        path = self.reports_folder / "mysql_persistence_manifest.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as manifest_file:
+            json.dump(manifest, manifest_file, indent=2, sort_keys=True)
+
+    @staticmethod
+    def _task_signature(task: tuple[str, str, str]) -> str:
+        _kind, _table_name, source_path = task
+        path = Path(source_path)
+        if not path.exists():
+            return "missing"
+        digest = hashlib.sha256()
+        with path.open("rb") as source_file:
+            for chunk in iter(lambda: source_file.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
     def _prepare_database(self) -> None:
         """Create the configured database before parallel table loads."""
 
@@ -229,6 +268,7 @@ class MySQLReportPersistence:
                 port=self.config.port,
                 user=self.config.username,
                 password=self.config.password,
+                connection_timeout=5,
                 autocommit=False,
             )
         except Error as exc:
@@ -257,18 +297,19 @@ class MySQLReportPersistence:
         append_only: bool = False,
     ) -> int:
         table_name = self._safe_identifier(table_name)
-        if refresh_table:
-            self._drop_table(connection, table_name)
         if not rows:
             self.logger.warning("No rows available for MySQL table %s from %s", table_name, source_name)
             self._ensure_table(connection, table_name, ["source_file"])
+            if refresh_table:
+                self._truncate_table(connection, table_name)
             return 0
 
         normalized_rows = [self._normalize_row(row, source_name) for row in rows]
         columns = self._ordered_columns(normalized_rows)
         self._ensure_table(connection, table_name, columns)
-        if not refresh_table:
-            self._ensure_columns(connection, table_name, columns)
+        self._ensure_columns(connection, table_name, columns)
+        if refresh_table:
+            self._truncate_table(connection, table_name)
         if append_only:
             affected = self._insert_ignore_rows(connection, table_name, columns, normalized_rows, timestamp)
         elif refresh_table:
@@ -292,6 +333,19 @@ class MySQLReportPersistence:
         finally:
             cursor.close()
 
+    def _truncate_table(self, connection, table_name: str) -> None:
+        """Clear a latest-state report table while keeping its schema."""
+
+        table_name = self._safe_identifier(table_name)
+        cursor = connection.cursor()
+        try:
+            cursor.execute(f"TRUNCATE TABLE `{table_name}`")
+            self.logger.info("Truncated MySQL report table before refresh: %s", table_name)
+        except Exception:
+            self.logger.exception("Unable to truncate MySQL table before refresh: %s", table_name)
+            raise
+        finally:
+            cursor.close()
     def _ensure_table(self, connection, table_name: str, columns: Iterable[str]) -> None:
         cursor = connection.cursor()
         column_sql = ", ".join(self._column_definition(column) for column in columns)
@@ -522,35 +576,39 @@ class MySQLReportPersistence:
             self.logger.warning("Automation log not found for MySQL persistence: %s", path)
             return []
 
+        with path.open("r", encoding="utf-8", errors="replace") as log_file:
+            lines = log_file.readlines()
+
+        max_lines = 300
+        start_line = max(len(lines) - max_lines, 0)
         rows: list[dict[str, Any]] = []
         current: dict[str, Any] | None = None
-        with path.open("r", encoding="utf-8", errors="replace") as log_file:
-            for line_number, line in enumerate(log_file, start=1):
-                line = line.rstrip("\n")
-                match = LOG_PATTERN.match(line)
-                if match:
-                    current = {
-                        "log_timestamp": match.group("timestamp"),
-                        "log_level": match.group("level"),
-                        "module": match.group("module"),
-                        "message": match.group("message"),
+        for line_number, line in enumerate(lines[start_line:], start=start_line + 1):
+            line = line.rstrip("\n")
+            match = LOG_PATTERN.match(line)
+            if match:
+                current = {
+                    "log_timestamp": match.group("timestamp"),
+                    "log_level": match.group("level"),
+                    "module": match.group("module"),
+                    "message": match.group("message"),
+                    "line_number": line_number,
+                    "source_row_number": line_number,
+                }
+                rows.append(current)
+            elif current:
+                current["message"] = f"{current['message']}\n{line}"
+            elif line:
+                rows.append(
+                    {
+                        "log_timestamp": "",
+                        "log_level": "",
+                        "module": "",
+                        "message": line,
                         "line_number": line_number,
                         "source_row_number": line_number,
                     }
-                    rows.append(current)
-                elif current:
-                    current["message"] = f"{current['message']}\n{line}"
-                elif line:
-                    rows.append(
-                        {
-                            "log_timestamp": "",
-                            "log_level": "",
-                            "module": "",
-                            "message": line,
-                            "line_number": line_number,
-                            "source_row_number": line_number,
-                        }
-                    )
+                )
         return rows
 
     def _existing_report_path(self, relative_path: str) -> Path:

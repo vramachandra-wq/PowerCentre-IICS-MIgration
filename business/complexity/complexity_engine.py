@@ -164,8 +164,6 @@ class ComplexityClassifier:
             ]
         )
         markdown_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-        self._persist_report_to_mysql(csv_path)
         self.logger.info("Complexity classification written to %s and %s", csv_path, markdown_path)
 
     def _classify_mapping(
