@@ -733,6 +733,8 @@ def _build_mtt_zip_pcxml(
 def _build_dtemplate_zip(mapping: dict, folder_data: dict, guid: str) -> bytes:
     name = mapping["mapping_name"]
     bin_bytes = _build_bin(mapping, folder_data)
+    preview = f"Generated mapping preview for {name}\n".encode("utf-8")
+    now = int(time.time() * 1000)
 
     mapping_template = [{
         "@type": "mappingTemplate",
@@ -741,34 +743,46 @@ def _build_dtemplate_zip(mapping: dict, folder_data: dict, guid: str) -> bytes:
         "autoExpireObject": False,
         "bundleVersion": "0",
         "assetFrsGuid": guid,
-        "templateId": "@2",
-        "deployTime": int(time.time() * 1000),
+        "templateId": "@3",
+        "deployTime": now,
         "hasParameters": True,
         "valid": True,
-        "fixedConnection": False,
+        "fixedConnection": True,
         "hasParametersDeployed": True,
-        "fixedConnectionDeployed": False,
+        "fixedConnectionDeployed": True,
         "isSchemaValidationEnabled": False,
         "tasks": 1,
+        "mappingPreviewFileRecordId": "@2",
         "allowMaxFieldLength": False,
         "specialCharacterSupport": False,
         "references": [],
     }]
-    file_record = [{
-        "@type": "fileRecord",
-        "id": "@2", "name": name,
-        "type": "IMFOBJECT",
-        "size": len(bin_bytes),
-        "attachTime": int(time.time() * 1000),
-        "additionalInfo": "com.informatica.metadata.template.common.Template",
-    }]
+    file_record = [
+        {
+            "@type": "fileRecord",
+            "id": "@2",
+            "name": f"{name}_preview.jpeg",
+            "type": "IMAGE",
+            "size": len(preview),
+            "attachTime": now,
+        },
+        {
+            "@type": "fileRecord",
+            "id": "@3", "name": name,
+            "type": "IMFOBJECT",
+            "size": len(bin_bytes),
+            "attachTime": now,
+            "additionalInfo": "com.informatica.metadata.template.common.Template",
+        },
+    ]
     metadata_meta = [{"@type": "objectRef", "id": "@1", "type": "mappingTemplate"}]
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("mappingTemplate.json", json.dumps(mapping_template, separators=(",", ":")))
         zf.writestr("fileRecord.json",      json.dumps(file_record, separators=(",", ":")))
-        zf.writestr("bin/@2.bin",           bin_bytes.decode("utf-8"))
+        zf.writestr("bin/@2.bin",           preview)
+        zf.writestr("bin/@3.bin",           bin_bytes.decode("utf-8"))
         zf.writestr("metadata.meta",        json.dumps(metadata_meta, separators=(",", ":")))
     return buf.getvalue()
 
@@ -1342,17 +1356,46 @@ class IICSPackageGenerator:
         remediated_xml_dir: str | Path = "output/remediated_xml",
         output_dir: str | Path = "output/iics_generated",
         logger: logging.Logger | None = None,
+        source_file_filter: str | None = None,
+        workflow_name_filter: str | None = None,
+        primary_workflow_sessions_only: bool = False,
     ) -> None:
         self.parsed_json_dir = Path(parsed_json_dir)
         self.remediated_xml_dir = Path(remediated_xml_dir)
         self.output_dir      = Path(output_dir)
         self.logger = logger or logging.getLogger(__name__)
+        self.source_file_filter = source_file_filter
+        self.workflow_name_filter = workflow_name_filter
+        self.primary_workflow_sessions_only = primary_workflow_sessions_only
+
+    def _selected_workflow(self, workflows: list[dict]) -> dict | None:
+        if self.workflow_name_filter:
+            return next(
+                (workflow for workflow in workflows if workflow.get("workflow_name") == self.workflow_name_filter),
+                None,
+            )
+        return workflows[0] if workflows else None
+
+    def _selected_sessions(self, sessions: list[dict], workflow: dict | None) -> list[dict]:
+        if not self.primary_workflow_sessions_only or not workflow:
+            return sessions
+        workflow_name = workflow.get("workflow_name", "")
+        primary = [
+            session
+            for session in sessions
+            if session.get("session_name", "").startswith(workflow_name)
+            or session.get("mapping_name", "").startswith(workflow_name)
+        ]
+        return primary or sessions
 
     def generate(self) -> dict[str, Any]:
         self.logger.info("IICS Package Generator starting. source=%s", self.parsed_json_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         json_files = sorted(self.parsed_json_dir.glob("*.json"))
+        if self.source_file_filter:
+            filter_stem = Path(self.source_file_filter).stem
+            json_files = [path for path in json_files if path.stem == filter_stem]
         self.logger.info("Found %d parsed JSON files.", len(json_files))
 
         project_guid     = _new_guid()
@@ -1437,13 +1480,26 @@ class IICSPackageGenerator:
                 parsed = json.load(fh)
 
             for folder_data in parsed.get("folders", []):
+                workflows = folder_data.get("workflows", [])
+                selected_workflow = self._selected_workflow(workflows)
+                if self.workflow_name_filter and not selected_workflow:
+                    continue
+                selected_sessions = self._selected_sessions(folder_data.get("sessions", []), selected_workflow)
+                selected_mapping_names = {
+                    session.get("mapping_name", "")
+                    for session in selected_sessions
+                    if session.get("mapping_name")
+                }
+                taskflow_refs: list[tuple[str, str]] = []
                 # ── Per mapping (all placed in Custom_Project) ────────────────
                 for mapping in folder_data.get("mappings", []):
+                    if selected_mapping_names and mapping["mapping_name"] not in selected_mapping_names:
+                        continue
                     m_name       = _unique_mapping_name(mapping["mapping_name"])
                     dtemplate_guid = _new_guid()
                     mtt_frs_guid   = _new_guid()
 
-                    sessions   = folder_data.get("sessions", [])
+                    sessions   = selected_sessions or folder_data.get("sessions", [])
                     session    = next(
                         (s for s in sessions if s.get("session_name") == m_name
                          or s.get("mapping_name") == m_name
@@ -1453,8 +1509,7 @@ class IICSPackageGenerator:
                             sessions[0] if sessions else None,
                         ),
                     )
-                    workflows  = folder_data.get("workflows", [])
-                    workflow   = next(
+                    workflow   = selected_workflow or next(
                         (w for w in workflows if w.get("workflow_name") == m_name
                          or w.get("workflow_name") == mapping["mapping_name"]),
                         workflows[0] if workflows else None,
@@ -1501,21 +1556,22 @@ class IICSPackageGenerator:
                     }
 
                     tf_obj = None
-                    if workflow:
+                    if workflow and not taskflow_refs:
                         tf_guid    = _new_guid()
                         from datetime import datetime
                         now_str    = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.") + \
                                      f"{datetime.utcnow().microsecond // 1000:03d}Z"
                         tf_manifest_handle = _repo_handle()
-                        entry_id = f"{_h()}-gt-{abs(hash(m_name)) % 99999999}-{now_str}::tf.xml"
+                        tf_name = workflow.get("workflow_name", m_name)
+                        entry_id = f"{_h()}-gt-{abs(hash(tf_name)) % 99999999}-{now_str}::tf.xml"
                         tf_xml = _build_taskflow_xml(
                             workflow, mtt_frs_guid, m_name, tf_guid, entry_id,
                         )
-                        tf_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.TASKFLOW.xml"
+                        tf_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{tf_name}.TASKFLOW.xml"
                         zip_contents[tf_path] = tf_xml.encode("utf-8")
                         tf_obj = {
                             "objectGuid": tf_guid,
-                            "objectName": m_name,
+                            "objectName": tf_name,
                             "objectType": "TASKFLOW",
                             "path": folder_path,
                             "providerName": None,
@@ -1528,6 +1584,8 @@ class IICSPackageGenerator:
                                 model_version={"major": 1, "minor": 0},
                             ),
                         }
+                    if workflow:
+                        taskflow_refs.append((mtt_frs_guid, m_name))
 
                     # Teammate export order: DTEMPLATE -> MTT -> TASKFLOW
                     mapping_objects.append(dtemplate_obj)
@@ -1535,8 +1593,12 @@ class IICSPackageGenerator:
                     if tf_obj:
                         mapping_objects.append(tf_obj)
 
-        # Manifest order matches working client export: Project, Connection, mappings, Folder, AgentGroup
-        exported_objects = [project_obj, conn_obj] + mapping_objects + [folder_obj, agent_obj]
+        # Scoped workflow packages expose only runtime payload objects in the import list.
+        if self.primary_workflow_sessions_only:
+            exported_objects = mapping_objects
+        else:
+            # Manifest order matches working client export: Project, Connection, mappings, Folder, AgentGroup
+            exported_objects = [project_obj, conn_obj] + mapping_objects + [folder_obj, agent_obj]
         job_name = f"job-{int(time.time() * 1000)}"
         manifest = {
             "name": job_name,
