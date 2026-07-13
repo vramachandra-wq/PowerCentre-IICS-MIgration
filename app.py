@@ -260,6 +260,7 @@ def run_all(
     from business.complexity.complexity_engine import ComplexityClassifier
     from business.validation.batch_xml_processor import run_batch_xml_remediation
     from business.validation.datatype_harmonization import build_datatype_mismatch_report
+    from business.validation.readiness_engine import build_migration_readiness_report
     from business.validation.Rule_Based_Validation_Engine import build_remediation_report
     from business.validation.validation_engine import build_validation_report
     from business.parser.xml_parser import XMLParser
@@ -309,6 +310,7 @@ def run_all(
     datatype_findings = build_datatype_mismatch_report(config=config, logger=logger)
     validation_issues = build_validation_report(config=config, logger=logger)
     remediation_results, revalidation_summary = build_remediation_report(config=config, logger=logger)
+    readiness_records = build_migration_readiness_report(config=config, logger=logger)
     xml_summary = run_batch_xml_remediation(
         input_folder=config.paths.xml_folder,
         output_folder=config.paths.output_folder,
@@ -325,6 +327,7 @@ def run_all(
         "datatype_findings": len(datatype_findings),
         "validation_issues": len(validation_issues),
         "remediation_results": len(remediation_results),
+        "readiness_records": len(readiness_records),
         "revalidation": {
             "before_fix_issues": revalidation_summary.before_fix_issues,
             "after_fix_issues": revalidation_summary.after_fix_issues,
