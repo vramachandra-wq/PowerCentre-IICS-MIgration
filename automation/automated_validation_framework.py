@@ -126,6 +126,13 @@ class AutomatedValidationFramework:
                     )
                 self.logger.info("AI evaluation generated. rows=%s accuracy=%s", len(ai_dataset), ai_summary.ml_accuracy)
 
+            from export.idmc_review_package_generator import build_idmc_review_package
+
+            outputs["idmc_review_package"] = build_idmc_review_package(
+                output_folder=self.config.output_folder,
+                logger=self.logger,
+            )
+
             end_time = datetime.now(UTC)
             full_automation_seconds = round((end_time - start_time).total_seconds(), 2)
             self.logger.info(
