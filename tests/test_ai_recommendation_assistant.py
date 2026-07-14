@@ -137,9 +137,10 @@ class AIRecommendationAssistantTests(unittest.TestCase):
 
         self.assertEqual("model timeout", results[0].error)
         rows = self._read_csv(report)
-        self.assertIn("migration assessment indicates", rows[0]["AI Summary"])
+        self.assertIn("AI recommendation assessment indicates", rows[0]["AI Summary"])
         self.assertNotIn("Manual", rows[0]["AI Summary"])
-        self.assertIn("migration assistance is recommended", rows[0]["AI Recommendation"])
+        self.assertIn("AI recommendation", rows[0]["AI Recommendation"])
+        self.assertIn("Real-world scenario", rows[0]["AI Recommendation"])
         self.assertIn("readiness posture", rows[0]["AI Recommendation"])
         self.assertNotIn("Manual", rows[0]["AI Recommendation"])
         self.assertEqual("model timeout", rows[0]["Error"])

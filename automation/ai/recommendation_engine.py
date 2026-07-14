@@ -327,11 +327,13 @@ class RecommendationEngine:
         readiness = cls._number(context.get("estimated_migration_readiness"))
         success_rate = cls._number(context.get("migration_success_rate"))
         base_guidance = failure.rule_based_recommendation.strip()
+        scenario = cls._real_world_scenario(failure)
 
         if "mapplet" in failure.failure_type.lower():
             action = (
-                "Rework the reusable logic into an IDMC-supported mapping design, validating port alignment, "
-                "execution order, and reusable component behavior before deployment."
+                "Flatten the nested mapplet into explicit IDMC transformations or rebuild it as a supported reusable "
+                "mapping pattern. Validate port alignment, lookup behavior, execution order, row counts, and business "
+                "rule outputs against the original PowerCenter run before deployment."
             )
         elif any(token in failure.failure_type.lower() for token in ["datatype", "precision", "scale", "truncation"]):
             action = (
@@ -361,10 +363,45 @@ class RecommendationEngine:
 
         rule_context = f" Existing rule guidance should be incorporated: {base_guidance}" if base_guidance else ""
         return (
-            f"{priority} priority migration assistance is recommended for {object_name} because the {issue} finding "
-            f"remains outside automated conversion coverage. {action}{rule_context} "
-            f"This recommendation supports a readiness posture of {readiness:g}% and a conversion success rate of "
-            f"{success_rate:g}%, while reducing deployment risk through focused functional validation."
+            f"{priority} priority AI recommendation for {object_name}: the {issue} finding indicates PowerCenter logic "
+            f"that should not be treated as a simple lift-and-shift conversion. Real-world scenario: {scenario} "
+            f"Recommended IDMC action: {action}{rule_context} This supports the current readiness posture of "
+            f"{readiness:g}% and conversion success rate of {success_rate:g}% by reducing production risk through "
+            f"targeted functional validation."
+        )
+
+    @staticmethod
+    def _real_world_scenario(failure: FailureRecord) -> str:
+        """Explain the business impact in plain migration language."""
+
+        text = " ".join([failure.workflow, failure.session, failure.mapping, failure.object_name]).lower()
+        if "projectcostline" in text or "project_cost" in text or "costline" in text:
+            return (
+                "this mapping supports project cost processing, where reusable PowerCenter logic may drive cost-line "
+                "allocation, elimination, intercompany, or project financial reporting behavior. A conversion mismatch "
+                "can affect reconciliation totals, project margins, and downstream finance analytics."
+            )
+        if "employee" in text or "headcount" in text:
+            return (
+                "this mapping supports employee or workforce reporting, where reusable logic may standardize employee "
+                "attributes, effective dates, headcount rules, or dimension keys. A conversion mismatch can create "
+                "incorrect workforce counts or inconsistent employee dimension history."
+            )
+        if "budget" in text or "actual" in text or "pbcs" in text:
+            return (
+                "this mapping supports budget or actuals reporting, where reusable logic may normalize account, period, "
+                "or planning-system values. A conversion mismatch can cause planning-to-actual reporting variances."
+            )
+        if "dimension" in text:
+            return (
+                "this mapping supports dimensional data, where reusable logic may control surrogate keys, change "
+                "detection, hierarchy values, or reference attributes. A conversion mismatch can break joins and "
+                "downstream reporting consistency."
+            )
+        return (
+            "the mapping contains reusable transformation logic that may hide business rules inside nested PowerCenter "
+            "components. A direct automated conversion can preserve the object shell while missing execution behavior "
+            "that users rely on in production."
         )
 
     def _migration_context(self) -> dict[str, object]:
@@ -430,16 +467,17 @@ class RecommendationEngine:
             posture = "moderate migration complexity that benefits from phased remediation before deployment"
 
         return (
-            f"The migration assessment indicates {posture}. "
+            f"The AI recommendation assessment indicates {posture}. "
             f"{successful} of {total} mappings are currently tracking as successful conversions, with an estimated "
             f"readiness score of {readiness:g}% and validation accuracy of {validation_accuracy:g}%. "
             f"The rule engine identified {findings} validation findings, while {ai_recommendations} AI-assisted "
             f"recommendations highlight platform-specific behavior, unsupported constructs, or configuration areas "
-            f"that need migration review. The current item is classified as {priority} priority, with {unsupported} "
-            f"unsupported or complex objects and {high_risk} high-risk mappings visible in the assessment baseline. "
-            "Addressing these recommendations is expected to improve conversion quality, strengthen functional "
-            "validation, and reduce deployment risk. Overall, the migration remains technically feasible when the "
-            "identified recommendations are incorporated into the readiness plan."
+            f"that need migration review. The current item is classified as {priority} priority and should be treated "
+            "as a real-world design validation item, not just a technical parser warning. "
+            f"The assessment baseline shows {unsupported} unsupported or complex objects and {high_risk} high-risk "
+            "mappings. Addressing these recommendations is expected to improve conversion quality, strengthen "
+            "functional validation, and reduce deployment risk before business users compare IDMC outputs with "
+            "PowerCenter production results."
         )
 
     @staticmethod
