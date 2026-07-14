@@ -1188,6 +1188,160 @@ def _build_taskflow_xml(
 
 # ── Connection builder ───────────────────────────────────────────────────────
 
+def _build_workflow_taskflow_xml(
+    workflow: dict,
+    tasks: list[tuple[str, str]],
+    tf_guid: str,
+    repo_handle: str,
+) -> str:
+    if len(tasks) == 1:
+        mtt_name, mtt_frs_guid = tasks[0]
+        return _build_taskflow_xml(workflow, mtt_frs_guid, mtt_name, tf_guid, repo_handle)
+
+    wf_name = workflow.get("workflow_name") or tasks[0][0]
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    temp_fields = ""
+    dependencies = ""
+    branch_xml = ""
+    for mtt_name, mtt_frs_guid in tasks:
+        mtt_hyphen = _hyphenate(mtt_name)
+        temp_fields += (
+            f'\n               <field description="" name="{mtt_name}" type="reference"><options>'
+            f'<option name="failOnNotRun">false</option>'
+            f'<option name="failOnFault">true</option>'
+            f'<option name="referenceTo">$po:{mtt_hyphen}</option>'
+            f'<option name="required">false</option>'
+            f'<option name="isCopy">true</option>'
+            f'</options></field>'
+        )
+        sid_cont = _h()
+        sid_svc = _h()
+        sid_link = _h()
+        sid_cerr = _h()
+        sid_cwrn = _h()
+        exclusive_id = _h()
+        branch_xml += f"""
+                     <container id="{exclusive_id}" type="exclusive">
+                        <eventContainer id="{sid_cont}">
+                           <service id="{sid_svc}">
+                              <title>{mtt_name}</title>
+                              <serviceName>ICSExecuteDataTask</serviceName>
+                              <serviceGUID/>
+                              <serviceInput>
+                                 <parameter name="Task Name" source="constant" updatable="true">{mtt_name}</parameter>
+                                 <parameter name="Wait for Task to Complete" source="constant" updatable="true">true</parameter>
+                                 <parameter name="Max Wait" source="constant" updatable="true">86400</parameter>
+                                 <parameter name="GUID" source="constant" updatable="true">{mtt_frs_guid}</parameter>
+                                 <parameter name="Has Inout Parameters" source="constant" updatable="true">false</parameter>
+                                 <parameter name="Task Type" source="constant" updatable="true">MCT</parameter>
+                              </serviceInput>
+                           </service>
+                           <link id="{sid_link}" targetId="end_node"/>
+                           <events>
+                              <catch faultField="temp.{mtt_name}/fault" id="{sid_cerr}" interrupting="true" name="error"/>
+                              <catch faultField="temp.{mtt_name}/fault" id="{sid_cwrn}" interrupting="true" name="warning"/>
+                           </events>
+                        </eventContainer>
+                     </container>"""
+        dependencies += f"""
+               <processObject xmlns="http://schemas.active-endpoints.com/appmodules/screenflow/2011/06/avosHostEnvironment.xsd"
+                              xmlns:processObject="http://schemas.active-endpoints.com/appmodules/screenflow/2011/06/avosHostEnvironment.xsd"
+                              displayName="{mtt_hyphen}"
+                              isByCopy="true"
+                              name="{mtt_hyphen}">
+                  <description/>
+                  <tags/>
+                  <detail>
+                     <field label="Input Parameters"           name="input"          type="reference"/>
+                     <field label="InOut Parameters"           name="inout"          type="reference"/>
+                     <field label="TaskProperties Parameters"  name="taskProperties" type="reference"/>
+                     <field label="Output Parameters"          name="output"         type="reference"/>
+                     <field label="Fault"                      name="fault"          type="reference"/>
+                  </detail>
+               </processObject>"""
+
+    start_link = _h()
+    parallel_id = _h()
+    xml = f"""<aetgt:getResponse xmlns:aetgt="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd"
+                   xmlns:types1="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd">
+   <types1:Item>
+      <types1:EntryId>{repo_handle}</types1:EntryId>
+      <types1:Name>{wf_name}</types1:Name>
+      <types1:MimeType>application/xml+taskflow</types1:MimeType>
+      <types1:Description>These workflows are created from the Workflow Generation Wizard.</types1:Description>
+      <types1:VersionLabel>1.0</types1:VersionLabel>
+      <types1:State>CURRENT</types1:State>
+      <types1:CreatedBy>PC2IICS-Migration</types1:CreatedBy>
+      <types1:CreationDate>{now_iso}</types1:CreationDate>
+      <types1:PublicationStatus>unpublished</types1:PublicationStatus>
+      <types1:Entry>
+         <taskflow xmlns="http://schemas.active-endpoints.com/appmodules/screenflow/2010/10/avosScreenflow.xsd"
+                   GUID="{tf_guid}"
+                   displayName="{wf_name}"
+                   name="{wf_name}"
+                   overrideAPIName="false">
+            <input>
+               <parameter name="InputMappingTaskParameterFileDir" type="string">
+                  <options><option name="required">false</option></options>
+               </parameter>
+               <parameter name="InputMappingTaskParameterFileName" type="string">
+                  <options><option name="required">false</option></options>
+               </parameter>
+            </input>
+            <tempFields>{temp_fields}
+            </tempFields>
+            <flow id="a">
+               <start id="b">
+                  <title>Start</title>
+                  <link id="{start_link}" targetId="{parallel_id}"/>
+               </start>
+               <container id="{parallel_id}" type="parallel">
+{branch_xml}
+               </container>
+               <end id="end_node"/>
+            </flow>
+            <dependencies>{dependencies}
+            </dependencies>
+         </taskflow>
+      </types1:Entry>
+      <types1:GUID>{tf_guid}</types1:GUID>
+      <types1:DisplayName>{wf_name}</types1:DisplayName>
+   </types1:Item>
+   <types1:CurrentServerDateTime>{now_iso}</types1:CurrentServerDateTime>
+</aetgt:getResponse>"""
+    return xml.replace("\n", "\r\n")
+
+
+def _valid_workflow_tasks(folder_data: dict, workflow: dict, mtt_by_name: dict[str, str]) -> list[tuple[str, str]]:
+    sessions = folder_data.get("sessions", [])
+    valid_sessions = {
+        session.get("session_name"): session
+        for session in sessions
+        if session.get("session_name") and str(session.get("is_valid", "YES")).upper() != "NO"
+    }
+    task_names = [
+        task.get("TASKNAME") or task.get("NAME")
+        for task in workflow.get("task_instances", [])
+        if str(task.get("TASKTYPE", "")).lower() == "session"
+    ]
+    if not task_names:
+        task_names = [session.get("session_name") for session in sessions]
+
+    tasks: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for task_name in task_names:
+        session = valid_sessions.get(task_name)
+        if not session:
+            continue
+        mtt_name = session.get("mapping_name") or task_name
+        mtt_guid = mtt_by_name.get(mtt_name)
+        if not mtt_guid or mtt_name in seen:
+            continue
+        seen.add(mtt_name)
+        tasks.append((mtt_name, mtt_guid))
+    return tasks
+
+
 def _build_connection_zip(
     conn_name: str, conn_guid: str,
     agent_group_guid: str, org_id: str, agent_id: str,
@@ -1437,11 +1591,13 @@ class IICSPackageGenerator:
                 parsed = json.load(fh)
 
             for folder_data in parsed.get("folders", []):
+                mtt_by_name: dict[str, str] = {}
                 # ── Per mapping (all placed in Custom_Project) ────────────────
                 for mapping in folder_data.get("mappings", []):
                     m_name       = _unique_mapping_name(mapping["mapping_name"])
                     dtemplate_guid = _new_guid()
                     mtt_frs_guid   = _new_guid()
+                    mtt_by_name[m_name] = mtt_frs_guid
 
                     sessions   = folder_data.get("sessions", [])
                     session    = next(
@@ -1500,40 +1656,40 @@ class IICSPackageGenerator:
                         ),
                     }
 
-                    tf_obj = None
-                    if workflow:
-                        tf_guid    = _new_guid()
-                        from datetime import datetime
-                        now_str    = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.") + \
-                                     f"{datetime.utcnow().microsecond // 1000:03d}Z"
-                        tf_manifest_handle = _repo_handle()
-                        entry_id = f"{_h()}-gt-{abs(hash(m_name)) % 99999999}-{now_str}::tf.xml"
-                        tf_xml = _build_taskflow_xml(
-                            workflow, mtt_frs_guid, m_name, tf_guid, entry_id,
-                        )
-                        tf_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.TASKFLOW.xml"
-                        zip_contents[tf_path] = tf_xml.encode("utf-8")
-                        tf_obj = {
-                            "objectGuid": tf_guid,
-                            "objectName": m_name,
-                            "objectType": "TASKFLOW",
-                            "path": folder_path,
-                            "providerName": None,
-                            "metadata": _meta_with_ctx(
-                                tf_manifest_handle, [mtt_frs_guid],
-                                "These workflows are created from the Workflow Generation Wizard.",
-                                "application/json; charset=utf-8",
-                                "VALID",
-                                _CONTEXT_ATTR,
-                                model_version={"major": 1, "minor": 0},
-                            ),
-                        }
-
                     # Teammate export order: DTEMPLATE -> MTT -> TASKFLOW
                     mapping_objects.append(dtemplate_obj)
                     mapping_objects.append(mtt_obj)
-                    if tf_obj:
-                        mapping_objects.append(tf_obj)
+
+                for workflow in folder_data.get("workflows", []):
+                    tasks = _valid_workflow_tasks(folder_data, workflow, mtt_by_name)
+                    if not tasks:
+                        continue
+                    tf_name = tasks[0][0] if len(tasks) == 1 else workflow.get("workflow_name", tasks[0][0])
+                    tf_guid = _new_guid()
+                    from datetime import datetime
+                    now_str = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.") + \
+                        f"{datetime.utcnow().microsecond // 1000:03d}Z"
+                    tf_manifest_handle = _repo_handle()
+                    entry_id = f"{_h()}-gt-{abs(hash(tf_name)) % 99999999}-{now_str}::tf.xml"
+                    tf_xml = _build_workflow_taskflow_xml(workflow, tasks, tf_guid, entry_id)
+                    tf_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{tf_name}.TASKFLOW.xml"
+                    zip_contents[tf_path] = tf_xml.encode("utf-8")
+                    mapping_objects.append({
+                        "objectGuid": tf_guid,
+                        "objectName": tf_name,
+                        "objectType": "TASKFLOW",
+                        "path": folder_path,
+                        "providerName": None,
+                        "metadata": _meta_with_ctx(
+                            tf_manifest_handle,
+                            [mtt_guid for _, mtt_guid in tasks],
+                            "These workflows are created from the Workflow Generation Wizard.",
+                            "application/json; charset=utf-8",
+                            "VALID",
+                            _CONTEXT_ATTR,
+                            model_version={"major": 1, "minor": 0},
+                        ),
+                    })
 
         # Manifest order matches working client export: Project, Connection, mappings, Folder, AgentGroup
         exported_objects = [project_obj, conn_obj] + mapping_objects + [folder_obj, agent_obj]

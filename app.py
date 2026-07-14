@@ -267,6 +267,7 @@ def run_all(
     from data.repositories.metadata_repository import CanonicalMetadataBuilder
     from reports.html_report import EnterpriseReportBuilder
     from automation.automated_validation_framework import AutomatedValidationFramework
+    from business.export.idmc_export_package import generate_idmc_export_package
 
     logger.info("Starting full metadata, validation, and remediation run.")
 
@@ -321,6 +322,17 @@ def run_all(
 
         automation_framework.config = replace(automation_framework.config, execute_existing_modules=False)
     automation_summary = automation_framework.run()
+    package_path = Path(config.paths.output_folder) / "Custom_Project_Export.zip"
+    existing_package = package_path.read_bytes() if package_path.exists() else None
+    try:
+        idmc_export_summary = generate_idmc_export_package(config=config, logger=logger)
+    except Exception:
+        if package_path.exists():
+            package_path.unlink()
+        if existing_package is not None:
+            package_path.write_bytes(existing_package)
+        logger.exception("IDMC export package generation failed after XML remediation completed.")
+        raise
 
     return {
         "enterprise": enterprise_summary,
@@ -335,6 +347,7 @@ def run_all(
         },
         "xml": xml_summary,
         "automation": automation_summary,
+        "idmc_export": idmc_export_summary,
     }
 
 
