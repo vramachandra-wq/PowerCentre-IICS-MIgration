@@ -8,6 +8,7 @@ import csv
 import hashlib
 import io
 import json
+import re
 import shutil
 import zipfile
 from dataclasses import dataclass
@@ -71,6 +72,7 @@ class IdmcExportPackageGenerator:
         self.package_name = package_name
         self.execution_strategy = execution_strategy
         self.reference_package = self._default_reference_package(reference_package)
+        self.folder_name = self.FOLDER_NAME
         self.package_path = self.output_folder / package_name
         self.staging_folder = self.output_folder / "idmc_export_package"
         self.parser = XMLParser(config=config, logger=logger)
@@ -87,6 +89,7 @@ class IdmcExportPackageGenerator:
 
         parsed_files = self._parse_xml_files(xml_files)
         mapping_assets = self._mapping_assets(parsed_files)
+        mapping_assets = self._publishable_mapping_assets(mapping_assets)
         if not mapping_assets:
             raise ValueError(f"No mappings found in XML files under {self.remediated_folder}")
 
@@ -107,16 +110,41 @@ class IdmcExportPackageGenerator:
             self._write_pcxml_source_bundle(xml_files, mapping_assets, now)
             sample_templates = self._sample_asset_templates()
             if sample_templates:
+                dependencies = self._reference_dependencies(sample_templates)
+                for dependency in dependencies:
+                    self._write_reference_dependency_artifact(dependency)
+                    exported_objects.append(
+                        self._exported_object(
+                            dependency["id"],
+                            dependency["name"],
+                            dependency["type"],
+                            dependency["path"],
+                            dependency["content_type"],
+                            dependency["state"],
+                            dependency["description"],
+                        )
+                    )
+                    contents_rows.append(
+                        {
+                            "objectPath": dependency["path"],
+                            "objectName": dependency["name"],
+                            "objectType": dependency["type"],
+                            "id": dependency["id"],
+                        }
+                    )
+                taskflow_groups: dict[str, dict[str, Any]] = {}
                 for index, asset in enumerate(mapping_assets):
                     asset_ids = self._asset_ids(asset["name"])
+                    asset["ids"] = asset_ids
+                    template = self._template_for_asset(sample_templates, asset["name"], index)
                     self._write_sample_backed_mapping_artifacts(
                         asset,
                         asset_ids,
-                        sample_templates[index % len(sample_templates)],
+                        template,
                         ids,
                         now,
                     )
-                    object_path = f"/Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}"
+                    object_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
                     exported_objects.extend(
                         [
                             self._exported_object(
@@ -138,6 +166,86 @@ class IdmcExportPackageGenerator:
                                 f"Sample-backed mapping task wrapper for remediated XML : {asset['name']}",
                                 [asset_ids.dtemplate, ids.connection, ids.agent_group],
                             ),
+                        ]
+                    )
+                    contents_rows.extend(
+                        [
+                            {"objectPath": object_path, "objectName": asset["name"], "objectType": "DTEMPLATE", "id": asset_ids.dtemplate},
+                            {"objectPath": object_path, "objectName": asset["name"], "objectType": "MTT", "id": asset_ids.mtt},
+                        ]
+                    )
+                    group_key = asset.get("workflow_key") or asset["name"]
+                    group = taskflow_groups.setdefault(
+                        group_key,
+                        {
+                            "name": asset.get("workflow_name") or asset["name"],
+                            "assets": [],
+                            "links": asset.get("workflow_links", []),
+                        },
+                    )
+                    group["assets"].append(asset)
+
+                for group in taskflow_groups.values():
+                    taskflow_name = self._asset_name(group["name"])
+                    taskflow_id = self._guid("taskflow", taskflow_name)
+                    taskflow_text = self._workflow_taskflow_xml(taskflow_name, taskflow_id, group["assets"], sample_templates, now)
+                    entry_id = self._taskflow_entry_id_from_text(taskflow_text) or f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
+                    taskflow_refs = self._ordered_unique(
+                        [
+                            *[asset["ids"].mtt for asset in group["assets"]],
+                            *self._taskflow_mtt_refs(taskflow_text),
+                        ]
+                    )
+                    mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
+                    (mapping_folder / f"{taskflow_name}.TASKFLOW.xml").write_text(taskflow_text, encoding="utf-8")
+                    object_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
+                    exported_objects.append(
+                        self._exported_object(
+                            taskflow_id,
+                            taskflow_name,
+                            "TASKFLOW",
+                            object_path,
+                            "application/json; charset=utf-8",
+                            "VALID",
+                            "These workflows are created from the Workflow Generation Wizard.",
+                            taskflow_refs,
+                            model_version={"major": 1, "minor": 0},
+                            repo_handle=entry_id,
+                            context_attributes=None,
+                        )
+                    )
+                    contents_rows.append(
+                        {"objectPath": object_path, "objectName": taskflow_name, "objectType": "TASKFLOW", "id": taskflow_id}
+                    )
+            else:
+                self.logger.warning(
+                    "No reference IDMC export package was found. Falling back to generated placeholder DTEMPLATE/MTT/TASKFLOW artifacts."
+                )
+                for asset in mapping_assets:
+                    asset_ids = self._asset_ids(asset["name"])
+                    self._write_mapping_artifacts(asset, asset_ids, now)
+                    object_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
+                    exported_objects.extend(
+                        [
+                            self._exported_object(
+                                asset_ids.dtemplate,
+                                asset["name"],
+                                "DTEMPLATE",
+                                object_path,
+                                "JSON",
+                                "VALID",
+                                f"Generated CDI conversion placeholder for remediated XML : {asset['name']}",
+                            ),
+                            self._exported_object(
+                                asset_ids.mtt,
+                                asset["name"],
+                                "MTT",
+                                object_path,
+                                "JSON",
+                                "VALID",
+                                f"Generated mapping task wrapper for remediated XML : {asset['name']}",
+                                [asset_ids.dtemplate, ids.connection, ids.agent_group],
+                            ),
                             self._exported_object(
                                 asset_ids.taskflow,
                                 asset["name"],
@@ -145,7 +253,7 @@ class IdmcExportPackageGenerator:
                                 object_path,
                                 "application/json; charset=utf-8",
                                 "VALID",
-                                "PowerCenter XML conversion taskflow wrapper generated from the reference export package.",
+                                "Generated PowerCenter XML taskflow wrapper.",
                                 [asset_ids.mtt],
                                 model_version={"major": 1, "minor": 0},
                             ),
@@ -158,15 +266,11 @@ class IdmcExportPackageGenerator:
                             {"objectPath": object_path, "objectName": asset["name"], "objectType": "TASKFLOW", "id": asset_ids.taskflow},
                         ]
                     )
-            else:
-                self.logger.warning(
-                    "No reference IDMC export package was found. Generated PCXML bundle only; the IDMC UI may show no selectable assets."
-                )
         else:
             for asset in mapping_assets:
                 asset_ids = self._asset_ids(asset["name"])
                 self._write_mapping_artifacts(asset, asset_ids, now)
-                object_path = f"/Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}"
+                object_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
                 exported_objects.extend(
                     [
                         self._exported_object(
@@ -210,14 +314,14 @@ class IdmcExportPackageGenerator:
                 )
 
         exported_objects.append(
-            self._exported_object(ids.folder, self.FOLDER_NAME, "Folder", f"/Explore/{self.PROJECT_NAME}", "Binary", "COMPLETE", "")
+            self._exported_object(ids.folder, self.folder_name, "Folder", f"/Explore/{self.PROJECT_NAME}", "Binary", "COMPLETE", "")
         )
         exported_objects.append(
             self._exported_object(ids.agent_group, self.AGENT_GROUP_NAME, "AgentGroup", "/SYS", "JSON", "VALID", None)
         )
         contents_rows.extend(
             [
-                {"objectPath": f"/Explore/{self.PROJECT_NAME}", "objectName": self.FOLDER_NAME, "objectType": "Folder", "id": ids.folder},
+                {"objectPath": f"/Explore/{self.PROJECT_NAME}", "objectName": self.folder_name, "objectType": "Folder", "id": ids.folder},
                 {"objectPath": "/SYS", "objectName": self.AGENT_GROUP_NAME, "objectType": "AgentGroup", "id": ids.agent_group},
             ]
         )
@@ -266,8 +370,13 @@ class IdmcExportPackageGenerator:
         for parsed in parsed_files:
             for folder in parsed.folders:
                 sessions = {session.mapping_name: session for session in folder.sessions if session.mapping_name}
+                workflow_by_session = self._workflow_by_session(folder.workflows)
                 for mapping in folder.mappings:
-                    name = self._asset_name(mapping.mapping_name)
+                    session = sessions.get(mapping.mapping_name)
+                    workflow = workflow_by_session.get(session.session_name if session else "")
+                    name = self._asset_name(
+                        session.session_name if workflow and session and session.session_name else mapping.mapping_name
+                    )
                     unique_name = self._unique_name(name, seen)
                     seen.add(unique_name)
                     assets.append(
@@ -278,12 +387,47 @@ class IdmcExportPackageGenerator:
                             "repository": parsed.repository,
                             "folder": folder.folder_name,
                             "mapping": mapping,
-                            "session": sessions.get(mapping.mapping_name),
+                            "session": session,
+                            "workflow_name": workflow.workflow_name if workflow else unique_name,
+                            "workflow_key": f"{parsed.file_name}:{folder.folder_name}:{workflow.workflow_name if workflow else unique_name}",
+                            "workflow_links": workflow.workflow_links if workflow else [],
                             "sources": folder.sources,
                             "targets": folder.targets,
                         }
                     )
         return assets
+
+    @staticmethod
+    def _workflow_by_session(workflows) -> dict[str, Any]:
+        by_session: dict[str, Any] = {}
+        for workflow in workflows:
+            for task in workflow.task_instances:
+                if task.get("TASKTYPE", "").lower() != "session":
+                    continue
+                for key in ("TASKNAME", "NAME"):
+                    session_name = task.get(key, "")
+                    if session_name:
+                        by_session[session_name] = workflow
+        return by_session
+
+    def _publishable_mapping_assets(self, assets: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for asset in assets:
+            grouped.setdefault(asset.get("workflow_key") or asset["name"], []).append(asset)
+
+        publishable: list[dict[str, Any]] = []
+        for group_assets in grouped.values():
+            if len(group_assets) == 1:
+                publishable.extend(group_assets)
+                continue
+            workflow_name = self._asset_name(group_assets[0].get("workflow_name") or "")
+            business_assets = [
+                asset
+                for asset in group_assets
+                if asset["name"] == workflow_name or asset["name"].startswith(workflow_name)
+            ]
+            publishable.extend(business_assets or group_assets)
+        return publishable
 
     def _write_system_artifacts(self, ids: _AssetIds, now: datetime) -> None:
         sys_folder = self.staging_folder / "SYS"
@@ -344,7 +488,7 @@ class IdmcExportPackageGenerator:
         explore = self.staging_folder / "Explore"
         project_folder = explore / self.PROJECT_NAME
         project_folder.mkdir(parents=True, exist_ok=True)
-        (project_folder / self.FOLDER_NAME).mkdir(parents=True, exist_ok=True)
+        (project_folder / self.folder_name).mkdir(parents=True, exist_ok=True)
         (explore / f"{self.PROJECT_NAME}.Project.json").write_text(
             json.dumps(
                 self._odata_document(
@@ -360,12 +504,12 @@ class IdmcExportPackageGenerator:
             ),
             encoding="utf-8",
         )
-        (project_folder / f"{self.FOLDER_NAME}.Folder.json").write_text(
+        (project_folder / f"{self.folder_name}.Folder.json").write_text(
             json.dumps(
                 self._odata_document(
                     "Folder",
                     ids.folder,
-                    self.FOLDER_NAME,
+                    self.folder_name,
                     "",
                     now,
                     subcontainer_count=mapping_count,
@@ -380,7 +524,7 @@ class IdmcExportPackageGenerator:
         )
 
     def _write_pcxml_source_bundle(self, xml_files: list[Path], mapping_assets: list[dict[str, Any]], now: datetime) -> None:
-        bundle_folder = self.staging_folder / "PCXML" / self.FOLDER_NAME
+        bundle_folder = self.staging_folder / "PCXML" / self.folder_name
         bundle_folder.mkdir(parents=True, exist_ok=True)
         for xml_file in xml_files:
             shutil.copy2(xml_file, bundle_folder / xml_file.name)
@@ -390,7 +534,7 @@ class IdmcExportPackageGenerator:
             by_xml.setdefault(asset["source_xml"], []).append(asset["name"])
 
         manifest = {
-            "name": f"{self.FOLDER_NAME}_PowerCenterXml_Source_Bundle",
+            "name": f"{self.folder_name}_PowerCenterXml_Source_Bundle",
             "createdTime": self._timestamp(now),
             "executionStrategy": self.execution_strategy,
             "nativeCdiMapping": False,
@@ -402,7 +546,7 @@ class IdmcExportPackageGenerator:
             "xmlFiles": [
                 {
                     "fileName": xml_file.name,
-                    "relativePath": f"PCXML/{self.FOLDER_NAME}/{xml_file.name}",
+                    "relativePath": f"PCXML/{self.folder_name}/{xml_file.name}",
                     "mappings": sorted(by_xml.get(xml_file.name, [])),
                     "sha256": hashlib.sha256(xml_file.read_bytes()).hexdigest().upper(),
                 }
@@ -419,37 +563,110 @@ class IdmcExportPackageGenerator:
         with zipfile.ZipFile(self.reference_package) as package:
             metadata = json.loads(package.read("exportMetadata.v2.json"))
             objects = metadata.get("exportedObjects", [])
-            connection = next((item for item in objects if item.get("objectType") == "Connection"), {})
-            agent_group = next((item for item in objects if item.get("objectType") == "AgentGroup"), {})
+            connections = [item for item in objects if item.get("objectType") == "Connection"]
+            agent_groups = [item for item in objects if item.get("objectType") == "AgentGroup"]
+            connection = connections[0] if connections else {}
+            agent_group = agent_groups[0] if agent_groups else {}
+            dependencies = self._load_reference_dependency_templates(package, objects)
+            taskflows = [item for item in objects if item.get("objectType") == "TASKFLOW"]
+            workflow_templates = []
+            for taskflow in taskflows:
+                base_path = taskflow.get("path", "").strip("/")
+                name = taskflow.get("objectName", "")
+                taskflow_xml = f"{base_path}/{name}.TASKFLOW.xml" if base_path else f"{name}.TASKFLOW.xml"
+                if name and taskflow_xml in package.namelist():
+                    workflow_templates.append(
+                        {
+                            "name": name,
+                            "taskflow_id": taskflow.get("objectGuid", ""),
+                            "taskflow_xml": package.read(taskflow_xml).decode("utf-8"),
+                            "repo_handle": (taskflow.get("metadata", {}).get("repoInfo") or {}).get("repoHandle"),
+                        }
+                    )
             templates: list[dict[str, Any]] = []
-            dtemplates = [item for item in objects if item.get("objectType") == "DTEMPLATE"]
-            for dtemplate in dtemplates:
-                name = dtemplate.get("objectName", "")
-                mtt = next((item for item in objects if item.get("objectType") == "MTT" and item.get("objectName") == name), None)
-                taskflow = next((item for item in objects if item.get("objectType") == "TASKFLOW" and item.get("objectName") == name), None)
-                if not name or not mtt or not taskflow:
+            dtemplates = {item.get("objectGuid", ""): item for item in objects if item.get("objectType") == "DTEMPLATE"}
+            dtemplates_by_name = {item.get("objectName", ""): item for item in dtemplates.values()}
+            for mtt in [item for item in objects if item.get("objectType") == "MTT"]:
+                name = mtt.get("objectName", "")
+                if not name:
                     continue
+                mtt_base_path = mtt.get("path", "").strip("/")
+                mtt_zip = f"{mtt_base_path}/{name}.MTT.zip" if mtt_base_path else f"{name}.MTT.zip"
+                if mtt_zip not in package.namelist():
+                    continue
+                mtt_payload = self._zip_json_member(package.read(mtt_zip), "mtTask.json")
+                mapping_id = ""
+                if mtt_payload and isinstance(mtt_payload[0], dict):
+                    mapping_id = str(mtt_payload[0].get("mappingId", "")).lstrip("@")
+                dtemplate = dtemplates.get(mapping_id) or dtemplates_by_name.get(name)
+                if not dtemplate:
+                    continue
+                dtemplate_name = dtemplate.get("objectName", "")
                 base_path = dtemplate.get("path", "").strip("/")
-                artifact_prefix = f"{base_path}/{name}" if base_path else name
+                artifact_prefix = f"{base_path}/{dtemplate_name}" if base_path else dtemplate_name
                 dtemplate_zip = f"{artifact_prefix}.DTEMPLATE.zip"
-                mtt_zip = f"{artifact_prefix}.MTT.zip"
-                taskflow_xml = f"{artifact_prefix}.TASKFLOW.xml"
-                if not all(item in package.namelist() for item in [dtemplate_zip, mtt_zip, taskflow_xml]):
+                if not all(item in package.namelist() for item in [dtemplate_zip, mtt_zip]):
                     continue
                 templates.append(
                     {
                         "name": name,
                         "dtemplate_id": dtemplate.get("objectGuid", ""),
                         "mtt_id": mtt.get("objectGuid", ""),
-                        "taskflow_id": taskflow.get("objectGuid", ""),
+                        "workflow_templates": workflow_templates,
                         "connection_id": connection.get("objectGuid", ""),
+                        "connection_ids": [item.get("objectGuid", "") for item in connections],
                         "agent_group_id": agent_group.get("objectGuid", ""),
+                        "agent_group_ids": [item.get("objectGuid", "") for item in agent_groups],
+                        "dependencies": dependencies,
                         "dtemplate_zip": package.read(dtemplate_zip),
                         "mtt_zip": package.read(mtt_zip),
-                        "taskflow_xml": package.read(taskflow_xml).decode("utf-8"),
                     }
                 )
             return templates
+
+    @staticmethod
+    def _template_for_asset(templates: list[dict[str, Any]], asset_name: str, index: int) -> dict[str, Any]:
+        return next((template for template in templates if template.get("name") == asset_name), templates[index % len(templates)])
+
+    @staticmethod
+    def _reference_dependencies(templates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        dependencies: dict[str, dict[str, Any]] = {}
+        for template in templates:
+            for dependency in template.get("dependencies", []):
+                dependencies[dependency["id"]] = dependency
+        return list(dependencies.values())
+
+    def _load_reference_dependency_templates(self, package: zipfile.ZipFile, objects: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        dependencies = []
+        for obj in objects:
+            if obj.get("objectType") != "DMAPPLET":
+                continue
+            name = obj.get("objectName", "")
+            base_path = obj.get("path", "").strip("/")
+            artifact = f"{base_path}/{name}.DMAPPLET.zip" if base_path else f"{name}.DMAPPLET.zip"
+            if not name or artifact not in package.namelist():
+                continue
+            metadata = obj.get("metadata", {})
+            additional = metadata.get("additionalInfo", {})
+            dependencies.append(
+                {
+                    "id": obj.get("objectGuid", ""),
+                    "name": name,
+                    "type": "DMAPPLET",
+                    "path": f"/Explore/{self.PROJECT_NAME}/{self.folder_name}",
+                    "content_type": additional.get("contentType", "JSON"),
+                    "state": additional.get("documentState", "VALID"),
+                    "description": additional.get("description"),
+                    "artifact_name": f"Explore/{self.PROJECT_NAME}/{self.folder_name}/{name}.DMAPPLET.zip",
+                    "artifact_bytes": package.read(artifact),
+                }
+            )
+        return dependencies
+
+    def _write_reference_dependency_artifact(self, dependency: dict[str, Any]) -> None:
+        output_path = self.staging_folder / dependency["artifact_name"]
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(dependency["artifact_bytes"])
 
     def _write_sample_backed_mapping_artifacts(
         self,
@@ -459,17 +676,16 @@ class IdmcExportPackageGenerator:
         base_ids: _AssetIds,
         now: datetime,
     ) -> None:
-        mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.FOLDER_NAME
+        mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
         mapping_folder.mkdir(parents=True, exist_ok=True)
         mapping_name = asset["name"]
         replacements = {
             template["name"]: mapping_name,
             template["dtemplate_id"]: ids.dtemplate,
             template["mtt_id"]: ids.mtt,
-            template["taskflow_id"]: ids.taskflow,
-            template["connection_id"]: base_ids.connection,
-            template["agent_group_id"]: base_ids.agent_group,
         }
+        replacements.update({connection_id: base_ids.connection for connection_id in template.get("connection_ids", []) if connection_id})
+        replacements.update({agent_group_id: base_ids.agent_group for agent_group_id in template.get("agent_group_ids", []) if agent_group_id})
 
         self._rewrite_sample_zip(
             template["dtemplate_zip"],
@@ -489,12 +705,6 @@ class IdmcExportPackageGenerator:
             ids,
             now,
         )
-        taskflow_text = self._replace_text(template["taskflow_xml"], replacements)
-        taskflow_text = taskflow_text.replace(
-            "<types1:Description>These workflows are created from the Workflow Generation Wizard.</types1:Description>",
-            "<types1:Description>Sample-backed taskflow wrapper for remediated PowerCenter XML.</types1:Description>",
-        )
-        (mapping_folder / f"{mapping_name}.TASKFLOW.xml").write_text(taskflow_text, encoding="utf-8")
 
     def _rewrite_sample_zip(
         self,
@@ -511,6 +721,11 @@ class IdmcExportPackageGenerator:
                 for member in source_zip.namelist():
                     content = source_zip.read(member)
                     output_zip.writestr(member, member_rewriter(member, content, replacements, mapping_name, ids, now))
+
+    @staticmethod
+    def _zip_json_member(source_bytes: bytes, member: str) -> Any:
+        with zipfile.ZipFile(io.BytesIO(source_bytes)) as source_zip:
+            return json.loads(source_zip.read(member).decode("utf-8"))
 
     def _rewrite_dtemplate_member(
         self,
@@ -558,11 +773,168 @@ class IdmcExportPackageGenerator:
                 payload[0]["description"] = f"Sample-backed mapping task wrapper for remediated XML : {mapping_name}"
                 payload[0]["mappingId"] = f"@{ids.dtemplate}"
                 payload[0]["frsGuid"] = ids.mtt
+                payload[0].setdefault("paramFileType", "PARAM_FILE_LOCAL")
+                payload[0].setdefault("serverlessProperties", {})
             return self._json_bytes(payload)
         return self._replace_text_bytes(content, replacements)
 
+    def _workflow_taskflow_xml(
+        self,
+        taskflow_name: str,
+        taskflow_id: str,
+        assets: list[dict[str, Any]],
+        templates: list[dict[str, Any]],
+        now: datetime,
+    ) -> str:
+        workflow_templates = next((template.get("workflow_templates", []) for template in templates if template.get("workflow_templates")), [])
+        template_names = {template.get("name") for template in templates}
+        if not workflow_templates or not all(asset["name"] in template_names for asset in assets):
+            fallback_ids = self._asset_ids(taskflow_name)
+            fallback_ids = _AssetIds(
+                project=fallback_ids.project,
+                folder=fallback_ids.folder,
+                connection=fallback_ids.connection,
+                agent_group=fallback_ids.agent_group,
+                dtemplate=fallback_ids.dtemplate,
+                mtt=fallback_ids.mtt,
+                taskflow=taskflow_id,
+            )
+            return self._taskflow_xml(taskflow_name, fallback_ids, now)
+
+        template = next(
+            (candidate for candidate in workflow_templates if candidate.get("name") == taskflow_name),
+            workflow_templates[0],
+        )
+        entry_id = f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
+        replacements = {
+            template.get("name", ""): taskflow_name,
+            template.get("taskflow_id", ""): taskflow_id,
+            template.get("repo_handle", "") or "": entry_id,
+        }
+        template_by_name = {template.get("name", ""): template for template in templates}
+        service_titles = set(re.findall(r"<service\b[\s\S]*?<title>(.*?)</title>", template["taskflow_xml"]))
+        retained_service_titles = {asset["name"] for asset in assets}
+        for service_title in sorted(service_titles):
+            if service_title in retained_service_titles:
+                continue
+            helper_template = template_by_name.get(service_title)
+            if not helper_template and service_title.endswith("_HR"):
+                helper_template = template_by_name.get(service_title.removesuffix("_HR"))
+            if not helper_template:
+                continue
+            helper_ids = self._asset_ids(helper_template.get("name", service_title))
+            replacements.update(
+                {
+                    helper_template.get("dtemplate_id", ""): helper_ids.dtemplate,
+                    helper_template.get("mtt_id", ""): helper_ids.mtt,
+                }
+            )
+            retained_service_titles.add(service_title)
+        for index, asset in enumerate(assets):
+            asset_template = self._template_for_asset(templates, asset["name"], index)
+            asset_ids: _AssetIds = asset["ids"]
+            replacements.update(
+                {
+                    asset_template.get("name", ""): asset["name"],
+                    asset_template.get("dtemplate_id", ""): asset_ids.dtemplate,
+                    asset_template.get("mtt_id", ""): asset_ids.mtt,
+                }
+            )
+        taskflow_text = self._replace_text(template["taskflow_xml"], replacements)
+        taskflow_text = re.sub(r"<types1:EntryId>.*?</types1:EntryId>", f"<types1:EntryId>{entry_id}</types1:EntryId>", taskflow_text, count=1)
+        taskflow_text = re.sub(r'<taskflow([^>]*?)GUID="[^"]+"', f'<taskflow\\1GUID="{taskflow_id}"', taskflow_text, count=1)
+        taskflow_text = re.sub(r'<types1:Name>.*?</types1:Name>', f'<types1:Name>{escape(taskflow_name)}</types1:Name>', taskflow_text, count=1)
+        taskflow_text = re.sub(r'displayName="[^"]+"', f'displayName="{escape(taskflow_name)}"', taskflow_text, count=1)
+        taskflow_text = re.sub(r'name="[^"]+"', f'name="{escape(taskflow_name)}"', taskflow_text, count=1)
+        taskflow_text = re.sub(
+            r"<types1:PublishedContributionId>.*?</types1:PublishedContributionId>",
+            f"<types1:PublishedContributionId>project:/tf.{escape(taskflow_name)}/{escape(taskflow_name)}.tf.xml</types1:PublishedContributionId>",
+            taskflow_text,
+            count=1,
+        )
+        taskflow_text = self._disable_inout_parameter_mapping(taskflow_text, retained_service_titles)
+        taskflow_text = self._prune_unpublished_taskflow_services(taskflow_text, retained_service_titles)
+        return taskflow_text
+
+    @staticmethod
+    def _taskflow_entry_id_from_text(taskflow_text: str) -> str | None:
+        match = re.search(r"<types1:EntryId>(.*?)</types1:EntryId>", taskflow_text)
+        return match.group(1) if match else None
+
+    @staticmethod
+    def _taskflow_mtt_refs(taskflow_text: str) -> list[str]:
+        return re.findall(
+            r'<parameter\s+name="GUID"\s+source="constant"\s+updatable="true">([^<]+)</parameter>',
+            taskflow_text,
+        )
+
+    @staticmethod
+    def _ordered_unique(values: list[str]) -> list[str]:
+        seen: set[str] = set()
+        unique: list[str] = []
+        for value in values:
+            if value and value not in seen:
+                seen.add(value)
+                unique.append(value)
+        return unique
+
+    def _disable_inout_parameter_mapping(self, taskflow_text: str, service_names: set[str]) -> str:
+        def replace_service(match: re.Match) -> str:
+            service = match.group(0)
+            title_match = re.search(r"<title>(.*?)</title>", service)
+            if not title_match or title_match.group(1) not in service_names:
+                return service
+            service_name = re.escape(title_match.group(1))
+            service = re.sub(
+                r'(<parameter name="Has Inout Parameters" source="constant" updatable="true">)true(</parameter>)',
+                r"\1false\2",
+                service,
+                count=1,
+            )
+            return re.sub(
+                rf'\s*<operation source="field"\s+to="temp\.{service_name}/inout/[^"]+">[^<]*</operation>',
+                "",
+                service,
+            )
+
+        return re.sub(r'<service id="[^"]+">[\s\S]*?</service>', replace_service, taskflow_text)
+
+    def _prune_unpublished_taskflow_services(self, taskflow_text: str, published_names: set[str]) -> str:
+        service_titles = set(re.findall(r"<service\b[\s\S]*?<title>(.*?)</title>", taskflow_text))
+        for service_name in sorted(service_titles - published_names):
+            taskflow_text = self._remove_temp_field(taskflow_text, service_name)
+            taskflow_text = self._remove_linear_service_container(taskflow_text, service_name)
+            taskflow_text = taskflow_text.replace(
+                f"{{$temp.{service_name}[1]/output[1]/Task_Status}}",
+                "{1}",
+            )
+        return taskflow_text
+
+    @staticmethod
+    def _remove_temp_field(taskflow_text: str, field_name: str) -> str:
+        pattern = rf'\s*<field description="" name="{re.escape(field_name)}" type="reference">[\s\S]*?</field>'
+        return re.sub(pattern, "", taskflow_text, count=1)
+
+    @staticmethod
+    def _remove_linear_service_container(taskflow_text: str, service_name: str) -> str:
+        title = re.escape(service_name)
+        pattern = re.compile(
+            rf'(?P<block>\s*<eventContainer id="(?P<id>[^"]+)">[\s\S]*?<title>{title}</title>[\s\S]*?<link id="[^"]+" targetId="(?P<target>[^"]+)"\s*/>[\s\S]*?</eventContainer>)'
+        )
+        match = pattern.search(taskflow_text)
+        if not match:
+            return taskflow_text
+        taskflow_text = taskflow_text.replace(match.group("block"), "", 1)
+        taskflow_text = re.sub(
+            rf'(<link id="[^"]+" targetId="){re.escape(match.group("id"))}(")',
+            rf'\g<1>{match.group("target")}\2',
+            taskflow_text,
+            count=1,
+        )
+        return taskflow_text
+
     def _write_mapping_artifacts(self, asset: dict[str, Any], ids: _AssetIds, now: datetime) -> None:
-        mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.FOLDER_NAME
+        mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
         mapping_name = asset["name"]
         template_payload = self._template_payload(asset)
         template_bytes = self._json_bytes(template_payload)
@@ -896,7 +1268,12 @@ class IdmcExportPackageGenerator:
         description: str | None,
         refs: list[str] | None = None,
         model_version: dict[str, int] | None = None,
+        repo_handle: str | None = None,
+        context_attributes: list[dict[str, str]] | None | object = (),
     ) -> dict[str, Any]:
+        if context_attributes == ():
+            context_attributes = [] if object_type in {"Project", "Folder"} else [{"name": "id", "value": "@1"}]
+        repo_info = None if object_type in {"Project", "Folder"} else {"repoHandle": repo_handle or self._repo_handle(object_guid)}
         return {
             "objectGuid": object_guid,
             "objectName": name,
@@ -905,9 +1282,9 @@ class IdmcExportPackageGenerator:
             "providerName": None,
             "metadata": {
                 "modelVersion": model_version or {"major": 0, "minor": 0},
-                "repoInfo": None if object_type in {"Project", "Folder"} else {"repoHandle": self._repo_handle(object_guid)},
+                "repoInfo": repo_info,
                 "objectRefs": refs or [],
-                "contextAttributes": [] if object_type in {"Project", "Folder"} else [{"name": "id", "value": "@1"}],
+                "contextAttributes": context_attributes,
                 "additionalInfo": {
                     "description": description,
                     "contentType": content_type,
@@ -1031,7 +1408,7 @@ class IdmcExportPackageGenerator:
     def _base_ids(self) -> _AssetIds:
         return _AssetIds(
             project=self._guid("project", self.PROJECT_NAME),
-            folder=self._guid("folder", self.FOLDER_NAME),
+            folder=self._guid("folder", self.folder_name),
             connection=self._guid("connection", self.CONNECTION_NAME),
             agent_group=self._guid("agent-group", self.AGENT_GROUP_NAME),
             dtemplate="",
@@ -1071,7 +1448,7 @@ class IdmcExportPackageGenerator:
     @staticmethod
     def _replace_text(value: str, replacements: dict[str, str]) -> str:
         updated = value
-        for before, after in replacements.items():
+        for before, after in sorted(replacements.items(), key=lambda item: len(item[0]), reverse=True):
             if before:
                 updated = updated.replace(before, after)
         return updated
@@ -1094,6 +1471,17 @@ class IdmcExportPackageGenerator:
             ]
         )
         return next((candidate for candidate in candidates if candidate.exists()), None)
+
+    def _reference_folder_name(self) -> str | None:
+        if not self.reference_package or not self.reference_package.exists():
+            return None
+        try:
+            with zipfile.ZipFile(self.reference_package) as package:
+                metadata = json.loads(package.read("exportMetadata.v2.json"))
+        except (KeyError, OSError, zipfile.BadZipFile, json.JSONDecodeError):
+            return None
+        folders = [item for item in metadata.get("exportedObjects", []) if item.get("objectType") == "Folder"]
+        return folders[0].get("objectName") if folders else None
 
     @staticmethod
     def _timestamp(value: datetime) -> str:
@@ -1161,3 +1549,4 @@ def generate_idmc_export_package(
         execution_strategy=execution_strategy,
         reference_package=reference_package,
     ).generate()
+
