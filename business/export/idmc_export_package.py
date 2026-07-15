@@ -49,8 +49,8 @@ class IdmcExportPackageGenerator:
     """Builds one combined IDMC-style export package from remediated XML files."""
 
     PROJECT_NAME = "BIAINFADEV2_FLEX"
-    FOLDER_NAME = "Custom_Project"
-    CONNECTION_NAME = "DBConnection_OLAP_Oracle"
+    FOLDER_NAME = "Custom_Project_Export"
+    CONNECTION_NAME = "DataWarehouse_PA"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
 
     def __init__(
@@ -95,36 +95,23 @@ class IdmcExportPackageGenerator:
             raise ValueError(f"No mappings found in XML files under {self.remediated_folder}")
 
         ids = self._base_ids()
-        self._write_system_artifacts(ids, now)
+        sample_templates: list[dict[str, Any]] = []
         self._write_container_artifacts(ids, now, len(mapping_assets))
 
         exported_objects = [
             self._exported_object(ids.project, self.PROJECT_NAME, "Project", "/Explore", "Binary", "COMPLETE", "Migrated project"),
-            self._exported_object(ids.connection, self.CONNECTION_NAME, "Connection", "/SYS", "JSON", "COMPLETE", None, [ids.agent_group]),
         ]
         contents_rows = [
             {"objectPath": "/Explore", "objectName": self.PROJECT_NAME, "objectType": "Project", "id": ids.project},
-            {"objectPath": "/SYS", "objectName": self.CONNECTION_NAME, "objectType": "Connection", "id": ids.connection},
         ]
 
         if self.execution_strategy == "POWERCENTER_XML_TASK":
-            self._write_pcxml_source_bundle(xml_files, mapping_assets, now)
             sample_templates = self._sample_asset_templates()
             if sample_templates:
                 dependencies = self._reference_dependencies(sample_templates)
                 for dependency in dependencies:
                     self._write_reference_dependency_artifact(dependency)
-                    exported_objects.append(
-                        self._exported_object(
-                            dependency["id"],
-                            dependency["name"],
-                            dependency["type"],
-                            dependency["path"],
-                            dependency["content_type"],
-                            dependency["state"],
-                            dependency["description"],
-                        )
-                    )
+                    exported_objects.append(dependency["exported_object"])
                     contents_rows.append(
                         {
                             "objectPath": dependency["path"],
@@ -138,6 +125,7 @@ class IdmcExportPackageGenerator:
                     asset_ids = self._asset_ids(asset["name"])
                     asset["ids"] = asset_ids
                     template = self._template_for_asset(sample_templates, asset["name"], index)
+                    dependency_refs = self._dependency_refs_for_template(template)
                     self._write_sample_backed_mapping_artifacts(
                         asset,
                         asset_ids,
@@ -165,7 +153,7 @@ class IdmcExportPackageGenerator:
                                 "JSON",
                                 "VALID",
                                 f"Sample-backed mapping task wrapper for remediated XML : {asset['name']}",
-                                [asset_ids.dtemplate, ids.connection, ids.agent_group],
+                                [asset_ids.dtemplate, *dependency_refs],
                             ),
                         ]
                     )
@@ -230,6 +218,14 @@ class IdmcExportPackageGenerator:
                 self.logger.warning(
                     "No reference IDMC export package was found. Falling back to generated placeholder DTEMPLATE/MTT/TASKFLOW artifacts."
                 )
+                self._write_system_artifacts(ids, now)
+                exported_objects.append(
+                    self._exported_object(ids.connection, self.CONNECTION_NAME, "Connection", "/SYS", "JSON", "COMPLETE", None, [ids.agent_group])
+                )
+                contents_rows.append(
+                    {"objectPath": "/SYS", "objectName": self.CONNECTION_NAME, "objectType": "Connection", "id": ids.connection}
+                )
+                self._write_pcxml_source_bundle(xml_files, mapping_assets, now)
                 for asset in mapping_assets:
                     asset_ids = self._asset_ids(asset["name"])
                     self._write_mapping_artifacts(asset, asset_ids, now)
@@ -276,6 +272,13 @@ class IdmcExportPackageGenerator:
                         ]
                     )
         else:
+            self._write_system_artifacts(ids, now)
+            exported_objects.append(
+                self._exported_object(ids.connection, self.CONNECTION_NAME, "Connection", "/SYS", "JSON", "COMPLETE", None, [ids.agent_group])
+            )
+            contents_rows.append(
+                {"objectPath": "/SYS", "objectName": self.CONNECTION_NAME, "objectType": "Connection", "id": ids.connection}
+            )
             for asset in mapping_assets:
                 asset_ids = self._asset_ids(asset["name"])
                 self._write_mapping_artifacts(asset, asset_ids, now)
@@ -325,15 +328,16 @@ class IdmcExportPackageGenerator:
         exported_objects.append(
             self._exported_object(ids.folder, self.folder_name, "Folder", f"/Explore/{self.PROJECT_NAME}", "Binary", "COMPLETE", "")
         )
-        exported_objects.append(
-            self._exported_object(ids.agent_group, self.AGENT_GROUP_NAME, "AgentGroup", "/SYS", "JSON", "VALID", None)
+        contents_rows.append(
+            {"objectPath": f"/Explore/{self.PROJECT_NAME}", "objectName": self.folder_name, "objectType": "Folder", "id": ids.folder}
         )
-        contents_rows.extend(
-            [
-                {"objectPath": f"/Explore/{self.PROJECT_NAME}", "objectName": self.folder_name, "objectType": "Folder", "id": ids.folder},
-                {"objectPath": "/SYS", "objectName": self.AGENT_GROUP_NAME, "objectType": "AgentGroup", "id": ids.agent_group},
-            ]
-        )
+        if not sample_templates:
+            exported_objects.append(
+                self._exported_object(ids.agent_group, self.AGENT_GROUP_NAME, "AgentGroup", "/SYS", "JSON", "VALID", None)
+            )
+            contents_rows.append(
+                {"objectPath": "/SYS", "objectName": self.AGENT_GROUP_NAME, "objectType": "AgentGroup", "id": ids.agent_group}
+            )
 
         self._write_export_metadata(exported_objects, now)
         self._write_contents_csv(contents_rows, now)
@@ -578,6 +582,24 @@ class IdmcExportPackageGenerator:
             connection = connections[0] if connections else {}
             agent_group = agent_groups[0] if agent_groups else {}
             dependencies = self._load_reference_dependency_templates(package, objects)
+            runtime_dependency = self._preferred_runtime_dependency(dependencies)
+            connection_dependency = self._preferred_connection_dependency(dependencies)
+            if runtime_dependency:
+                dependencies = [
+                    self._normalize_dependency_runtime(dependency, runtime_dependency)
+                    for dependency in dependencies
+                ]
+                dependencies = [
+                    dependency
+                    for dependency in dependencies
+                    if dependency["type"] != "AgentGroup" or dependency["id"] == runtime_dependency["id"]
+                ]
+            if connection_dependency:
+                dependencies = [
+                    dependency
+                    for dependency in dependencies
+                    if dependency["type"] != "Connection" or dependency["id"] == connection_dependency["id"]
+                ]
             taskflows = [item for item in objects if item.get("objectType") == "TASKFLOW"]
             workflow_templates = []
             for taskflow in taskflows:
@@ -623,11 +645,12 @@ class IdmcExportPackageGenerator:
                         "dtemplate_id": dtemplate.get("objectGuid", ""),
                         "mtt_id": mtt.get("objectGuid", ""),
                         "workflow_templates": workflow_templates,
-                        "connection_id": connection.get("objectGuid", ""),
+                        "connection_id": connection_dependency["id"] if connection_dependency else connection.get("objectGuid", ""),
                         "connection_ids": [item.get("objectGuid", "") for item in connections],
-                        "agent_group_id": agent_group.get("objectGuid", ""),
+                        "agent_group_id": runtime_dependency["id"] if runtime_dependency else agent_group.get("objectGuid", ""),
                         "agent_group_ids": [item.get("objectGuid", "") for item in agent_groups],
                         "dependencies": dependencies,
+                        "runtime_environment_id": runtime_dependency["id"] if runtime_dependency else agent_group.get("objectGuid", ""),
                         "dtemplate_zip": package.read(dtemplate_zip),
                         "mtt_zip": package.read(mtt_zip),
                     }
@@ -646,29 +669,112 @@ class IdmcExportPackageGenerator:
                 dependencies[dependency["id"]] = dependency
         return list(dependencies.values())
 
+    def _dependency_refs_for_template(self, template: dict[str, Any]) -> list[str]:
+        runtime_id = template.get("runtime_environment_id", "")
+        refs: list[str] = []
+        for dependency in template.get("dependencies", []):
+            if dependency["type"] == "AgentGroup":
+                if dependency["id"] != runtime_id:
+                    continue
+            refs.append(dependency["id"])
+        return self._ordered_unique(refs)
+
+    def _preferred_runtime_dependency(self, dependencies: list[dict[str, Any]]) -> dict[str, Any] | None:
+        agent_groups = [dependency for dependency in dependencies if dependency["type"] == "AgentGroup"]
+        return next(
+            (dependency for dependency in agent_groups if dependency["name"] == self.AGENT_GROUP_NAME),
+            agent_groups[0] if agent_groups else None,
+        )
+
+    def _preferred_connection_dependency(self, dependencies: list[dict[str, Any]]) -> dict[str, Any] | None:
+        connections = [dependency for dependency in dependencies if dependency["type"] == "Connection"]
+        return next(
+            (dependency for dependency in connections if dependency["name"] == self.CONNECTION_NAME),
+            connections[0] if connections else None,
+        )
+
+    def _normalize_dependency_runtime(
+        self,
+        dependency: dict[str, Any],
+        runtime_dependency: dict[str, Any],
+    ) -> dict[str, Any]:
+        if dependency["type"] != "Connection":
+            return dependency
+
+        updated = dict(dependency)
+        exported_object = json.loads(json.dumps(dependency["exported_object"]))
+        exported_object.setdefault("metadata", {})["objectRefs"] = [runtime_dependency["id"]]
+        updated["exported_object"] = exported_object
+        updated["normalized_artifact_bytes"] = self._normalize_connection_zip(
+            dependency["artifact_bytes"],
+            runtime_dependency,
+        )
+        return updated
+
+    def _normalize_connection_zip(
+        self,
+        source_bytes: bytes,
+        runtime_dependency: dict[str, Any],
+    ) -> bytes:
+        runtime_id = runtime_dependency["id"]
+        runtime_repo_handle = (
+            (runtime_dependency.get("exported_object", {}).get("metadata", {}).get("repoInfo") or {}).get("repoHandle")
+            or runtime_id
+        )
+        rewritten: dict[str, bytes] = {}
+        with zipfile.ZipFile(io.BytesIO(source_bytes)) as source_zip:
+            for member in source_zip.namelist():
+                content = source_zip.read(member)
+                if member == "connection.json":
+                    payload = json.loads(content.decode("utf-8"))
+                    for connection in payload:
+                        if not isinstance(connection, dict):
+                            continue
+                        connection["runtimeEnvironmentId"] = f"@{runtime_id}"
+                        conn_params = connection.setdefault("connParams", {})
+                        if isinstance(conn_params, dict):
+                            conn_params["agentGroupId"] = runtime_repo_handle
+                    content = self._json_bytes(payload)
+                rewritten[member] = content
+
+        output = io.BytesIO()
+        with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as output_zip:
+            for member, content in rewritten.items():
+                output_zip.writestr(member, content)
+        return output.getvalue()
+
     def _load_reference_dependency_templates(self, package: zipfile.ZipFile, objects: list[dict[str, Any]]) -> list[dict[str, Any]]:
         dependencies = []
         for obj in objects:
-            if obj.get("objectType") != "DMAPPLET":
+            object_type = obj.get("objectType")
+            if object_type not in {"Connection", "AgentGroup", "DMAPPLET"}:
                 continue
             name = obj.get("objectName", "")
             base_path = obj.get("path", "").strip("/")
-            artifact = f"{base_path}/{name}.DMAPPLET.zip" if base_path else f"{name}.DMAPPLET.zip"
+            artifact = f"{base_path}/{name}.{object_type}.zip" if base_path else f"{name}.{object_type}.zip"
             if not name or artifact not in package.namelist():
                 continue
             metadata = obj.get("metadata", {})
             additional = metadata.get("additionalInfo", {})
+            exported_object = json.loads(json.dumps(obj))
+            artifact_name = artifact
+            dependency_path = obj.get("path", "")
+            if object_type == "DMAPPLET":
+                dependency_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
+                exported_object["path"] = dependency_path
+                artifact_name = f"Explore/{self.PROJECT_NAME}/{self.folder_name}/{name}.DMAPPLET.zip"
             dependencies.append(
                 {
                     "id": obj.get("objectGuid", ""),
                     "name": name,
-                    "type": "DMAPPLET",
-                    "path": f"/Explore/{self.PROJECT_NAME}/{self.folder_name}",
+                    "type": object_type,
+                    "path": dependency_path,
                     "content_type": additional.get("contentType", "JSON"),
                     "state": additional.get("documentState", "VALID"),
                     "description": additional.get("description"),
-                    "artifact_name": f"Explore/{self.PROJECT_NAME}/{self.folder_name}/{name}.DMAPPLET.zip",
+                    "artifact_name": artifact_name,
                     "artifact_bytes": package.read(artifact),
+                    "exported_object": exported_object,
                 }
             )
         return dependencies
@@ -676,7 +782,7 @@ class IdmcExportPackageGenerator:
     def _write_reference_dependency_artifact(self, dependency: dict[str, Any]) -> None:
         output_path = self.staging_folder / dependency["artifact_name"]
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_bytes(dependency["artifact_bytes"])
+        output_path.write_bytes(dependency.get("normalized_artifact_bytes", dependency["artifact_bytes"]))
 
     def _write_sample_backed_mapping_artifacts(
         self,
@@ -694,8 +800,12 @@ class IdmcExportPackageGenerator:
             template["dtemplate_id"]: ids.dtemplate,
             template["mtt_id"]: ids.mtt,
         }
-        replacements.update({connection_id: base_ids.connection for connection_id in template.get("connection_ids", []) if connection_id})
-        replacements.update({agent_group_id: base_ids.agent_group for agent_group_id in template.get("agent_group_ids", []) if agent_group_id})
+        for agent_group_id in template.get("agent_group_ids", []):
+            if agent_group_id:
+                replacements[agent_group_id] = template.get("runtime_environment_id", agent_group_id)
+        for connection_id in template.get("connection_ids", []):
+            if connection_id:
+                replacements[connection_id] = template.get("connection_id", connection_id)
 
         self._rewrite_sample_zip(
             template["dtemplate_zip"],
@@ -920,14 +1030,14 @@ class IdmcExportPackageGenerator:
                         f"{record.get('name')!r} != {mapping_name!r}"
                     )
 
-                # IMF content must be parseable JSON; truncated/corrupt bins cause metaClass null.
-                try:
-                    payload = json.loads(bin_members[bin_member].decode("utf-8"))
-                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-                    raise ValueError(
-                        f"DTEMPLATE {path.name} bin {bin_member} is not valid IMF JSON: {exc}"
-                    ) from exc
                 if record.get("type") == "IMFOBJECT":
+                    # IMF content must be parseable JSON; truncated/corrupt bins cause metaClass null.
+                    try:
+                        payload = json.loads(bin_members[bin_member].decode("utf-8"))
+                    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                        raise ValueError(
+                            f"DTEMPLATE {path.name} bin {bin_member} is not valid IMF JSON: {exc}"
+                        ) from exc
                     content = payload.get("content") if isinstance(payload, dict) else None
                     if not isinstance(content, dict) or content.get("name") != mapping_name:
                         raise ValueError(
@@ -1139,6 +1249,8 @@ class IdmcExportPackageGenerator:
         taskflow_text = self._disable_inout_parameter_mapping(taskflow_text, retained_service_titles)
         taskflow_text = self._prune_unpublished_taskflow_services(taskflow_text, retained_service_titles)
         taskflow_text = self._prune_unexpected_process_objects(taskflow_text, retained_service_titles)
+        if len(assets) == 1:
+            taskflow_text = self._linearize_single_service_taskflow(taskflow_text, primary_asset["name"])
         taskflow_text = self._rewrite_taskflow_guid_parameters(taskflow_text, assets)
         expected_mtt_ids = {asset["ids"].mtt for asset in assets}
         actual_guids = set(
@@ -1228,6 +1340,36 @@ class IdmcExportPackageGenerator:
             )
 
         return taskflow_text
+
+    @staticmethod
+    def _linearize_single_service_taskflow(taskflow_text: str, service_name: str) -> str:
+        """Remove leftover reference branch containers from a one-session taskflow."""
+
+        end_match = re.search(r"<end\b[^>]*\bid=\"([^\"]+)\"", taskflow_text)
+        if not end_match:
+            return taskflow_text
+        end_id = end_match.group(1)
+
+        service_title = re.escape(service_name)
+        container_pattern = re.compile(
+            rf'(?P<block><eventContainer\b[^>]*>(?:(?!</eventContainer>)[\s\S])*?<title>{service_title}</title>(?:(?!</eventContainer>)[\s\S])*?</eventContainer>)'
+        )
+        match = container_pattern.search(taskflow_text)
+        if not match:
+            return taskflow_text
+
+        block = re.sub(
+            r'(<link\b[^>]*\btargetId=")[^"]+(")',
+            rf"\g<1>{end_id}\2",
+            match.group("block"),
+            count=1,
+        )
+        taskflow_text = taskflow_text[: match.start()] + block + taskflow_text[match.end() :]
+        return re.sub(
+            r'\s*<container\b(?=[^>]*\btype="exclusive")[\s\S]*?</container>',
+            "",
+            taskflow_text,
+        )
 
     @staticmethod
     def _rewrite_taskflow_guid_parameters(taskflow_text: str, assets: list[dict[str, Any]]) -> str:
@@ -1644,15 +1786,15 @@ class IdmcExportPackageGenerator:
 
     def _write_export_metadata(self, exported_objects: list[dict[str, Any]], now: datetime) -> None:
         payload = {
-            "name": f"job-{self._epoch_millis(now)}",
-            "sourceOrgId": "generated",
+            "name": self.folder_name,
+            "sourceOrgId": "combined-local-repair",
             "sourceOrgName": "PC_IICS_MIGRATION",
             "exportedObjects": exported_objects,
         }
         (self.staging_folder / "exportMetadata.v2.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     def _write_contents_csv(self, rows: list[dict[str, str]], now: datetime) -> None:
-        csv_path = self.staging_folder / f"ContentsofExportPackage_job-{self._epoch_millis(now)}.csv"
+        csv_path = self.staging_folder / f"ContentsofExportPackage_{self.folder_name}.csv"
         with csv_path.open("w", newline="", encoding="utf-8") as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=["objectPath", "objectName", "objectType", "id"])
             writer.writeheader()
