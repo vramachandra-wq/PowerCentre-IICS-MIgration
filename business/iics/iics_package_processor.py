@@ -71,7 +71,7 @@ class PackageValidationResult:
     issues: list[str] = field(default_factory=list)
 
 
-# ── processor ────────────────────────────────────────────────────────────────
+from business.iics.iics_success_benchmark import IICSSuccessBenchmark
 
 class IICSPackageProcessor:
     """Validate and repackage a client-supplied IICS export zip."""
@@ -128,6 +128,7 @@ class IICSPackageProcessor:
             self._write_reports(result)
             output_zip = self._repackage(result)
             summary = self._build_summary(result, output_zip)
+            summary["success_benchmark"] = self._success_benchmark_summary(output_zip)
             self._write_summary(summary)
             self.logger.info(
                 "IICS package processing complete. valid=%d invalid=%d output=%s",
@@ -534,6 +535,18 @@ class IICSPackageProcessor:
             for a in result.assets:
                 writer.writerow([a.object_name, a.object_type, a.file_path, a.checksum_ok])
         self.logger.info("Checksum report written. path=%s", path)
+
+    def _success_benchmark_summary(self, output_zip: Path) -> dict[str, Any]:
+        benchmark = IICSSuccessBenchmark(project_root=Path.cwd())
+        result = benchmark.validate_package(output_zip)
+        report_path = self.output_dir / "success_benchmark.json"
+        report_path.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+        return {
+            "profile": result.profile,
+            "passed": result.passed,
+            "failed_checks": [check.name for check in result.checks if not check.passed],
+            "report": str(report_path),
+        }
 
     def _build_summary(self, result: PackageValidationResult, output_zip: Path) -> dict[str, Any]:
         return {
