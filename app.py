@@ -211,11 +211,12 @@ def main() -> None:
                 summary["valid_assets"], summary["invalid_assets"], summary["output_zip"],
             )
         else:
-            # Generate a new IICS package from the 14 parsed PowerCenter XML files
+            # Generate a new IICS package from the parsed PowerCenter XML files.
             generator = IICSPackageGenerator(
                 parsed_json_dir=Path(config.paths.output_folder) / "parsed_json",
                 remediated_xml_dir=Path(config.paths.output_folder) / "remediated_xml",
-                output_dir=Path(config.paths.output_folder) / "iics_generated",
+                output_dir=Path(config.paths.output_folder),
+                output_zip_name="Custom_Project_Export.zip",
                 logger=logger,
             )
             summary = generator.generate()

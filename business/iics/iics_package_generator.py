@@ -1535,11 +1535,13 @@ class IICSPackageGenerator:
         parsed_json_dir: str | Path = "output/parsed_json",
         remediated_xml_dir: str | Path = "output/remediated_xml",
         output_dir: str | Path = "output/iics_generated",
+        output_zip_name: str = "Custom_Project_Export.zip",
         logger: logging.Logger | None = None,
     ) -> None:
         self.parsed_json_dir = Path(parsed_json_dir)
         self.remediated_xml_dir = Path(remediated_xml_dir)
         self.output_dir      = Path(output_dir)
+        self.output_zip_name = output_zip_name
         self.logger = logger or logging.getLogger(__name__)
 
     def generate(self) -> dict[str, Any]:
@@ -1751,7 +1753,7 @@ class IICSPackageGenerator:
         csv_bytes    = csv_buf.getvalue().encode("utf-8")
 
         checksums: dict[str, str] = {}
-        output_zip_path = self.output_dir / "iics_generated_package_checksum.zip"
+        output_zip_path = self.output_dir / self.output_zip_name
 
         with zipfile.ZipFile(output_zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zout:
             zout.writestr("exportMetadata.v2.json", manifest_bytes)
