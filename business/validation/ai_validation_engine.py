@@ -17,6 +17,7 @@ from typing import Any, Iterable, Protocol
 
 from automation.evaluation_matrix import ReportRepository
 from automation.metrics import MetricsCalculator
+from business.iics.iics_success_benchmark import IICSSuccessBenchmark
 from business.validation.readiness_engine import RemediationReportLoader
 
 class AIModelClient(Protocol):
@@ -168,6 +169,18 @@ class HuggingFaceQwenClient:
     def _prompt(payload: dict[str, Any]) -> str:
         """Handle prompt using the provided payload."""
 
+        success_context = ""
+        rule_name = str(payload.get("rule_name", "")).lower()
+        if any(token in rule_name for token in ("iics", "taskflow", "mtt", "dtemplate", "import", "package")):
+            try:
+                training = IICSSuccessBenchmark(project_root=Path.cwd()).training_context()
+                success_context = (
+                    "\nKnown-good IICS import success patterns:\n"
+                    f"{json.dumps(training, separators=(',', ':'), sort_keys=True)}\n"
+                )
+            except (OSError, json.JSONDecodeError, KeyError):
+                success_context = ""
+
         return (
             "Evaluate this PowerCenter to IDMC migration validation record. "
             "Return only one compact JSON object under 60 words. "
@@ -180,6 +193,7 @@ class HuggingFaceQwenClient:
             "return PASS with confidence 85-95. Keep reason under 12 words. "
             "No markdown. No extra text.\n"
             "Example: {\"decision\":\"FAIL\",\"confidence\":90,\"reason\":\"Unsupported nested mapplet remains unresolved\"}\n\n"
+            f"{success_context}"
             f"Validation record:\n{json.dumps(payload, separators=(',', ':'), sort_keys=True)}"
         )
 

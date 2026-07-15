@@ -1182,7 +1182,7 @@ def _build_taskflow_xml(
                   <link id="{start_link}" targetId="{asgn1_id}"/>
                </start>
                <assignment id="{asgn1_id}">
-                  <title>Assignment_Workflow_Init</title>
+                  <title>Assignment_PC_Variables</title>
                   {assign_ops}
                   <link id="{asgn2_link}" targetId="{asgn2_id}"/>
                </assignment>

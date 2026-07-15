@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape
 
+from business.iics.iics_success_benchmark import IICSSuccessBenchmark
 from business.parser.xml_parser import XMLParser
 from common.config.config import AppConfig
 from data.models.mapping_model import MappingMetadata, ParsedXmlMetadata, SessionMetadata, TargetMetadata, to_plain_dict
@@ -188,7 +189,15 @@ class IdmcExportPackageGenerator:
                 for group in taskflow_groups.values():
                     taskflow_name = self._asset_name(group["name"])
                     taskflow_id = self._guid("taskflow", taskflow_name)
-                    taskflow_text = self._workflow_taskflow_xml(taskflow_name, taskflow_id, group["assets"], sample_templates, now)
+                    workflow_templates = self._success_workflow_templates(len(group["assets"]))
+                    taskflow_text = self._workflow_taskflow_xml(
+                        taskflow_name,
+                        taskflow_id,
+                        group["assets"],
+                        sample_templates,
+                        now,
+                        workflow_templates=workflow_templates,
+                    )
                     entry_id = self._taskflow_entry_id_from_text(taskflow_text) or f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
                     taskflow_refs = self._ordered_unique(
                         [
@@ -991,8 +1000,9 @@ class IdmcExportPackageGenerator:
         assets: list[dict[str, Any]],
         templates: list[dict[str, Any]],
         now: datetime,
+        workflow_templates: list[dict[str, Any]] | None = None,
     ) -> str:
-        workflow_templates = next(
+        workflow_templates = workflow_templates or next(
             (template.get("workflow_templates", []) for template in templates if template.get("workflow_templates")),
             [],
         )
@@ -1019,11 +1029,11 @@ class IdmcExportPackageGenerator:
             template = self._select_rewriteable_workflow_template(workflow_templates, len(assets))
 
         entry_id = f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
-        replacements = {
-            template.get("name", ""): taskflow_name,
+        replacements: dict[str, str] = {
             template.get("taskflow_id", ""): taskflow_id,
             template.get("repo_handle", "") or "": entry_id,
         }
+        self._add_asset_name_replacements(replacements, template.get("name", ""), taskflow_name)
         template_by_name = {item.get("name", ""): item for item in templates}
         service_titles = set(re.findall(r"<service\b[\s\S]*?<title>(.*?)</title>", template["taskflow_xml"]))
         retained_service_titles = {asset["name"] for asset in assets}
@@ -1038,10 +1048,12 @@ class IdmcExportPackageGenerator:
                 (title for title in sorted(service_titles) if title == primary_template.get("name")),
                 sorted(service_titles)[0],
             )
+            self._add_asset_name_replacements(replacements, primary_service, primary_asset["name"])
+            self._add_asset_name_replacements(
+                replacements, primary_template.get("name", ""), primary_asset["name"]
+            )
             replacements.update(
                 {
-                    primary_service: primary_asset["name"],
-                    primary_template.get("name", ""): primary_asset["name"],
                     primary_template.get("dtemplate_id", ""): primary_ids.dtemplate,
                     primary_template.get("mtt_id", ""): primary_ids.mtt,
                 }
@@ -1052,8 +1064,10 @@ class IdmcExportPackageGenerator:
                 {
                     service_template.get("dtemplate_id", ""): primary_ids.dtemplate,
                     service_template.get("mtt_id", ""): primary_ids.mtt,
-                    service_template.get("name", ""): primary_asset["name"],
                 }
+            )
+            self._add_asset_name_replacements(
+                replacements, service_template.get("name", ""), primary_asset["name"]
             )
             retained_service_titles = {primary_asset["name"]}
 
@@ -1077,9 +1091,11 @@ class IdmcExportPackageGenerator:
         for index, asset in enumerate(assets[1:], start=1):
             asset_template = self._template_for_asset(templates, asset["name"], index)
             asset_ids: _AssetIds = asset["ids"]
+            self._add_asset_name_replacements(
+                replacements, asset_template.get("name", ""), asset["name"]
+            )
             replacements.update(
                 {
-                    asset_template.get("name", ""): asset["name"],
                     asset_template.get("dtemplate_id", ""): asset_ids.dtemplate,
                     asset_template.get("mtt_id", ""): asset_ids.mtt,
                 }
@@ -1138,7 +1154,47 @@ class IdmcExportPackageGenerator:
             )
         if "<service" not in taskflow_text:
             raise ValueError(f"Rewritten taskflow {taskflow_name} is missing MTT service references")
+        self._assert_taskflow_process_objects(taskflow_text, taskflow_name, retained_service_titles)
         return taskflow_text
+
+    @staticmethod
+    def _process_object_name(name: str) -> str:
+        """IICS Process Object names use hyphens where asset names use underscores."""
+
+        return name.replace("_", "-")
+
+    @classmethod
+    def _add_asset_name_replacements(
+        cls,
+        replacements: dict[str, str],
+        old_name: str,
+        new_name: str,
+    ) -> None:
+        """Map both underscore asset names and hyphenated Process Object aliases."""
+
+        if not old_name or not new_name:
+            return
+        replacements[old_name] = new_name
+        replacements[cls._process_object_name(old_name)] = cls._process_object_name(new_name)
+
+    @classmethod
+    def _assert_taskflow_process_objects(
+        cls,
+        taskflow_text: str,
+        taskflow_name: str,
+        retained_service_titles: set[str],
+    ) -> None:
+        """Ensure rewritten taskflows never keep the reference Process Object identity."""
+
+        expected = {cls._process_object_name(name) for name in retained_service_titles}
+        po_names = set(re.findall(r"<processObject\b[^>]*\bname=\"([^\"]+)\"", taskflow_text))
+        po_refs = set(re.findall(r'referenceTo">\$po:([^<]+)', taskflow_text))
+        unexpected = (po_names | po_refs) - expected
+        if unexpected:
+            raise ValueError(
+                f"Rewritten taskflow {taskflow_name} still references Process Objects "
+                f"{sorted(unexpected)}; expected {sorted(expected)}"
+            )
 
     @staticmethod
     def _rewrite_taskflow_guid_parameters(taskflow_text: str, assets: list[dict[str, Any]]) -> str:
@@ -1817,12 +1873,55 @@ class IdmcExportPackageGenerator:
         except UnicodeDecodeError:
             return value
 
+    def _success_workflow_templates(self, asset_count: int) -> list[dict[str, Any]]:
+        """Load taskflow XML templates from known-good IICS import packages."""
+
+        profile = "multi_session" if asset_count > 1 else "single_session"
+        benchmark = IICSSuccessBenchmark(project_root=self.project_root)
+        reference_package = benchmark.reference_package(profile)
+        if not reference_package:
+            return []
+
+        try:
+            with zipfile.ZipFile(reference_package) as package:
+                metadata = json.loads(package.read("exportMetadata.v2.json"))
+                templates: list[dict[str, Any]] = []
+                for taskflow in metadata.get("exportedObjects", []):
+                    if taskflow.get("objectType") != "TASKFLOW":
+                        continue
+                    name = taskflow.get("objectName", "")
+                    base_path = taskflow.get("path", "").strip("/")
+                    taskflow_xml = f"{base_path}/{name}.TASKFLOW.xml" if base_path else f"{name}.TASKFLOW.xml"
+                    if not name or taskflow_xml not in package.namelist():
+                        continue
+                    templates.append(
+                        {
+                            "name": name,
+                            "taskflow_id": taskflow.get("objectGuid", ""),
+                            "taskflow_xml": package.read(taskflow_xml).decode("utf-8"),
+                            "repo_handle": (taskflow.get("metadata", {}).get("repoInfo") or {}).get("repoHandle"),
+                            "success_profile": profile,
+                        }
+                    )
+                if templates:
+                    self.logger.info(
+                        "Using %s success reference taskflow template(s) from %s",
+                        profile,
+                        reference_package.name,
+                    )
+                return templates
+        except (KeyError, OSError, zipfile.BadZipFile, json.JSONDecodeError) as exc:
+            self.logger.warning("Failed to load %s success taskflow templates: %s", profile, exc)
+            return []
+
     def _default_reference_package(self, reference_package: str | Path | None) -> Path | None:
         candidates = []
         if reference_package:
             candidates.append(self._resolve_path(reference_package))
         candidates.extend(
             [
+                self.project_root / "reference_packages/iics_success/single_session/JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F-1784088987453.zip",
+                self.project_root / "reference_packages/iics_success/multi_session/TaskFlow_SDE_EmployeeHeadCount_Informatica_ConvTool.zip",
                 self.project_root / "reference_export_package.zip",
                 Path(r"D:/Downloads/Custom_Project_Export_SelectableAssets.zip"),
                 Path(r"D:/Downloads/Custom_SDE_PBCS_Export 1.zip"),
