@@ -1019,11 +1019,11 @@ class IdmcExportPackageGenerator:
             template = self._select_rewriteable_workflow_template(workflow_templates, len(assets))
 
         entry_id = f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
-        replacements = {
-            template.get("name", ""): taskflow_name,
+        replacements: dict[str, str] = {
             template.get("taskflow_id", ""): taskflow_id,
             template.get("repo_handle", "") or "": entry_id,
         }
+        self._add_asset_name_replacements(replacements, template.get("name", ""), taskflow_name)
         template_by_name = {item.get("name", ""): item for item in templates}
         service_titles = set(re.findall(r"<service\b[\s\S]*?<title>(.*?)</title>", template["taskflow_xml"]))
         retained_service_titles = {asset["name"] for asset in assets}
@@ -1038,10 +1038,12 @@ class IdmcExportPackageGenerator:
                 (title for title in sorted(service_titles) if title == primary_template.get("name")),
                 sorted(service_titles)[0],
             )
+            self._add_asset_name_replacements(replacements, primary_service, primary_asset["name"])
+            self._add_asset_name_replacements(
+                replacements, primary_template.get("name", ""), primary_asset["name"]
+            )
             replacements.update(
                 {
-                    primary_service: primary_asset["name"],
-                    primary_template.get("name", ""): primary_asset["name"],
                     primary_template.get("dtemplate_id", ""): primary_ids.dtemplate,
                     primary_template.get("mtt_id", ""): primary_ids.mtt,
                 }
@@ -1052,8 +1054,10 @@ class IdmcExportPackageGenerator:
                 {
                     service_template.get("dtemplate_id", ""): primary_ids.dtemplate,
                     service_template.get("mtt_id", ""): primary_ids.mtt,
-                    service_template.get("name", ""): primary_asset["name"],
                 }
+            )
+            self._add_asset_name_replacements(
+                replacements, service_template.get("name", ""), primary_asset["name"]
             )
             retained_service_titles = {primary_asset["name"]}
 
@@ -1077,9 +1081,11 @@ class IdmcExportPackageGenerator:
         for index, asset in enumerate(assets[1:], start=1):
             asset_template = self._template_for_asset(templates, asset["name"], index)
             asset_ids: _AssetIds = asset["ids"]
+            self._add_asset_name_replacements(
+                replacements, asset_template.get("name", ""), asset["name"]
+            )
             replacements.update(
                 {
-                    asset_template.get("name", ""): asset["name"],
                     asset_template.get("dtemplate_id", ""): asset_ids.dtemplate,
                     asset_template.get("mtt_id", ""): asset_ids.mtt,
                 }
@@ -1138,7 +1144,47 @@ class IdmcExportPackageGenerator:
             )
         if "<service" not in taskflow_text:
             raise ValueError(f"Rewritten taskflow {taskflow_name} is missing MTT service references")
+        self._assert_taskflow_process_objects(taskflow_text, taskflow_name, retained_service_titles)
         return taskflow_text
+
+    @staticmethod
+    def _process_object_name(name: str) -> str:
+        """IICS Process Object names use hyphens where asset names use underscores."""
+
+        return name.replace("_", "-")
+
+    @classmethod
+    def _add_asset_name_replacements(
+        cls,
+        replacements: dict[str, str],
+        old_name: str,
+        new_name: str,
+    ) -> None:
+        """Map both underscore asset names and hyphenated Process Object aliases."""
+
+        if not old_name or not new_name:
+            return
+        replacements[old_name] = new_name
+        replacements[cls._process_object_name(old_name)] = cls._process_object_name(new_name)
+
+    @classmethod
+    def _assert_taskflow_process_objects(
+        cls,
+        taskflow_text: str,
+        taskflow_name: str,
+        retained_service_titles: set[str],
+    ) -> None:
+        """Ensure rewritten taskflows never keep the reference Process Object identity."""
+
+        expected = {cls._process_object_name(name) for name in retained_service_titles}
+        po_names = set(re.findall(r"<processObject\b[^>]*\bname=\"([^\"]+)\"", taskflow_text))
+        po_refs = set(re.findall(r'referenceTo">\$po:([^<]+)', taskflow_text))
+        unexpected = (po_names | po_refs) - expected
+        if unexpected:
+            raise ValueError(
+                f"Rewritten taskflow {taskflow_name} still references Process Objects "
+                f"{sorted(unexpected)}; expected {sorted(expected)}"
+            )
 
     @staticmethod
     def _rewrite_taskflow_guid_parameters(taskflow_text: str, assets: list[dict[str, Any]]) -> str:

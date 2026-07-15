@@ -246,6 +246,77 @@ class IdmcExportIntegrityTests(unittest.TestCase):
                 self.assertIn("SDE_ORA_JobDimension", task["shortDescription"])
                 self.assertNotIn("OLD_TEMPLATE_NAME", task["shortDescription"])
 
+    def test_workflow_taskflow_rewrites_process_object_hyphen_names(self) -> None:
+        sample_name = "JEG_SDE_ORA_PBCS_Actual_Proforma"
+        sample_po = "JEG-SDE-ORA-PBCS-Actual-Proforma"
+        target_name = "SDE_ORA_JobDimension"
+        target_po = "SDE-ORA-JobDimension"
+        sample_mtt = "oldMttGuid123456789012"
+        taskflow_xml = f'''<aetgt:getResponse xmlns:aetgt="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd"
+                   xmlns:types1="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd">
+   <types1:Item>
+      <types1:EntryId>old-entry</types1:EntryId>
+      <types1:Name>{sample_name}</types1:Name>
+      <types1:PublishedContributionId>project:/tf.{sample_name}/{sample_name}.tf.xml</types1:PublishedContributionId>
+      <types1:Entry>
+         <taskflow GUID="oldTf" displayName="{sample_name}" name="{sample_name}">
+            <tempFields>
+               <field name="{sample_name}" type="reference">
+                  <options><option name="referenceTo">$po:{sample_po}</option></options>
+               </field>
+            </tempFields>
+            <flow id="a">
+               <eventContainer id="c1">
+                  <service id="s1">
+                     <title>{sample_name}</title>
+                     <serviceInput>
+                        <parameter name="GUID" source="constant" updatable="true">{sample_mtt}</parameter>
+                        <parameter name="Has Inout Parameters" source="constant" updatable="true">false</parameter>
+                        <parameter name="taskField" source="nested">
+                           <operation source="field" to="{sample_po}/taskProperties[1]/parameterFileDir">input.InputMappingTaskParameterFileDir</operation>
+                        </parameter>
+                     </serviceInput>
+                     <serviceOutput>
+                        <operation source="field" to="temp.{sample_name}/output/Run_Id">Run Id</operation>
+                     </serviceOutput>
+                  </service>
+               </eventContainer>
+            </flow>
+            <dependencies>
+               <processObject displayName="{sample_po}" name="{sample_po}">
+                  <detail><field name="output" type="reference"/></detail>
+               </processObject>
+            </dependencies>
+         </taskflow>
+      </types1:Entry>
+   </types1:Item>
+</aetgt:getResponse>'''
+        assets = [{"name": target_name, "ids": self.ids}]
+        templates = [
+            {
+                "name": sample_name,
+                "dtemplate_id": "oldDt",
+                "mtt_id": sample_mtt,
+                "taskflow_id": "oldTf",
+                "repo_handle": "old-entry",
+                "workflow_templates": [
+                    {
+                        "name": sample_name,
+                        "taskflow_id": "oldTf",
+                        "repo_handle": "old-entry",
+                        "taskflow_xml": taskflow_xml,
+                    }
+                ],
+            }
+        ]
+        rewritten = self.generator._workflow_taskflow_xml(target_name, "newTfGuid", assets, templates, self.now)
+        self.assertIn(f"$po:{target_po}", rewritten)
+        self.assertIn(f'name="{target_po}"', rewritten)
+        self.assertIn(f'displayName="{target_po}"', rewritten)
+        self.assertIn(f"to=\"{target_po}/taskProperties", rewritten)
+        self.assertNotIn(sample_po, rewritten)
+        self.assertIn(self.ids.mtt, rewritten)
+
 
 if __name__ == "__main__":
     unittest.main()
