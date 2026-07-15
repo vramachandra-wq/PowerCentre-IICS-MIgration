@@ -284,24 +284,87 @@ class IICSPackageProcessor:
                 if missing:
                     asset.valid = False
                     asset.issues.append(f"DTEMPLATE missing: {', '.join(missing)}")
-                else:
-                    tpl = json.loads(zf.read("mappingTemplate.json"))
-                    if isinstance(tpl, list) and tpl:
-                        t = tpl[0]
-                        asset.metadata["template_name"] = t.get("name", "")
-                        asset.metadata["tasks"] = t.get("tasks", 0)
-                        asset.metadata["has_parameters"] = t.get("hasParameters", False)
-                        asset.metadata["valid_flag"] = t.get("valid", None)
+                    return
+
+                tpl = json.loads(zf.read("mappingTemplate.json"))
+                records = json.loads(zf.read("fileRecord.json"))
+                if isinstance(tpl, list) and tpl:
+                    t = tpl[0]
+                    asset.metadata["template_name"] = t.get("name", "")
+                    asset.metadata["tasks"] = t.get("tasks", 0)
+                    asset.metadata["has_parameters"] = t.get("hasParameters", False)
+                    asset.metadata["valid_flag"] = t.get("valid", None)
+                    template_id = str(t.get("templateId", "")).lstrip("@")
+                    record_ids = {
+                        str(record.get("id", "")).lstrip("@")
+                        for record in records
+                        if isinstance(record, dict)
+                    }
+                    if template_id and template_id not in record_ids:
+                        asset.valid = False
+                        asset.issues.append(
+                            f"mappingTemplate.templateId @{template_id} has no matching fileRecord"
+                        )
 
                 bin_files = [n for n in names if n.startswith("bin/") and n.endswith(".bin")]
                 if not bin_files:
                     asset.valid = False
                     asset.issues.append("DTEMPLATE missing bin/*.bin mapping content")
-                else:
-                    asset.metadata["bin_files"] = bin_files
+                    return
+
+                asset.metadata["bin_files"] = bin_files
+                bin_members = {name: zf.read(name) for name in bin_files}
+                if not isinstance(records, list):
+                    asset.valid = False
+                    asset.issues.append("fileRecord.json is not a list")
+                    return
+
+                for record in records:
+                    if not isinstance(record, dict):
+                        continue
+                    record_id = str(record.get("id", "")).lstrip("@")
+                    bin_member = next(
+                        (name for name in bin_members if name.endswith(f"/@{record_id}.bin")),
+                        None,
+                    )
+                    if not bin_member:
+                        continue
+                    actual_size = len(bin_members[bin_member])
+                    declared_size = int(record.get("size") or -1)
+                    if declared_size != actual_size:
+                        asset.valid = False
+                        asset.issues.append(
+                            f"fileRecord size mismatch for {record.get('id')}: "
+                            f"declared={declared_size} actual={actual_size}"
+                        )
+                    if record.get("type") != "IMFOBJECT":
+                        continue
+                    try:
+                        payload = json.loads(bin_members[bin_member].decode("utf-8"))
+                    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                        asset.valid = False
+                        asset.issues.append(f"IMFOBJECT bin {bin_member} is not valid JSON: {exc}")
+                        continue
+                    content = payload.get("content") if isinstance(payload, dict) else None
+                    if not isinstance(content, dict) or "name" not in content:
+                        asset.valid = False
+                        asset.issues.append(
+                            f"IMFOBJECT bin {bin_member} missing content.name (IMF metaClass risk)"
+                        )
+                    metadata = payload.get("metadata") if isinstance(payload, dict) else None
+                    class_info = metadata.get("$$classInfo") if isinstance(metadata, dict) else None
+                    if not isinstance(class_info, dict) or not class_info:
+                        asset.valid = False
+                        asset.issues.append(
+                            f"IMFOBJECT bin {bin_member} missing metadata.$$classInfo "
+                            "(IICS import will fail with metaClass/ObjectNode null)"
+                        )
         except zipfile.BadZipFile as e:
             asset.valid = False
             asset.issues.append(f"DTEMPLATE zip is corrupt: {e}")
+        except (json.JSONDecodeError, ValueError, TypeError) as e:
+            asset.valid = False
+            asset.issues.append(f"DTEMPLATE metadata parse error: {e}")
 
     def _validate_taskflow(self, asset: IICSAsset, path: Path) -> None:
         try:

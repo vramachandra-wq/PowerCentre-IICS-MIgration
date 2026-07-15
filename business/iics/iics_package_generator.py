@@ -451,7 +451,47 @@ def _build_bin(mapping: dict, folder_data: dict) -> bytes:
         "parameters": parameters,
         "transformations": transformations,
     }
-    return json.dumps({"content": content}, separators=(",", ":")).encode("utf-8")
+    return json.dumps(
+        {
+            "content": content,
+            "metadata": {
+                "$$classInfo": {
+                    "1": "com.informatica.metadata.template.common.Template",
+                    "2": "com.informatica.metadata.common.description.Description",
+                    "3": "com.informatica.metadata.common.genericannotation.GenericAnnotation",
+                    "4": "com.informatica.metadata.template.common.TmplLink",
+                    "5": "com.informatica.metadata.template.common.TmplGroup",
+                    "6": "com.informatica.metadata.template.tx.tmplsource.TmplSource",
+                    "7": "com.informatica.metadata.template.tx.tmplexpression.TmplExpression",
+                    "8": "com.informatica.metadata.template.tx.tmpltarget.TmplTarget",
+                    "9": "com.informatica.metadata.template.common.param.TmplParam",
+                    "10": "com.informatica.metadata.common.genericannotation.NameValuePair",
+                    "11": "com.informatica.metadata.template.common.param.ConnectionParamType",
+                    "12": "com.informatica.metadata.template.common.TxSessionProperty",
+                    "13": "com.informatica.metadata.template.ext.da.cloud.common.BaseAdapter",
+                    "14": "com.informatica.metadata.template.common.field.TxField",
+                    "15": "com.informatica.metadata.template.ext.da.cloud.common.BaseAdapterField",
+                    "16": "com.informatica.metadata.common.typesystem.DataType",
+                    "17": "com.informatica.metadata.template.tx.tmpltarget.FieldMappings",
+                    "18": "com.informatica.metadata.template.common.TxAdvancedProperty",
+                    "19": "com.informatica.metadata.template.tx.tmplexpression.TmplExpressionField",
+                    "20": "com.informatica.metadata.common.types.BooleanValue",
+                    "21": "com.informatica.metadata.template.common.rule.TmplAllRule",
+                    "22": "com.informatica.metadata.template.common.rule.TmplNameRule",
+                    "23": "com.informatica.metadata.template.ext.da.cloud.common.DataObject",
+                    "24": "com.informatica.metadata.template.ext.da.cloud.common.WriteOptions",
+                    "25": "com.informatica.metadata.template.tx.tmpltarget.FieldMapping",
+                    "26": "com.informatica.metadata.template.ext.da.cloud.common.ReadOptions",
+                    "27": "com.informatica.metadata.template.common.ConflictResolution",
+                    "28": "com.informatica.metadata.template.common.rule.TmplNameRuleEntry",
+                    "29": "com.informatica.metadata.template.ext.da.cloud.common.FlatFileAttrs",
+                    "30": "com.informatica.metadata.template.ext.da.cloud.common.Option",
+                    "31": "com.informatica.metadata.template.common.BulkRenameOption",
+                }
+            },
+        },
+        separators=(",", ":"),
+    ).encode("utf-8")
 
 
 # ── PowerCenter XML Task builders (matches IICS import validation model) ────
@@ -768,7 +808,7 @@ def _build_dtemplate_zip(mapping: dict, folder_data: dict, guid: str) -> bytes:
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("mappingTemplate.json", json.dumps(mapping_template, separators=(",", ":")))
         zf.writestr("fileRecord.json",      json.dumps(file_record, separators=(",", ":")))
-        zf.writestr("bin/@2.bin",           bin_bytes.decode("utf-8"))
+        zf.writestr("bin/@2.bin",           bin_bytes)
         zf.writestr("metadata.meta",        json.dumps(metadata_meta, separators=(",", ":")))
     return buf.getvalue()
 
