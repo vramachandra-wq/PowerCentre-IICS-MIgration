@@ -1138,6 +1138,7 @@ class IdmcExportPackageGenerator:
         )
         taskflow_text = self._disable_inout_parameter_mapping(taskflow_text, retained_service_titles)
         taskflow_text = self._prune_unpublished_taskflow_services(taskflow_text, retained_service_titles)
+        taskflow_text = self._prune_unexpected_process_objects(taskflow_text, retained_service_titles)
         taskflow_text = self._rewrite_taskflow_guid_parameters(taskflow_text, assets)
         expected_mtt_ids = {asset["ids"].mtt for asset in assets}
         actual_guids = set(
@@ -1195,6 +1196,38 @@ class IdmcExportPackageGenerator:
                 f"Rewritten taskflow {taskflow_name} still references Process Objects "
                 f"{sorted(unexpected)}; expected {sorted(expected)}"
             )
+
+    @classmethod
+    def _prune_unexpected_process_objects(
+        cls,
+        taskflow_text: str,
+        retained_service_titles: set[str],
+    ) -> str:
+        """Remove Process Object declarations and temp fields left by unused reference services."""
+
+        expected = {cls._process_object_name(name) for name in retained_service_titles}
+        po_refs = set(re.findall(r'referenceTo">\$po:([^<]+)', taskflow_text))
+        po_names = set(re.findall(r"<processObject\b[^>]*\bname=\"([^\"]+)\"", taskflow_text))
+
+        for po_name in sorted((po_refs | po_names) - expected, key=len, reverse=True):
+            escaped = re.escape(po_name)
+            taskflow_text = re.sub(
+                rf'\s*<field\b(?=[^>]*\btype="reference")(?:(?!</field>)[\s\S])*?<option\s+name="referenceTo">\$po:{escaped}</option>(?:(?!</field>)[\s\S])*?</field>',
+                "",
+                taskflow_text,
+            )
+            taskflow_text = re.sub(
+                rf'\s*<eventContainer\b(?:(?!</eventContainer>)[\s\S])*?\bto="{escaped}(?:/[^"]*)?"(?:(?!</eventContainer>)[\s\S])*?</eventContainer>',
+                "",
+                taskflow_text,
+            )
+            taskflow_text = re.sub(
+                rf'\s*<processObject\b(?=[^>]*\bname="{escaped}")[\s\S]*?</processObject>',
+                "",
+                taskflow_text,
+            )
+
+        return taskflow_text
 
     @staticmethod
     def _rewrite_taskflow_guid_parameters(taskflow_text: str, assets: list[dict[str, Any]]) -> str:

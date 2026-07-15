@@ -264,6 +264,9 @@ class IdmcExportIntegrityTests(unittest.TestCase):
                <field name="{sample_name}" type="reference">
                   <options><option name="referenceTo">$po:{sample_po}</option></options>
                </field>
+               <field name="INFA_CommandTask" type="reference">
+                  <options><option name="referenceTo">$po:INFA-commandTask</option></options>
+               </field>
             </tempFields>
             <flow id="a">
                <eventContainer id="c1">
@@ -284,6 +287,9 @@ class IdmcExportIntegrityTests(unittest.TestCase):
             </flow>
             <dependencies>
                <processObject displayName="{sample_po}" name="{sample_po}">
+                  <detail><field name="output" type="reference"/></detail>
+               </processObject>
+               <processObject displayName="INFA-commandTask" name="INFA-commandTask">
                   <detail><field name="output" type="reference"/></detail>
                </processObject>
             </dependencies>
@@ -315,6 +321,7 @@ class IdmcExportIntegrityTests(unittest.TestCase):
         self.assertIn(f'displayName="{target_po}"', rewritten)
         self.assertIn(f"to=\"{target_po}/taskProperties", rewritten)
         self.assertNotIn(sample_po, rewritten)
+        self.assertNotIn("INFA-commandTask", rewritten)
         self.assertIn(self.ids.mtt, rewritten)
 
 
