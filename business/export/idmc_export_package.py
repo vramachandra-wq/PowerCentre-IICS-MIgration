@@ -10,6 +10,7 @@ import io
 import json
 import re
 import shutil
+import zlib
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -52,6 +53,7 @@ class IdmcExportPackageGenerator:
     FOLDER_NAME = "Custom_Project_Export"
     CONNECTION_NAME = "DataWarehouse_PA"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
+    PARAMETER_FILE_DIRECTORY = "/JacobsAnalytics/IICS/Data_Integration/Param"
 
     def __init__(
         self,
@@ -845,6 +847,7 @@ class IdmcExportPackageGenerator:
 
         if str(output_path).endswith(".DTEMPLATE.zip"):
             rewritten = self._sync_dtemplate_file_records(rewritten, mapping_name, now)
+            rewritten = self._ensure_dtemplate_preview(rewritten, mapping_name, now)
 
         with zipfile.ZipFile(Path(output_path), "w", compression=zipfile.ZIP_DEFLATED) as output_zip:
             for member, content in rewritten.items():
@@ -977,6 +980,51 @@ class IdmcExportPackageGenerator:
                     )
         return rewritten
 
+    def _ensure_dtemplate_preview(
+        self,
+        rewritten: dict[str, bytes],
+        mapping_name: str,
+        now: datetime,
+    ) -> dict[str, bytes]:
+        if "mappingTemplate.json" not in rewritten or "fileRecord.json" not in rewritten:
+            return rewritten
+
+        template = json.loads(rewritten["mappingTemplate.json"].decode("utf-8"))
+        records = json.loads(rewritten["fileRecord.json"].decode("utf-8"))
+        if not template or not isinstance(records, list):
+            return rewritten
+
+        preview_id = str(template[0].get("mappingPreviewFileRecordId") or "").lstrip("@")
+        if preview_id and f"bin/@{preview_id}.bin" in rewritten:
+            return rewritten
+
+        used_ids = {
+            int(str(record.get("id", "")).lstrip("@"))
+            for record in records
+            if str(record.get("id", "")).lstrip("@").isdigit()
+        }
+        preview_number = 2
+        while preview_number in used_ids:
+            preview_number += 1
+        preview_ref = f"@{preview_number}"
+        preview_bytes = self._preview_bytes(mapping_name)
+
+        template[0]["mappingPreviewFileRecordId"] = preview_ref
+        records.append(
+            {
+                "@type": "fileRecord",
+                "id": preview_ref,
+                "name": f"{mapping_name}_preview.png",
+                "type": "IMAGE",
+                "size": len(preview_bytes),
+                "attachTime": self._epoch_millis(now),
+            }
+        )
+        rewritten["mappingTemplate.json"] = self._json_bytes(template)
+        rewritten["fileRecord.json"] = self._json_bytes(records)
+        rewritten[f"bin/{preview_ref}.bin"] = preview_bytes
+        return rewritten
+
     @staticmethod
     def _assert_dtemplate_integrity(path: Path, mapping_name: str) -> None:
         """Fail fast if a rewritten DTEMPLATE would cause IICS IMF import errors."""
@@ -1100,8 +1148,55 @@ class IdmcExportPackageGenerator:
                 payload[0]["frsGuid"] = ids.mtt
                 payload[0].setdefault("paramFileType", "PARAM_FILE_LOCAL")
                 payload[0].setdefault("serverlessProperties", {})
+                self._apply_parameter_file_fields(payload[0], mapping_name)
+                self._apply_empty_inout_parameters(payload[0])
             return self._json_bytes(payload)
         return self._replace_text_bytes(content, replacements)
+
+    def _apply_parameter_file_fields(self, task: dict[str, Any], mapping_name: str) -> None:
+        task["paramFileType"] = "PARAM_FILE_LOCAL"
+        task_properties = task.setdefault("taskProperties", [])
+        if not isinstance(task_properties, list):
+            task_properties = []
+            task["taskProperties"] = task_properties
+
+        property_values = {
+            "parameterFileDir": self.PARAMETER_FILE_DIRECTORY,
+            "parameterFileName": f"{mapping_name}.param",
+        }
+        labels = {
+            "parameterFileDir": "label.parameterFileDir",
+            "parameterFileName": "label.parameterFileName",
+        }
+        by_name = {
+            item.get("name"): item
+            for item in task_properties
+            if isinstance(item, dict) and item.get("name")
+        }
+        for name, value in property_values.items():
+            item = by_name.get(name)
+            if item is None:
+                item = {"@type": "taskProperty", "name": name}
+                task_properties.append(item)
+            item.update(
+                {
+                    "currentValue": value,
+                    "type": "STRING",
+                    "label": labels[name],
+                    "required": False,
+                }
+            )
+
+    @staticmethod
+    def _apply_empty_inout_parameters(task: dict[str, Any]) -> None:
+        task["inOutParameters"] = [
+            {
+                "@type": "mtTaskInOutParameter",
+                "name": "",
+                "type": "",
+                "value": "",
+            }
+        ]
 
     def _workflow_taskflow_xml(
         self,
@@ -1246,7 +1341,7 @@ class IdmcExportPackageGenerator:
             taskflow_text,
             count=1,
         )
-        taskflow_text = self._disable_inout_parameter_mapping(taskflow_text, retained_service_titles)
+        taskflow_text = self._enable_empty_inout_parameter_section(taskflow_text, retained_service_titles)
         taskflow_text = self._prune_unpublished_taskflow_services(taskflow_text, retained_service_titles)
         taskflow_text = self._prune_unexpected_process_objects(taskflow_text, retained_service_titles)
         if len(assets) == 1:
@@ -1435,7 +1530,7 @@ class IdmcExportPackageGenerator:
                 unique.append(value)
         return unique
 
-    def _disable_inout_parameter_mapping(self, taskflow_text: str, service_names: set[str]) -> str:
+    def _enable_empty_inout_parameter_section(self, taskflow_text: str, service_names: set[str]) -> str:
         def replace_service(match: re.Match) -> str:
             service = match.group(0)
             title_match = re.search(r"<title>(.*?)</title>", service)
@@ -1443,8 +1538,8 @@ class IdmcExportPackageGenerator:
                 return service
             service_name = re.escape(title_match.group(1))
             service = re.sub(
-                r'(<parameter name="Has Inout Parameters" source="constant" updatable="true">)true(</parameter>)',
-                r"\1false\2",
+                r'(<parameter name="Has Inout Parameters" source="constant" updatable="true">)(?:true|false)(</parameter>)',
+                r"\1true\2",
                 service,
                 count=1,
             )
@@ -1680,13 +1775,29 @@ class IdmcExportPackageGenerator:
             "valid": True,
             "schemaValidationErrorCount": -1,
             "taskProperties": [
-                {"@type": "taskProperty", "name": "parameterFileDir", "currentValue": "", "type": "STRING", "required": False},
-                {"@type": "taskProperty", "name": "parameterFileName", "currentValue": "", "type": "STRING", "required": False},
+                {
+                    "@type": "taskProperty",
+                    "name": "parameterFileDir",
+                    "currentValue": self.PARAMETER_FILE_DIRECTORY,
+                    "type": "STRING",
+                    "label": "label.parameterFileDir",
+                    "required": False,
+                },
+                {
+                    "@type": "taskProperty",
+                    "name": "parameterFileName",
+                    "currentValue": f"{asset['name']}.param",
+                    "type": "STRING",
+                    "label": "label.parameterFileName",
+                    "required": False,
+                },
             ],
             "optimizationPlan": "NONE",
             "parameters": target_parameters,
             "sequences": [],
-            "inOutParameters": [],
+            "inOutParameters": [
+                {"@type": "mtTaskInOutParameter", "name": "", "type": "", "value": ""},
+            ],
             "connRuntimeAttrs": [],
             "sourceXml": asset["source_xml"],
             "mappingSummary": {
@@ -2023,7 +2134,41 @@ class IdmcExportPackageGenerator:
 
     @staticmethod
     def _preview_bytes(mapping_name: str) -> bytes:
-        return f"Generated preview placeholder for {mapping_name}\n".encode("utf-8")
+        return IdmcExportPackageGenerator._png_preview_bytes(mapping_name)
+
+    @staticmethod
+    def _png_preview_bytes(mapping_name: str) -> bytes:
+        width = 960
+        height = 260
+        rows: list[bytes] = []
+        blocks = [(120, 96, 250, 64), (360, 96, 250, 64), (600, 96, 250, 64)]
+        for y in range(height):
+            row = bytearray()
+            for x in range(width):
+                pixel = (248, 250, 252)
+                for bx, by, bw, bh in blocks:
+                    if bx <= x < bx + bw and by <= y < by + bh:
+                        pixel = (255, 224, 204)
+                    if bx <= x < bx + bw and (y == by or y == by + bh - 1):
+                        pixel = (213, 148, 104)
+                    if by <= y < by + bh and (x == bx or x == bx + bw - 1):
+                        pixel = (213, 148, 104)
+                if 372 <= x <= 598 and 126 <= y <= 130:
+                    pixel = (148, 163, 184)
+                if 612 <= x <= 838 and 126 <= y <= 130:
+                    pixel = (148, 163, 184)
+                row.extend(pixel)
+            rows.append(b"\x00" + bytes(row))
+
+        raw = b"".join(rows)
+
+        def chunk(kind: bytes, data: bytes) -> bytes:
+            checksum = zlib.crc32(kind + data) & 0xFFFFFFFF
+            return len(data).to_bytes(4, "big") + kind + data + checksum.to_bytes(4, "big")
+
+        header = b"\x89PNG\r\n\x1a\n"
+        ihdr = width.to_bytes(4, "big") + height.to_bytes(4, "big") + b"\x08\x02\x00\x00\x00"
+        return header + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
 
     def _replace_json_strings(self, value: Any, replacements: dict[str, str]) -> Any:
         if isinstance(value, str):
