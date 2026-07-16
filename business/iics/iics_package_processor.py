@@ -71,7 +71,7 @@ class PackageValidationResult:
     issues: list[str] = field(default_factory=list)
 
 
-# ── processor ────────────────────────────────────────────────────────────────
+from business.iics.iics_success_benchmark import IICSSuccessBenchmark
 
 class IICSPackageProcessor:
     """Validate and repackage a client-supplied IICS export zip."""
@@ -128,6 +128,7 @@ class IICSPackageProcessor:
             self._write_reports(result)
             output_zip = self._repackage(result)
             summary = self._build_summary(result, output_zip)
+            summary["success_benchmark"] = self._success_benchmark_summary(output_zip)
             self._write_summary(summary)
             self.logger.info(
                 "IICS package processing complete. valid=%d invalid=%d output=%s",
@@ -284,24 +285,87 @@ class IICSPackageProcessor:
                 if missing:
                     asset.valid = False
                     asset.issues.append(f"DTEMPLATE missing: {', '.join(missing)}")
-                else:
-                    tpl = json.loads(zf.read("mappingTemplate.json"))
-                    if isinstance(tpl, list) and tpl:
-                        t = tpl[0]
-                        asset.metadata["template_name"] = t.get("name", "")
-                        asset.metadata["tasks"] = t.get("tasks", 0)
-                        asset.metadata["has_parameters"] = t.get("hasParameters", False)
-                        asset.metadata["valid_flag"] = t.get("valid", None)
+                    return
+
+                tpl = json.loads(zf.read("mappingTemplate.json"))
+                records = json.loads(zf.read("fileRecord.json"))
+                if isinstance(tpl, list) and tpl:
+                    t = tpl[0]
+                    asset.metadata["template_name"] = t.get("name", "")
+                    asset.metadata["tasks"] = t.get("tasks", 0)
+                    asset.metadata["has_parameters"] = t.get("hasParameters", False)
+                    asset.metadata["valid_flag"] = t.get("valid", None)
+                    template_id = str(t.get("templateId", "")).lstrip("@")
+                    record_ids = {
+                        str(record.get("id", "")).lstrip("@")
+                        for record in records
+                        if isinstance(record, dict)
+                    }
+                    if template_id and template_id not in record_ids:
+                        asset.valid = False
+                        asset.issues.append(
+                            f"mappingTemplate.templateId @{template_id} has no matching fileRecord"
+                        )
 
                 bin_files = [n for n in names if n.startswith("bin/") and n.endswith(".bin")]
                 if not bin_files:
                     asset.valid = False
                     asset.issues.append("DTEMPLATE missing bin/*.bin mapping content")
-                else:
-                    asset.metadata["bin_files"] = bin_files
+                    return
+
+                asset.metadata["bin_files"] = bin_files
+                bin_members = {name: zf.read(name) for name in bin_files}
+                if not isinstance(records, list):
+                    asset.valid = False
+                    asset.issues.append("fileRecord.json is not a list")
+                    return
+
+                for record in records:
+                    if not isinstance(record, dict):
+                        continue
+                    record_id = str(record.get("id", "")).lstrip("@")
+                    bin_member = next(
+                        (name for name in bin_members if name.endswith(f"/@{record_id}.bin")),
+                        None,
+                    )
+                    if not bin_member:
+                        continue
+                    actual_size = len(bin_members[bin_member])
+                    declared_size = int(record.get("size") or -1)
+                    if declared_size != actual_size:
+                        asset.valid = False
+                        asset.issues.append(
+                            f"fileRecord size mismatch for {record.get('id')}: "
+                            f"declared={declared_size} actual={actual_size}"
+                        )
+                    if record.get("type") != "IMFOBJECT":
+                        continue
+                    try:
+                        payload = json.loads(bin_members[bin_member].decode("utf-8"))
+                    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                        asset.valid = False
+                        asset.issues.append(f"IMFOBJECT bin {bin_member} is not valid JSON: {exc}")
+                        continue
+                    content = payload.get("content") if isinstance(payload, dict) else None
+                    if not isinstance(content, dict) or "name" not in content:
+                        asset.valid = False
+                        asset.issues.append(
+                            f"IMFOBJECT bin {bin_member} missing content.name (IMF metaClass risk)"
+                        )
+                    metadata = payload.get("metadata") if isinstance(payload, dict) else None
+                    class_info = metadata.get("$$classInfo") if isinstance(metadata, dict) else None
+                    if not isinstance(class_info, dict) or not class_info:
+                        asset.valid = False
+                        asset.issues.append(
+                            f"IMFOBJECT bin {bin_member} missing metadata.$$classInfo "
+                            "(IICS import will fail with metaClass/ObjectNode null)"
+                        )
         except zipfile.BadZipFile as e:
             asset.valid = False
             asset.issues.append(f"DTEMPLATE zip is corrupt: {e}")
+        except (json.JSONDecodeError, ValueError, TypeError) as e:
+            asset.valid = False
+            asset.issues.append(f"DTEMPLATE metadata parse error: {e}")
 
     def _validate_taskflow(self, asset: IICSAsset, path: Path) -> None:
         try:
@@ -471,6 +535,18 @@ class IICSPackageProcessor:
             for a in result.assets:
                 writer.writerow([a.object_name, a.object_type, a.file_path, a.checksum_ok])
         self.logger.info("Checksum report written. path=%s", path)
+
+    def _success_benchmark_summary(self, output_zip: Path) -> dict[str, Any]:
+        benchmark = IICSSuccessBenchmark(project_root=Path.cwd())
+        result = benchmark.validate_package(output_zip)
+        report_path = self.output_dir / "success_benchmark.json"
+        report_path.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+        return {
+            "profile": result.profile,
+            "passed": result.passed,
+            "failed_checks": [check.name for check in result.checks if not check.passed],
+            "report": str(report_path),
+        }
 
     def _build_summary(self, result: PackageValidationResult, output_zip: Path) -> dict[str, Any]:
         return {

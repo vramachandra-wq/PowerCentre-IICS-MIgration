@@ -451,7 +451,47 @@ def _build_bin(mapping: dict, folder_data: dict) -> bytes:
         "parameters": parameters,
         "transformations": transformations,
     }
-    return json.dumps({"content": content}, separators=(",", ":")).encode("utf-8")
+    return json.dumps(
+        {
+            "content": content,
+            "metadata": {
+                "$$classInfo": {
+                    "1": "com.informatica.metadata.template.common.Template",
+                    "2": "com.informatica.metadata.common.description.Description",
+                    "3": "com.informatica.metadata.common.genericannotation.GenericAnnotation",
+                    "4": "com.informatica.metadata.template.common.TmplLink",
+                    "5": "com.informatica.metadata.template.common.TmplGroup",
+                    "6": "com.informatica.metadata.template.tx.tmplsource.TmplSource",
+                    "7": "com.informatica.metadata.template.tx.tmplexpression.TmplExpression",
+                    "8": "com.informatica.metadata.template.tx.tmpltarget.TmplTarget",
+                    "9": "com.informatica.metadata.template.common.param.TmplParam",
+                    "10": "com.informatica.metadata.common.genericannotation.NameValuePair",
+                    "11": "com.informatica.metadata.template.common.param.ConnectionParamType",
+                    "12": "com.informatica.metadata.template.common.TxSessionProperty",
+                    "13": "com.informatica.metadata.template.ext.da.cloud.common.BaseAdapter",
+                    "14": "com.informatica.metadata.template.common.field.TxField",
+                    "15": "com.informatica.metadata.template.ext.da.cloud.common.BaseAdapterField",
+                    "16": "com.informatica.metadata.common.typesystem.DataType",
+                    "17": "com.informatica.metadata.template.tx.tmpltarget.FieldMappings",
+                    "18": "com.informatica.metadata.template.common.TxAdvancedProperty",
+                    "19": "com.informatica.metadata.template.tx.tmplexpression.TmplExpressionField",
+                    "20": "com.informatica.metadata.common.types.BooleanValue",
+                    "21": "com.informatica.metadata.template.common.rule.TmplAllRule",
+                    "22": "com.informatica.metadata.template.common.rule.TmplNameRule",
+                    "23": "com.informatica.metadata.template.ext.da.cloud.common.DataObject",
+                    "24": "com.informatica.metadata.template.ext.da.cloud.common.WriteOptions",
+                    "25": "com.informatica.metadata.template.tx.tmpltarget.FieldMapping",
+                    "26": "com.informatica.metadata.template.ext.da.cloud.common.ReadOptions",
+                    "27": "com.informatica.metadata.template.common.ConflictResolution",
+                    "28": "com.informatica.metadata.template.common.rule.TmplNameRuleEntry",
+                    "29": "com.informatica.metadata.template.ext.da.cloud.common.FlatFileAttrs",
+                    "30": "com.informatica.metadata.template.ext.da.cloud.common.Option",
+                    "31": "com.informatica.metadata.template.common.BulkRenameOption",
+                }
+            },
+        },
+        separators=(",", ":"),
+    ).encode("utf-8")
 
 
 # ── PowerCenter XML Task builders (matches IICS import validation model) ────
@@ -768,7 +808,7 @@ def _build_dtemplate_zip(mapping: dict, folder_data: dict, guid: str) -> bytes:
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("mappingTemplate.json", json.dumps(mapping_template, separators=(",", ":")))
         zf.writestr("fileRecord.json",      json.dumps(file_record, separators=(",", ":")))
-        zf.writestr("bin/@2.bin",           bin_bytes.decode("utf-8"))
+        zf.writestr("bin/@2.bin",           bin_bytes)
         zf.writestr("metadata.meta",        json.dumps(metadata_meta, separators=(",", ":")))
     return buf.getvalue()
 
@@ -1142,7 +1182,7 @@ def _build_taskflow_xml(
                   <link id="{start_link}" targetId="{asgn1_id}"/>
                </start>
                <assignment id="{asgn1_id}">
-                  <title>Assignment_Workflow_Init</title>
+                  <title>Assignment_PC_Variables</title>
                   {assign_ops}
                   <link id="{asgn2_link}" targetId="{asgn2_id}"/>
                </assignment>
@@ -1364,12 +1404,20 @@ def _build_connection_zip(
         "majorUpdateTime": "2025-12-11T00:51:01.000Z",
         "timeout": 60,
         "connParams": {
+            "agentId": agent_id,
+            "oracleSubType": "oracleonpremise",
             "agentGroupId": agent_group_guid,
+            "orgId": "010CW7",
         },
         "internal": False,
         "federatedId": conn_guid,
         "retryNetworkError": False,
+        "supportsCCIMultiGroup": False,
         "metadataBrowsable": True,
+        "supportLabels": False,
+        "vaultEnabled": False,
+        "vaultEnabledParams": [],
+        "isRtAttrsRefreshRequired": False,
         "connectorStatus": "ACTIVE",
     }]
     meta = [{"@type": "objectRef", "id": "@1", "type": "connection"}]
@@ -1382,23 +1430,66 @@ def _build_connection_zip(
 
 def _build_agent_group_zip(group_name: str, group_guid: str) -> bytes:
     ag_json = [{
-        "@type": "agentGroup",
+        "@type": "runtimeEnvironment",
         "id": "@1",
         "name": group_name,
-        "description": "Generated runtime environment placeholder",
+        "isSystemAgentGroup": False,
+        "isShared": False,
         "federatedId": group_guid,
+        "createTimeUTC": "2025-09-09T11:52:30.000Z",
+        "updateTimeUTC": "2025-09-09T11:53:44.000Z",
     }]
-    meta = [{"@type": "objectRef", "id": "@1", "type": "agentGroup"}]
+    meta = [{"@type": "objectRef", "id": "@1", "type": "runtimeEnvironment"}]
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("agentGroup.json", json.dumps(ag_json, separators=(",", ":")))
+        zf.writestr("runtimeEnvironment.json", json.dumps(ag_json, separators=(",", ":")))
         zf.writestr("metadata.meta",   json.dumps(meta, separators=(",", ":")))
     return buf.getvalue()
 
 
 # ── Project / Folder builders ────────────────────────────────────────────────
 
-def _build_folder_json(folder_name: str, folder_guid: str) -> str:
+def _odata_property(name: str, value: Any) -> dict[str, Any]:
+    return {
+        "annotations": [],
+        "valueType": "PRIMITIVE",
+        "value": value,
+        "type": None,
+        "name": name,
+        "operations": [],
+        "null": value is None,
+        "primitive": value is not None,
+        "enum": False,
+        "collection": False,
+        "geospatial": False,
+        "complex": False,
+    }
+
+
+def _parent_info(parent_id: str, parent_name: str, parent_type: str) -> dict[str, Any]:
+    return {
+        "annotations": [],
+        "baseURI": None,
+        "id": None,
+        "title": None,
+        "associationLinks": [],
+        "navigationLinks": [],
+        "value": [
+            _odata_property("parentId", parent_id),
+            _odata_property("parentName", parent_name),
+            _odata_property("parentType", parent_type),
+        ],
+        "typeName": None,
+        "navigationBindings": [],
+    }
+
+
+def _build_folder_json(
+    folder_name: str,
+    folder_guid: str,
+    project_name: str | None = None,
+    project_guid: str | None = None,
+) -> str:
     obj = {
         "annotations": [], "baseURI": None,
         "id": f"Folders({folder_guid})",
@@ -1406,12 +1497,31 @@ def _build_folder_json(folder_name: str, folder_guid: str) -> str:
         "type": "OData.frs.Folder", "editLink": None,
         "mediaEditLinks": [], "operations": [],
         "properties": [
-            {"name": "id",           "value": folder_guid,  "valueType": "PRIMITIVE", "null": False, "primitive": True},
-            {"name": "name",         "value": folder_name,  "valueType": "PRIMITIVE", "null": False, "primitive": True},
-            {"name": "description",  "value": "",           "valueType": "PRIMITIVE", "null": False, "primitive": True},
-            {"name": "documentType", "value": "Folder",     "valueType": "PRIMITIVE", "null": False, "primitive": True},
-            {"name": "contentType",  "value": "Binary",     "valueType": "PRIMITIVE", "null": False, "primitive": True},
-            {"name": "documentState","value": "COMPLETE",   "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            _odata_property("id", folder_guid),
+            _odata_property("name", folder_name),
+            _odata_property("description", ""),
+            _odata_property("owner", "eviB4AQL3UHcL6imixfmoN"),
+            _odata_property("createdBy", "eviB4AQL3UHcL6imixfmoN"),
+            _odata_property("lastUpdatedBy", "eviB4AQL3UHcL6imixfmoN"),
+            _odata_property("lastAccessedBy", "eviB4AQL3UHcL6imixfmoN"),
+            _odata_property("createdTime", "2026-07-08T03:02:15.000Z"),
+            _odata_property("lastUpdatedTime", "2026-07-08T03:02:15.000Z"),
+            _odata_property("lastAccessedTime", "2026-07-08T03:02:15.000Z"),
+            _odata_property("expiresBy", "2038-01-18T00:00:00.000Z"),
+            _odata_property("documentType", "Folder"),
+            _odata_property("contentType", "Binary"),
+            _odata_property("documentState", "COMPLETE"),
+            _odata_property("aclRule", "org"),
+            _odata_property("subcontainerCount", 0),
+            _odata_property("customAttributes", None),
+            _odata_property("repoInfo", None),
+            _odata_property(
+                "parentInfo",
+                [
+                    _parent_info("7cCn5thwWFLhiZoSosphKL", "REG", "Space"),
+                    _parent_info(project_guid or "", project_name or "", "Project"),
+                ],
+            ),
         ],
         "mediaContentSource": None, "mediaContentType": None,
     }
@@ -1426,12 +1536,25 @@ def _build_project_json(project_name: str, project_guid: str) -> str:
         "type": "OData.frs.Project", "editLink": None,
         "mediaEditLinks": [], "operations": [],
         "properties": [
-            {"name": "id",           "value": project_guid, "valueType": "PRIMITIVE", "null": False, "primitive": True},
-            {"name": "name",         "value": project_name, "valueType": "PRIMITIVE", "null": False, "primitive": True},
-            {"name": "description",  "value": "Migrated project from PowerCenter", "valueType": "PRIMITIVE", "null": False, "primitive": True},
-            {"name": "documentType", "value": "Project",    "valueType": "PRIMITIVE", "null": False, "primitive": True},
-            {"name": "contentType",  "value": "Binary",     "valueType": "PRIMITIVE", "null": False, "primitive": True},
-            {"name": "documentState","value": "COMPLETE",   "valueType": "PRIMITIVE", "null": False, "primitive": True},
+            _odata_property("id", project_guid),
+            _odata_property("name", project_name),
+            _odata_property("description", "Migrated project"),
+            _odata_property("owner", "8xG29b4cYgGidbFjQDSFad"),
+            _odata_property("createdBy", "8xG29b4cYgGidbFjQDSFad"),
+            _odata_property("lastUpdatedBy", "8xG29b4cYgGidbFjQDSFad"),
+            _odata_property("lastAccessedBy", "3ZkD2hs22mSjfAAUpb2i4U"),
+            _odata_property("createdTime", "2025-12-05T11:57:41.000Z"),
+            _odata_property("lastUpdatedTime", "2025-12-05T11:57:41.000Z"),
+            _odata_property("lastAccessedTime", "2026-07-08T14:46:58.000Z"),
+            _odata_property("expiresBy", "2038-01-18T00:00:00.000Z"),
+            _odata_property("documentType", "Project"),
+            _odata_property("contentType", "Binary"),
+            _odata_property("documentState", "COMPLETE"),
+            _odata_property("aclRule", "org"),
+            _odata_property("subcontainerCount", 21),
+            _odata_property("customAttributes", None),
+            _odata_property("repoInfo", None),
+            _odata_property("parentInfo", [_parent_info("7cCn5thwWFLhiZoSosphKL", "REG", "Space")]),
         ],
         "mediaContentSource": None, "mediaContentType": None,
     }
@@ -1483,11 +1606,11 @@ class IICSPackageGenerator:
 
     PROJECT_NAME     = "BIAINFADEV2_FLEX"
     FOLDER_NAME      = "Custom_Project"
-    CONNECTION_NAME  = "DBConnection_OLAP_Oracle"
+    CONNECTION_NAME  = "DataWarehouse_PA"
     CONNECTION_PARAM = "DBConnection_OLAP"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
-    ORG_NAME         = "PC_IICS_MIGRATION"
-    ORG_ID           = "generated"
+    ORG_NAME         = "Jacobs"
+    ORG_ID           = "gO4aVWAxgK0lY2UdXmECWZ"
     AGENT_ID         = "010CW70800000000000B"
 
     def __init__(
@@ -1495,11 +1618,13 @@ class IICSPackageGenerator:
         parsed_json_dir: str | Path = "output/parsed_json",
         remediated_xml_dir: str | Path = "output/remediated_xml",
         output_dir: str | Path = "output/iics_generated",
+        output_zip_name: str = "Custom_Project_Export.zip",
         logger: logging.Logger | None = None,
     ) -> None:
         self.parsed_json_dir = Path(parsed_json_dir)
         self.remediated_xml_dir = Path(remediated_xml_dir)
         self.output_dir      = Path(output_dir)
+        self.output_zip_name = output_zip_name
         self.logger = logger or logging.getLogger(__name__)
 
     def generate(self) -> dict[str, Any]:
@@ -1550,7 +1675,7 @@ class IICSPackageGenerator:
             "metadata": _meta_with_ctx(None, [], None, "Binary", "COMPLETE", []),
         }
         zip_contents[f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}.Folder.json"] = \
-            _build_folder_json(self.FOLDER_NAME, folder_guid).encode("utf-8")
+            _build_folder_json(self.FOLDER_NAME, folder_guid, self.PROJECT_NAME, project_guid).encode("utf-8")
 
         ag_handle = _repo_handle()
         agent_obj = {
@@ -1650,7 +1775,7 @@ class IICSPackageGenerator:
                         "providerName": None,
                         "metadata": _meta_with_ctx(
                             mtt_handle,
-                            [dtemplate_guid, conn_guid, agent_group_guid],
+                            [conn_guid, agent_group_guid, dtemplate_guid],
                             f"Session pushed from PC to ICS : {m_name}",
                             "JSON", "VALID", _CONTEXT_ATTR,
                         ),
@@ -1669,7 +1794,6 @@ class IICSPackageGenerator:
                     from datetime import datetime
                     now_str = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.") + \
                         f"{datetime.utcnow().microsecond // 1000:03d}Z"
-                    tf_manifest_handle = _repo_handle()
                     entry_id = f"{_h()}-gt-{abs(hash(tf_name)) % 99999999}-{now_str}::tf.xml"
                     tf_xml = _build_workflow_taskflow_xml(workflow, tasks, tf_guid, entry_id)
                     tf_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{tf_name}.TASKFLOW.xml"
@@ -1681,18 +1805,21 @@ class IICSPackageGenerator:
                         "path": folder_path,
                         "providerName": None,
                         "metadata": _meta_with_ctx(
-                            tf_manifest_handle,
-                            [mtt_guid for _, mtt_guid in tasks],
+                            entry_id,
+                            [agent_group_guid, *[mtt_guid for _, mtt_guid in tasks]],
                             "These workflows are created from the Workflow Generation Wizard.",
                             "application/json; charset=utf-8",
                             "VALID",
-                            _CONTEXT_ATTR,
+                            None,
                             model_version={"major": 1, "minor": 0},
                         ),
                     })
 
-        # Manifest order matches working client export: Project, Connection, mappings, Folder, AgentGroup
-        exported_objects = [project_obj, conn_obj] + mapping_objects + [folder_obj, agent_obj]
+        # Manifest order follows the single-taskflow client export shape.
+        mtt_objects = [obj for obj in mapping_objects if obj["objectType"] == "MTT"]
+        taskflow_objects = [obj for obj in mapping_objects if obj["objectType"] == "TASKFLOW"]
+        dtemplate_objects = [obj for obj in mapping_objects if obj["objectType"] == "DTEMPLATE"]
+        exported_objects = [project_obj, conn_obj, agent_obj] + mtt_objects + [folder_obj] + taskflow_objects + dtemplate_objects
         job_name = f"job-{int(time.time() * 1000)}"
         manifest = {
             "name": job_name,
@@ -1711,7 +1838,7 @@ class IICSPackageGenerator:
         csv_bytes    = csv_buf.getvalue().encode("utf-8")
 
         checksums: dict[str, str] = {}
-        output_zip_path = self.output_dir / "iics_generated_package_checksum.zip"
+        output_zip_path = self.output_dir / self.output_zip_name
 
         with zipfile.ZipFile(output_zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zout:
             zout.writestr("exportMetadata.v2.json", manifest_bytes)

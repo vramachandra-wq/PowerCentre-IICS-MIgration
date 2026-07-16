@@ -19,6 +19,7 @@ class IICSPackageGeneratorMultisessionTests(unittest.TestCase):
         summary = IICSPackageGenerator(parsed_json_dir=parsed, output_dir=out).generate()
         taskflows = self._taskflow_shapes(Path(summary["output_zip"]))
 
+        self.assertEqual("Custom_Project_Export.zip", Path(summary["output_zip"]).name)
         self.assertEqual(1, len(taskflows))
         self.assertEqual(["s_LoadA"], taskflows[0]["services"])
         self.assertEqual([], taskflows[0]["containers"])

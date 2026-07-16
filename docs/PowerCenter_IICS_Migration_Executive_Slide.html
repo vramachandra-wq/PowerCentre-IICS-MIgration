@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PowerCenter → IICS Migration Accelerator | Executive Slide</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .slide {
+      width: 1280px;
+      height: 720px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0f2744 100%);
+      border-radius: 12px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.45);
+      padding: 36px 44px 32px;
+      color: #e2e8f0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+    .slide::before {
+      content: "";
+      position: absolute;
+      top: -120px; right: -80px;
+      width: 360px; height: 360px;
+      background: radial-gradient(circle, rgba(56,189,248,.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: #f8fafc;
+    }
+    header p {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+    .columns {
+      display: grid;
+      grid-template-columns: 1.15fr 1.15fr .85fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .card {
+      background: rgba(15,23,42,.65);
+      border: 1px solid rgba(148,163,184,.18);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #38bdf8;
+      font-weight: 700;
+      border-bottom: 1px solid rgba(56,189,248,.25);
+      padding-bottom: 8px;
+    }
+    .card ul {
+      list-style: none;
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: #cbd5e1;
+    }
+    .card ul li {
+      padding-left: 14px;
+      position: relative;
+      margin-bottom: 5px;
+    }
+    .card ul li::before {
+      content: "▸";
+      position: absolute;
+      left: 0;
+      color: #22d3ee;
+      font-size: 10px;
+      top: 2px;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .metric {
+      background: rgba(56,189,248,.08);
+      border: 1px solid rgba(56,189,248,.2);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+    .metric strong {
+      display: block;
+      font-size: 18px;
+      color: #7dd3fc;
+      font-weight: 700;
+    }
+    .metric span {
+      font-size: 10px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .timeline-card h2 { color: #a78bfa; border-color: rgba(167,139,250,.3); }
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      justify-content: center;
+    }
+    .bar-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .bar {
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      overflow: hidden;
+    }
+    .bar-core {
+      flex: 9;
+      background: linear-gradient(90deg, #3b82f6, #2563eb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .bar-buffer {
+      flex: 2;
+      background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .total {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      color: #c4b5fd;
+      margin-top: 4px;
+    }
+    .total small {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #64748b;
+      border-top: 1px solid rgba(148,163,184,.15);
+      padding-top: 12px;
+    }
+    .badge {
+      background: rgba(34,211,238,.12);
+      border: 1px solid rgba(34,211,238,.3);
+      color: #67e8f9;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <header>
+      <h1>PowerCenter → IICS / IDMC Migration Accelerator</h1>
+      <p>Enterprise metadata migration platform — pilot proven, enterprise scale planned</p>
+    </header>
+
+    <div class="columns">
+      <!-- 1. Current Delivery -->
+      <section class="card">
+        <h2>1 · Proven Delivery (Pilot)</h2>
+        <ul>
+          <li>End-to-end pipeline: PC XML → canonical metadata → validation → remediation → IICS export</li>
+          <li>Rule-based auto-remediation with remediated XML &amp; import-ready IDMC packages</li>
+          <li>Enterprise migration reports, readiness scores &amp; consolidated dashboards</li>
+          <li>AI-assisted validation &amp; recommendations (FastAPI + Streamlit)</li>
+          <li>MySQL central repository for metadata governance &amp; future PC-vs-IICS comparison</li>
+        </ul>
+        <div class="metrics">
+          <div class="metric"><strong>98.5%</strong><span>Validation Pass</span></div>
+          <div class="metric"><strong>99.3%</strong><span>Auto-Fix Rate</span></div>
+          <div class="metric"><strong>92%</strong><span>Readiness Score</span></div>
+          <div class="metric"><strong>73</strong><span>IICS Assets Exported</span></div>
+        </div>
+      </section>
+
+      <!-- 2. Future Services -->
+      <section class="card">
+        <h2>2 · Long-Run Services (6,000–7,000 Assets)</h2>
+        <ul>
+          <li><strong>Batch metadata extraction</strong> — workflows, mappings, transformations at enterprise volume</li>
+          <li><strong>Scaled validation &amp; remediation</strong> — datatype harmonization, rule engine, XML auto-fix</li>
+          <li><strong>IICS / IDMC package factory</strong> — bulk DTEMPLATE, MTT, TASKFLOW generation &amp; import validation</li>
+          <li><strong>Migration intelligence</strong> — complexity scoring, risk assessment, executive dashboards</li>
+          <li><strong>AI remediation studio</strong> — complex patterns (Stored Proc, Java, CDC, SAP) with guided fixes</li>
+          <li><strong>Lineage &amp; PC-vs-IICS comparison</strong> — central repository diff, drift tracking, cutover readiness</li>
+          <li><strong>CI/CD &amp; automation ops</strong> — scheduled runs, GitHub Actions, API-driven migration factory</li>
+        </ul>
+      </section>
+
+      <!-- 3. Timeline -->
+      <section class="card timeline-card">
+        <h2>3 · Program Timeline</h2>
+        <div class="timeline">
+          <div class="bar-wrap">
+            <div class="bar-label"><span>Core delivery</span><span>9 months</span></div>
+            <div class="bar"><div class="bar-core">Build · Migrate · Validate · Export</div></div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-label"><span>Risk buffer</span><span>2 months</span></div>
+            <div class="bar"><div class="bar-buffer" style="flex:1; width:100%;">Complex assets · Regression · Cutover</div></div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-label"><span>Total program</span><span>11 months</span></div>
+            <div class="bar">
+              <div class="bar-core">9 mo</div>
+              <div class="bar-buffer">+2 mo</div>
+            </div>
+          </div>
+          <div class="total">
+            11 Months
+            <small>9 months execution + 2 months buffer</small>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <span>Pilot scope: 14 XML files · 23 mappings · 202 canonical assets · Custom_Project IDMC export</span>
+      <span class="badge">Platform Ready for Enterprise Scale-Up</span>
+    </footer>
+  </div>
+</body>
+</html>
