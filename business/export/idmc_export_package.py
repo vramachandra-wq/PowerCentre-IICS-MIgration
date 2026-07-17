@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape
 
+from business.iics.iics_package_generator import _build_bin as _build_native_dtemplate_bin
 from business.iics.iics_success_benchmark import IICSSuccessBenchmark
 from business.parser.xml_parser import XMLParser
 from common.config.config import AppConfig
@@ -1688,53 +1689,27 @@ class IdmcExportPackageGenerator:
 
     def _template_payload(self, asset: dict[str, Any]) -> dict[str, Any]:
         mapping: MappingMetadata = asset["mapping"]
-        targets: list[TargetMetadata] = asset["targets"]
-        return {
-            "content": {
-                "$$IID": "stringIdentity:@3",
-                "$$class": 1,
-                "name": asset["name"],
-                "description": f"Packaged remediated PowerCenter XML {asset['source_xml']} for task/conversion execution.",
-                "sourceXml": asset["source_xml"],
-                "sourceXmlFileRecordId": "@4",
-                "nativeCdiMapping": False,
-                "executionStrategy": self.execution_strategy,
-                "supportedExecutionPaths": [
-                    "Run as PowerCenter XML task payload",
-                    "Convert remediated PowerCenter XML to cloud-native CDI objects",
-                    "Deploy remediated PowerCenter XML through IICS APIs",
-                ],
-                "conversionNote": (
-                    "Modified PowerCenter XML cannot be uploaded directly as a native CDI mapping. "
-                    "This package preserves the remediated XML and extracted metadata for supported task, conversion, or API workflows."
-                ),
-                "repository": asset["repository"],
-                "folder": asset["folder"],
-                "parameters": [
-                    {
-                        "$$class": 10,
-                        "input": "true",
-                        "output": "false",
-                        "name": "DBConnection_OLAP",
-                        "anonymousType": {"$$class": 12, "typeSystem": "Oracle", "connectionType": "Oracle"},
-                    }
-                ],
-                "sources": [to_plain_dict(source) for source in asset["sources"]],
-                "targets": [to_plain_dict(target) for target in targets],
-                "transformations": self._functional_transformations(asset),
-                "connectors": [to_plain_dict(connector) for connector in mapping.connectors],
-                "instances": [to_plain_dict(instance) for instance in mapping.instances],
-                "sqlOverrides": [to_plain_dict(sql_override) for sql_override in mapping.sql_overrides],
-                "functionalCoverage": self._functional_coverage(asset),
-            },
-            "metadata": {
-                "$$classInfo": {
-                    "1": "com.informatica.metadata.template.common.Template",
-                    "10": "com.informatica.metadata.template.common.param.TmplParam",
-                    "12": "com.informatica.metadata.template.common.param.ConnectionParamType",
-                }
-            },
+        mapping_payload = {
+            "mapping_name": asset["name"],
+            "is_valid": mapping.is_valid,
+            "transformation_count": len(self._functional_transformations(asset)),
+            "source_count": mapping.source_count,
+            "target_count": mapping.target_count,
+            "transformations": self._functional_transformations(asset),
+            "connectors": [to_plain_dict(connector) for connector in mapping.connectors],
+            "instances": [to_plain_dict(instance) for instance in mapping.instances],
+            "sql_overrides": [to_plain_dict(sql_override) for sql_override in mapping.sql_overrides],
         }
+        folder_payload = {
+            "folder_name": asset["folder"],
+            "repository_name": asset["repository"].get("name", self.PROJECT_NAME),
+            "sources": [to_plain_dict(source) for source in asset["sources"]],
+            "targets": [to_plain_dict(target) for target in asset["targets"]],
+            "mappings": [mapping_payload],
+            "sessions": [to_plain_dict(asset["session"])] if asset.get("session") else [],
+            "workflows": [],
+        }
+        return json.loads(_build_native_dtemplate_bin(mapping_payload, folder_payload).decode("utf-8"))
 
     def _mtt_payload(self, asset: dict[str, Any], ids: _AssetIds) -> dict[str, Any]:
         mapping: MappingMetadata = asset["mapping"]

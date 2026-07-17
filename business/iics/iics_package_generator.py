@@ -499,14 +499,29 @@ def _build_bin(mapping: dict, folder_data: dict) -> bytes:
 # ── PowerCenter XML Task builders (matches IICS import validation model) ────
 
 def _resolve_remediated_xml(
-    remediated_dir: Path, json_stem: str, mapping_name: str,
+    remediated_dir: Path,
+    json_stem: str,
+    mapping_name: str,
+    fallback_xml_dir: Path | None = None,
 ) -> tuple[Path, str]:
-    for candidate in (f"{mapping_name}_remediated.xml", f"{json_stem}_remediated.xml"):
+    remediated_candidates = (f"{mapping_name}_remediated.xml", f"{json_stem}_remediated.xml")
+    for candidate in remediated_candidates:
         path = remediated_dir / candidate
         if path.exists():
             return path, candidate
+
+    if fallback_xml_dir is not None:
+        source_candidates = (f"{mapping_name}.XML", f"{mapping_name}.xml", f"{json_stem}.XML", f"{json_stem}.xml")
+        for candidate in source_candidates:
+            path = fallback_xml_dir / candidate
+            if path.exists():
+                return path, candidate
+
+    searched = [str(remediated_dir / candidate) for candidate in remediated_candidates]
+    if fallback_xml_dir is not None:
+        searched.extend(str(fallback_xml_dir / candidate) for candidate in source_candidates)
     raise FileNotFoundError(
-        f"No remediated XML for mapping '{mapping_name}' (source={json_stem}) in {remediated_dir}"
+        f"No remediated or source XML for mapping '{mapping_name}' (source={json_stem}). Searched: {searched}"
     )
 
 
@@ -1924,6 +1939,7 @@ class IICSPackageGenerator:
                         self.remediated_xml_dir,
                         json_file.stem,
                         mapping["mapping_name"],
+                        Path("input_xml"),
                     )
                     enriched_mapping, coverage = _enrich_mapping_from_remediated_xml(
                         mapping,
