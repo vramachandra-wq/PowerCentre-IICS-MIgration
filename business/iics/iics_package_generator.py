@@ -1797,7 +1797,7 @@ class IICSPackageGenerator:
     """Generate a complete IICS import package from all parsed PC XML files."""
 
     PROJECT_NAME     = "BIAINFADEV2_FLEX"
-    FOLDER_NAME      = "Custom_Project"
+    FOLDER_NAME      = "RPA_PC_Modernization"
     CONNECTION_NAME  = "DataWarehouse_PA"
     CONNECTION_PARAM = "DBConnection_OLAP"
     AGENT_GROUP_NAME = "PC Secure Agent Group"

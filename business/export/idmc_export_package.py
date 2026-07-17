@@ -52,7 +52,7 @@ class IdmcExportPackageGenerator:
     """Builds one combined IDMC-style export package from remediated XML files."""
 
     PROJECT_NAME = "BIAINFADEV2_FLEX"
-    FOLDER_NAME = "Custom_Project_Export"
+    FOLDER_NAME = "RPA_PC_Modernization"
     CONNECTION_NAME = "DataWarehouse_PA"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
     PARAMETER_FILE_DIRECTORY = "/JacobsAnalytics/IICS/Data_Integration/Param"
