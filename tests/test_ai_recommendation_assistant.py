@@ -120,6 +120,55 @@ class AIRecommendationAssistantTests(unittest.TestCase):
         self.assertEqual("High", rows[0]["Priority"])
         self.assertEqual("91", rows[0]["Confidence"])
 
+    def test_recommendation_report_stays_empty_when_post_remediation_has_no_unresolved_failures(self) -> None:
+        """Verify resolved remediation report prevents validation fallback recommendations."""
+
+        root = self._workspace_tmp()
+        output = root / "output"
+        reports = root / "automation"
+        self._write_artifacts(output)
+        self._write_csv(
+            output / "remediation_report.csv",
+            [
+                "Issue",
+                "Severity",
+                "Recommendation",
+                "Auto Fixed",
+                "Fix Applied",
+                "Before Value",
+                "After Value",
+                "Status",
+                "Asset",
+                "Manual Remediation Required",
+                "Approval Required",
+            ],
+            [
+                {
+                    "Issue": "mapplet_nesting",
+                    "Severity": "HIGH",
+                    "Recommendation": "Flatten nested mapplet logic before migration.",
+                    "Auto Fixed": "True",
+                    "Fix Applied": "flatten_mapplet_nesting",
+                    "Before Value": "MPL_CUSTOMER",
+                    "After Value": "MPL_CUSTOMER_EXP",
+                    "Status": "Auto Fixed",
+                    "Asset": "MPL_CUSTOMER",
+                    "Manual Remediation Required": "False",
+                    "Approval Required": "False",
+                }
+            ],
+        )
+        service = AIRecommendationService(
+            ReportRepository(output, reports),
+            AIRecommendationConfig(max_records=10),
+            client=FakeRecommendationClient(),
+        )
+
+        results, report = service.run()
+
+        self.assertEqual([], results)
+        self.assertEqual([], self._read_csv(report))
+
     def test_failure_handling_writes_fallback_recommendation(self) -> None:
         """Verify failure handling writes fallback recommendation behavior."""
 

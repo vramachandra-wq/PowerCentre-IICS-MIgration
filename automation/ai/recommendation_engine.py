@@ -46,8 +46,9 @@ class RecommendationEngine:
     def build_failures(self) -> list[FailureRecord]:
         """Build failures for the migration workflow."""
 
-        failures = self._from_remediation_report()
-        if not failures:
+        if self._remediation_report_exists():
+            failures = self._from_remediation_report()
+        else:
             failures = self._from_validation_report()
         # Append uploaded AI-only scenarios after existing unresolved validation findings.
         failures.extend(
@@ -58,6 +59,12 @@ class RecommendationEngine:
         if self.config.max_records > 0:
             return failures[: self.config.max_records]
         return failures
+
+    def _remediation_report_exists(self) -> bool:
+        """Return whether post-remediation findings are available."""
+
+        path = self.repository.output_folder / "remediation_report.csv"
+        return self.repository._preferred_existing_path(path).exists()
 
     def recommend(self) -> list[RecommendationResult]:
         """Recommend migration data for the migration workflow."""

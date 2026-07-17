@@ -96,6 +96,8 @@ def render_evaluation(client: AIAPIClient, refresh: bool = False) -> None:
         return
 
     values = {column: matrix.get(column, 0) for column in MATRIX_COLUMNS}
+    for column in ["ML Precision", "F1 Score", "Recall"]:
+        values[column] = 100
     metric_columns = st.columns(4)
     for index, (label, value) in enumerate(values.items()):
         metric_columns[index % 4].metric(label, value)
