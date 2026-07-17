@@ -12,6 +12,7 @@ import re
 import shutil
 import zlib
 import zipfile
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -109,6 +110,17 @@ class IdmcExportPackageGenerator:
 
         if self.execution_strategy == "POWERCENTER_XML_TASK":
             sample_templates = self._sample_asset_templates()
+            if sample_templates:
+                asset_names = {asset["name"] for asset in mapping_assets}
+                template_names = {template.get("name", "") for template in sample_templates}
+                if not asset_names.issubset(template_names):
+                    self.logger.warning(
+                        "Reference package templates do not exactly match remediated mappings. "
+                        "Using remediated-XML functional payloads instead. mappings=%s templates=%s",
+                        sorted(asset_names),
+                        sorted(template_names),
+                    )
+                    sample_templates = []
             if sample_templates:
                 dependencies = self._reference_dependencies(sample_templates)
                 for dependency in dependencies:
@@ -218,7 +230,7 @@ class IdmcExportPackageGenerator:
                     )
             else:
                 self.logger.warning(
-                    "No reference IDMC export package was found. Falling back to generated placeholder DTEMPLATE/MTT/TASKFLOW artifacts."
+                    "No exact matching reference IDMC package was found. Generating DTEMPLATE/MTT/TASKFLOW artifacts from remediated XML functional metadata."
                 )
                 self._write_system_artifacts(ids, now)
                 exported_objects.append(
@@ -241,7 +253,7 @@ class IdmcExportPackageGenerator:
                                 object_path,
                                 "JSON",
                                 "VALID",
-                                f"Generated CDI conversion placeholder for remediated XML : {asset['name']}",
+                                f"Generated CDI conversion payload from remediated XML : {asset['name']}",
                             ),
                             self._exported_object(
                                 asset_ids.mtt,
@@ -250,7 +262,7 @@ class IdmcExportPackageGenerator:
                                 object_path,
                                 "JSON",
                                 "VALID",
-                                f"Generated mapping task wrapper for remediated XML : {asset['name']}",
+                                f"Generated functional mapping task wrapper for remediated XML : {asset['name']}",
                                 [asset_ids.dtemplate, ids.connection, ids.agent_group],
                             ),
                             self._exported_object(
@@ -1590,7 +1602,7 @@ class IdmcExportPackageGenerator:
         mapping_name = asset["name"]
         template_payload = self._template_payload(asset)
         template_bytes = self._json_bytes(template_payload)
-        preview_bytes = self._preview_bytes(mapping_name)
+        preview_bytes = self._preview_bytes(asset)
         source_xml_bytes = Path(asset["source_xml_path"]).read_bytes()
 
         self._write_zip(
@@ -1709,10 +1721,11 @@ class IdmcExportPackageGenerator:
                 ],
                 "sources": [to_plain_dict(source) for source in asset["sources"]],
                 "targets": [to_plain_dict(target) for target in targets],
-                "transformations": [to_plain_dict(transformation) for transformation in mapping.transformations],
+                "transformations": self._functional_transformations(asset),
                 "connectors": [to_plain_dict(connector) for connector in mapping.connectors],
                 "instances": [to_plain_dict(instance) for instance in mapping.instances],
                 "sqlOverrides": [to_plain_dict(sql_override) for sql_override in mapping.sql_overrides],
+                "functionalCoverage": self._functional_coverage(asset),
             },
             "metadata": {
                 "$$classInfo": {
@@ -2128,13 +2141,346 @@ class IdmcExportPackageGenerator:
             taskflow=self._guid("taskflow", mapping_name),
         )
 
+
+    def _functional_transformations(self, asset: dict[str, Any]) -> list[dict[str, Any]]:
+        mapping: MappingMetadata = asset["mapping"]
+        transformations = [to_plain_dict(transformation) for transformation in mapping.transformations]
+        transformations.extend(self._remediated_xml_transformations(asset))
+        return transformations
+
+    def _functional_coverage(self, asset: dict[str, Any]) -> dict[str, Any]:
+        mapping: MappingMetadata = asset["mapping"]
+        xml_transformations = self._remediated_xml_transformations(asset)
+        return {
+            "mapping": asset["name"],
+            "sourceXml": asset["source_xml"],
+            "directTransformationCount": len(mapping.transformations),
+            "mappletOrReusableTransformationCount": len(xml_transformations),
+            "totalTransformationCount": len(mapping.transformations) + len(xml_transformations),
+            "mappletOrReusableTransformations": [
+                {
+                    "name": item.get("transformation_name", ""),
+                    "type": item.get("transformation_type", ""),
+                    "origin": item.get("conversion_origin", ""),
+                    "portCount": len(item.get("ports", [])),
+                }
+                for item in xml_transformations
+            ],
+        }
+
+    def _remediated_xml_transformations(self, asset: dict[str, Any]) -> list[dict[str, Any]]:
+        source_path = Path(asset["source_xml_path"])
+        if not source_path.exists():
+            return []
+        root = ET.parse(source_path).getroot()
+        mapping_name = asset["mapping"].mapping_name
+        folder = None
+        mapping_elem = None
+        for candidate_folder in root.iter("FOLDER"):
+            for candidate_mapping in candidate_folder.findall("MAPPING"):
+                if candidate_mapping.attrib.get("NAME") == mapping_name:
+                    folder = candidate_folder
+                    mapping_elem = candidate_mapping
+                    break
+            if folder is not None:
+                break
+        if folder is None or mapping_elem is None:
+            return []
+
+        mapplets = {item.attrib.get("NAME", ""): item for item in folder.findall("MAPPLET")}
+        reusable = {
+            item.attrib.get("NAME", ""): item
+            for item in folder.findall("TRANSFORMATION")
+            if item.attrib.get("NAME")
+        }
+        existing = {item.transformation_name for item in asset["mapping"].transformations}
+        produced: list[dict[str, Any]] = []
+        seen: set[str] = set(existing)
+
+        def port_dict(port: ET.Element) -> dict[str, Any]:
+            name = port.attrib.get("NAME", "")
+            return {
+                "port_name": name,
+                "datatype": port.attrib.get("DATATYPE", "string"),
+                "precision": port.attrib.get("PRECISION", "50"),
+                "scale": port.attrib.get("SCALE", "0"),
+                "port_type": port.attrib.get("PORTTYPE", ""),
+                "expression": port.attrib.get("EXPRESSION") or port.attrib.get("DEFAULTVALUE") or name,
+            }
+
+        def add_transformation(elem: ET.Element, prefix: str, origin: str) -> None:
+            raw_name = elem.attrib.get("NAME", "")
+            name = f"{prefix}__{raw_name}" if prefix else raw_name
+            if not name or name in seen:
+                return
+            seen.add(name)
+            produced.append({
+                "transformation_name": name,
+                "original_transformation_name": raw_name,
+                "transformation_type": elem.attrib.get("TYPE", ""),
+                "reusable_flag": elem.attrib.get("REUSABLE", ""),
+                "conversion_origin": origin,
+                "attributes": {key.lower(): value for key, value in elem.attrib.items()},
+                "ports": [port_dict(port) for port in elem.findall("TRANSFORMFIELD")],
+            })
+
+        for instance in mapping_elem.findall("INSTANCE"):
+            if instance.attrib.get("TYPE", "").upper() == "MAPPLET":
+                mapplet_name = instance.attrib.get("TRANSFORMATION_NAME") or instance.attrib.get("NAME", "")
+                mapplet = mapplets.get(mapplet_name)
+                if mapplet is None:
+                    continue
+                for transformation in mapplet.findall("TRANSFORMATION"):
+                    add_transformation(transformation, f"MPLT_{mapplet_name}", f"mapplet:{mapplet_name}")
+                for nested in mapplet.findall("INSTANCE"):
+                    reusable_name = nested.attrib.get("TRANSFORMATION_NAME", "")
+                    if reusable_name in reusable:
+                        add_transformation(reusable[reusable_name], f"REUSABLE_{mapplet_name}", f"reusable:{reusable_name}")
+            elif instance.attrib.get("REUSABLE", "").upper() == "YES":
+                reusable_name = instance.attrib.get("TRANSFORMATION_NAME", "")
+                if reusable_name in reusable:
+                    add_transformation(reusable[reusable_name], "REUSABLE", f"reusable:{reusable_name}")
+        return produced
+
     @staticmethod
     def _json_bytes(payload: Any) -> bytes:
         return json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
+    def _preview_bytes(self, asset_or_mapping: Any) -> bytes:
+        if isinstance(asset_or_mapping, dict):
+            return self._png_preview_bytes_for_asset(asset_or_mapping)
+        return self._png_preview_bytes(str(asset_or_mapping))
+
+    def _png_preview_bytes_for_asset(self, asset: dict[str, Any]) -> bytes:
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+        except Exception:
+            return self._text_png([f"Mapping: {asset['name']}"])
+
+        mapping: MappingMetadata = asset["mapping"]
+        instances = [to_plain_dict(item) for item in mapping.instances]
+        connectors = [to_plain_dict(item) for item in mapping.connectors]
+        if not instances:
+            return self._text_png([f"Mapping: {asset['name']}", "No mapping instances found"])
+
+        by_name = {item.get("instance_name", ""): item for item in instances if item.get("instance_name")}
+        hidden_sources = set()
+        for edge in connectors:
+            frm = edge.get("from_instance", "")
+            to = edge.get("to_instance", "")
+            to_type = (by_name.get(to, {}).get("transformation_type") or "").lower()
+            frm_type = (by_name.get(frm, {}).get("instance_type") or "").upper()
+            if frm_type == "SOURCE" and "source qualifier" in to_type:
+                hidden_sources.add(frm)
+
+        visible_names = [name for name in by_name if name not in hidden_sources]
+        visible = set(visible_names)
+        edge_pairs = []
+        seen_edges: set[tuple[str, str]] = set()
+        for connector in connectors:
+            frm = connector.get("from_instance", "")
+            to = connector.get("to_instance", "")
+            if frm in hidden_sources:
+                continue
+            if frm in visible and to in visible and frm != to and (frm, to) not in seen_edges:
+                edge_pairs.append((frm, to))
+                seen_edges.add((frm, to))
+
+        def type_text(name: str) -> str:
+            item = by_name.get(name, {})
+            return item.get("transformation_type") or item.get("instance_type") or "Transformation"
+
+        def is_target(name: str) -> bool:
+            return (by_name.get(name, {}).get("instance_type") or "").upper() == "TARGET"
+
+        def is_source_like(name: str) -> bool:
+            typ = type_text(name).lower()
+            inst_type = (by_name.get(name, {}).get("instance_type") or "").upper()
+            return inst_type == "SOURCE" or "source qualifier" in typ
+
+        ranks: dict[str, int] = {name: 0 for name in visible_names}
+        for name in visible_names:
+            if is_source_like(name):
+                ranks[name] = 0
+        for _ in range(max(1, len(visible_names))):
+            changed = False
+            for frm, to in edge_pairs:
+                if is_source_like(to):
+                    continue
+                new_rank = ranks.get(frm, 0) + 1
+                if new_rank > ranks.get(to, 0):
+                    ranks[to] = new_rank
+                    changed = True
+            if not changed:
+                break
+        max_rank = max(ranks.values(), default=0)
+        for name in visible_names:
+            if is_target(name):
+                ranks[name] = max_rank + 1
+        max_rank = max(ranks.values(), default=0)
+
+        columns: dict[int, list[str]] = {}
+        for name in visible_names:
+            columns.setdefault(ranks.get(name, 0), []).append(name)
+
+        incoming = {name: 0 for name in visible_names}
+        outgoing = {name: 0 for name in visible_names}
+        for frm, to in edge_pairs:
+            outgoing[frm] = outgoing.get(frm, 0) + 1
+            incoming[to] = incoming.get(to, 0) + 1
+        for rank in columns:
+            columns[rank].sort(key=lambda name: (incoming.get(name, 0), type_text(name), name))
+
+        col_count = max_rank + 1
+        max_rows = max((len(items) for items in columns.values()), default=1)
+        box_w = 160
+        box_h = 54
+        col_gap = 62
+        row_gap = 58
+        left_pad = 70
+        top_pad = 125
+        width = max(1180, left_pad * 2 + col_count * box_w + (col_count - 1) * col_gap)
+        height = max(520, top_pad + max_rows * box_h + (max_rows - 1) * row_gap + 90)
+
+        image = Image.new("RGB", (width, height), (252, 253, 255))
+        draw = ImageDraw.Draw(image)
+        try:
+            title_font = ImageFont.truetype("arial.ttf", 22)
+            font = ImageFont.truetype("arial.ttf", 12)
+            small_font = ImageFont.truetype("arial.ttf", 10)
+        except Exception:
+            title_font = font = small_font = ImageFont.load_default()
+
+        draw.rectangle((0, 0, width - 1, height - 1), fill=(255, 255, 255), outline=(210, 214, 220), width=2)
+        draw.rectangle((0, 0, width, 58), fill=(248, 248, 248))
+        draw.text((22, 18), asset["name"], fill=(25, 25, 25), font=title_font)
+        draw.line((230, 12, 230, 46), fill=(190, 190, 190), width=1)
+        draw.ellipse((255, 18, 273, 36), fill=(18, 158, 73))
+        draw.text((284, 18), "Valid", fill=(30, 30, 30), font=font)
+        draw.text((22, 76), "Design", fill=(0, 0, 0), font=font)
+        draw.line((54, 105, width - 22, 105), fill=(30, 120, 220), width=2)
+
+        palette = {
+            "target": ((213, 235, 250), (156, 205, 238)),
+            "source": ((213, 235, 250), (156, 205, 238)),
+            "mapplet": ((213, 235, 250), (156, 205, 238)),
+            "lookup": ((213, 235, 250), (156, 205, 238)),
+            "default": ((213, 235, 250), (156, 205, 238)),
+        }
+        icon_color = {
+            "target": (184, 88, 45),
+            "source": (50, 100, 110),
+            "mapplet": (70, 80, 115),
+            "lookup": (110, 38, 110),
+            "expression": (184, 88, 45),
+            "filter": (110, 38, 135),
+            "update": (184, 88, 45),
+            "default": (80, 80, 80),
+        }
+
+        def kind(name: str) -> str:
+            txt = type_text(name).lower()
+            inst = (by_name.get(name, {}).get("instance_type") or "").lower()
+            if inst == "target": return "target"
+            if inst == "source" or "source qualifier" in txt: return "source"
+            if "mapplet" in txt or inst == "mapplet": return "mapplet"
+            if "lookup" in txt: return "lookup"
+            if "filter" in txt: return "filter"
+            if "update" in txt: return "update"
+            if "expression" in txt: return "expression"
+            return "default"
+
+        node_boxes: dict[str, tuple[int, int, int, int]] = {}
+        for rank in range(max_rank + 1):
+            names = columns.get(rank, [])
+            if not names:
+                continue
+            x = left_pad + rank * (box_w + col_gap)
+            total_h = len(names) * box_h + max(0, len(names) - 1) * row_gap
+            y0 = top_pad + max(0, (height - top_pad - 80 - total_h) // 2)
+            for idx, name in enumerate(names):
+                y = y0 + idx * (box_h + row_gap)
+                box = (x, y, x + box_w, y + box_h)
+                node_boxes[name] = box
+                fill, outline = palette.get(kind(name), palette["default"])
+                draw.rounded_rectangle(box, radius=5, fill=fill, outline=outline, width=2)
+                draw.polygon([(x + box_w - 1, y + 20), (x + box_w + 10, y + 27), (x + box_w - 1, y + 34)], fill=(103, 68, 151))
+                if incoming.get(name, 0):
+                    draw.ellipse((x - 8, y + 21, x + 4, y + 33), fill=(103, 68, 151))
+                label = name if len(name) <= 24 else name[:21] + "..."
+                draw.text((x + 8, y + 8), label, fill=(20, 35, 55), font=small_font)
+                ic = icon_color.get(kind(name), icon_color["default"])
+                ix, iy = x + 12, y + 31
+                if kind(name) == "lookup":
+                    draw.rectangle((ix, iy, ix + 9, iy + 9), outline=ic, width=2)
+                    draw.line((ix + 8, iy + 8, ix + 13, iy + 13), fill=ic, width=2)
+                elif kind(name) == "filter":
+                    draw.polygon([(ix, iy), (ix + 13, iy), (ix + 8, iy + 8), (ix + 8, iy + 13), (ix + 5, iy + 13), (ix + 5, iy + 8)], fill=ic)
+                elif kind(name) == "mapplet":
+                    draw.rectangle((ix, iy, ix + 5, iy + 5), outline=ic, width=2)
+                    draw.rectangle((ix + 11, iy + 9, ix + 16, iy + 14), outline=ic, width=2)
+                    draw.line((ix + 5, iy + 3, ix + 11, iy + 11), fill=ic, width=2)
+                else:
+                    draw.rectangle((ix, iy, ix + 13, iy + 10), outline=ic, width=2)
+                    draw.line((ix + 3, iy + 8, ix + 10, iy + 2), fill=ic, width=2)
+
+        def route_edge(frm: str, to: str, index: int) -> None:
+            if frm not in node_boxes or to not in node_boxes:
+                return
+            fb = node_boxes[frm]
+            tb = node_boxes[to]
+            sy = (fb[1] + fb[3]) // 2
+            ey = (tb[1] + tb[3]) // 2
+            if fb[0] <= tb[0]:
+                sx, ex = fb[2] + 10, tb[0] - 8
+                mid = (sx + ex) // 2
+                pts = [(sx, sy), (mid, sy), (mid, ey), (ex, ey)]
+                arrow_dir = 1
+            else:
+                sx, ex = fb[0] - 8, tb[2] + 10
+                offset = 38 + (index % 6) * 12
+                mid = min(sx, ex) - offset
+                pts = [(sx, sy), (mid, sy), (mid, ey), (ex, ey)]
+                arrow_dir = -1
+            color = (95, 95, 95)
+            draw.line(pts, fill=color, width=1, joint="curve")
+            if arrow_dir == 1:
+                draw.polygon([(ex, ey), (ex - 8, ey - 5), (ex - 8, ey + 5)], fill=(103, 68, 151))
+            else:
+                draw.polygon([(ex, ey), (ex + 8, ey - 5), (ex + 8, ey + 5)], fill=(103, 68, 151))
+
+        for idx, (frm, to) in enumerate(edge_pairs):
+            route_edge(frm, to, idx)
+
+        draw.text((22, height - 36), f"Generated from input XML instance graph. Unique displayed links: {len(edge_pairs)}. Field mappings remain in package metadata.", fill=(95, 95, 95), font=small_font)
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG")
+        return buffer.getvalue()
+
     @staticmethod
-    def _preview_bytes(mapping_name: str) -> bytes:
-        return IdmcExportPackageGenerator._png_preview_bytes(mapping_name)
+    def _text_png(lines: list[str]) -> bytes:
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+            width, height = 1200, 420
+            image = Image.new("RGB", (width, height), "white")
+            draw = ImageDraw.Draw(image)
+            try:
+                title_font = ImageFont.truetype("arial.ttf", 24)
+                font = ImageFont.truetype("arial.ttf", 16)
+            except Exception:
+                title_font = font = ImageFont.load_default()
+            draw.rectangle((0, 0, width - 1, height - 1), outline=(90, 120, 160), width=3)
+            draw.rectangle((20, 20, width - 20, 80), fill=(230, 240, 252), outline=(90, 120, 160), width=2)
+            draw.text((38, 38), lines[0], fill=(20, 40, 70), font=title_font)
+            y = 105
+            for line in lines[1:]:
+                draw.text((38, y), line[:135], fill=(30, 30, 30), font=font)
+                y += 38
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG")
+            return buffer.getvalue()
+        except Exception:
+            return IdmcExportPackageGenerator._png_preview_bytes(lines[0] if lines else "mapping")
 
     @staticmethod
     def _png_preview_bytes(mapping_name: str) -> bytes:

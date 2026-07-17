@@ -18,6 +18,8 @@ import os
 import time
 import uuid
 import zipfile
+import xml.etree.ElementTree as ET
+from copy import deepcopy
 from dataclasses import dataclass, field as dc_field
 from pathlib import Path
 from typing import Any
@@ -507,6 +509,181 @@ def _resolve_remediated_xml(
         f"No remediated XML for mapping '{mapping_name}' (source={json_stem}) in {remediated_dir}"
     )
 
+
+
+def _xml_attrs(elem: ET.Element) -> dict[str, str]:
+    return {str(k).lower(): str(v) for k, v in elem.attrib.items()}
+
+
+def _pc_port_from_field(field: ET.Element) -> dict[str, Any]:
+    attrs = field.attrib
+    port_name = attrs.get("NAME") or attrs.get("FIELDNAME") or ""
+    return {
+        "port_name": port_name,
+        "port_type": attrs.get("PORTTYPE", ""),
+        "datatype": attrs.get("DATATYPE", attrs.get("TYPE", "string")),
+        "precision": attrs.get("PRECISION", "50"),
+        "scale": attrs.get("SCALE", "0"),
+        "expression": attrs.get("EXPRESSION") or attrs.get("DEFAULTVALUE") or port_name,
+        "attributes": _xml_attrs(field),
+    }
+
+
+def _pc_transformation_from_xml(
+    elem: ET.Element,
+    *,
+    name_prefix: str = "",
+    origin: str,
+) -> dict[str, Any]:
+    raw_name = elem.attrib.get("NAME", "")
+    tx_name = f"{name_prefix}__{raw_name}" if name_prefix else raw_name
+    return {
+        "transformation_name": tx_name,
+        "original_transformation_name": raw_name,
+        "transformation_type": elem.attrib.get("TYPE", "Expression"),
+        "reusable_flag": elem.attrib.get("REUSABLE", ""),
+        "conversion_origin": origin,
+        "attributes": _xml_attrs(elem),
+        "ports": [_pc_port_from_field(port) for port in elem.findall("TRANSFORMFIELD")],
+    }
+
+
+def _find_folder_for_mapping(root: ET.Element, mapping_name: str) -> ET.Element | None:
+    for folder in root.iter("FOLDER"):
+        for mapping in folder.findall("MAPPING"):
+            if mapping.attrib.get("NAME") == mapping_name:
+                return folder
+    return None
+
+
+def _enrich_mapping_from_remediated_xml(
+    mapping: dict,
+    folder_data: dict,
+    remediated_path: Path,
+) -> tuple[dict, dict[str, Any]]:
+    """Flatten remediated XML mapplet/reusable logic into the generated IICS template."""
+
+    mapping_name = mapping["mapping_name"]
+    enriched = deepcopy(mapping)
+    root = ET.parse(remediated_path).getroot()
+    folder = _find_folder_for_mapping(root, mapping_name)
+    if folder is None:
+        raise ValueError(f"Mapping {mapping_name!r} not found in remediated XML {remediated_path}")
+
+    mapplet_defs = {m.attrib.get("NAME", ""): m for m in folder.findall("MAPPLET")}
+    folder_reusable = {
+        tx.attrib.get("NAME", ""): tx
+        for tx in folder.findall("TRANSFORMATION")
+        if tx.attrib.get("NAME")
+    }
+    mapping_elem = next(
+        m for m in folder.findall("MAPPING")
+        if m.attrib.get("NAME") == mapping_name
+    )
+
+    existing_names = {
+        tx.get("transformation_name", "")
+        for tx in enriched.get("transformations", [])
+    }
+    generated_names = set(existing_names)
+    flattened: list[dict[str, Any]] = []
+    documented_equivalents: list[dict[str, str]] = []
+    unsupported_or_review: list[dict[str, str]] = []
+
+    def append_if_new(tx: dict[str, Any]) -> None:
+        name = tx.get("transformation_name", "")
+        if name and name not in generated_names:
+            flattened.append(tx)
+            generated_names.add(name)
+
+    mapplet_instances = [
+        inst for inst in mapping_elem.findall("INSTANCE")
+        if inst.attrib.get("TYPE", "").upper() == "MAPPLET"
+    ]
+    for inst in mapplet_instances:
+        mapplet_name = inst.attrib.get("TRANSFORMATION_NAME") or inst.attrib.get("NAME", "")
+        mapplet = mapplet_defs.get(mapplet_name)
+        if mapplet is None:
+            unsupported_or_review.append({
+                "object": mapplet_name,
+                "type": "Mapplet",
+                "reason": "Mapplet instance has no matching remediated XML definition.",
+            })
+            continue
+
+        documented_equivalents.append({
+            "object": mapplet_name,
+            "type": "Mapplet",
+            "equivalent": "Flattened into parent mapping template as explicit transformation components.",
+        })
+        prefix = f"MPLT_{mapplet_name}"
+        for tx in mapplet.findall("TRANSFORMATION"):
+            append_if_new(_pc_transformation_from_xml(tx, name_prefix=prefix, origin=f"mapplet:{mapplet_name}"))
+
+        for nested_inst in mapplet.findall("INSTANCE"):
+            reusable_name = nested_inst.attrib.get("TRANSFORMATION_NAME", "")
+            reusable = folder_reusable.get(reusable_name)
+            if reusable is not None:
+                append_if_new(_pc_transformation_from_xml(
+                    reusable,
+                    name_prefix=f"REUSABLE_{mapplet_name}",
+                    origin=f"reusable:{reusable_name}",
+                ))
+
+    for inst in mapping_elem.findall("INSTANCE"):
+        reusable_name = inst.attrib.get("TRANSFORMATION_NAME", "")
+        if inst.attrib.get("REUSABLE", "").upper() == "YES" and reusable_name in folder_reusable:
+            append_if_new(_pc_transformation_from_xml(
+                folder_reusable[reusable_name],
+                name_prefix="REUSABLE",
+                origin=f"reusable:{reusable_name}",
+            ))
+
+    enriched.setdefault("transformations", [])
+    enriched["transformations"].extend(flattened)
+    enriched["transformation_count"] = len(enriched["transformations"])
+    enriched["functional_enrichment"] = {
+        "source": str(remediated_path),
+        "flattened_component_count": len(flattened),
+        "flattened_components": [
+            {
+                "name": tx.get("transformation_name", ""),
+                "originalName": tx.get("original_transformation_name", ""),
+                "type": tx.get("transformation_type", ""),
+                "origin": tx.get("conversion_origin", ""),
+                "portCount": len(tx.get("ports", [])),
+            }
+            for tx in flattened
+        ],
+    }
+
+    coverage = {
+        "mapping": mapping_name,
+        "remediatedXml": remediated_path.name,
+        "status": "FUNCTIONAL_COVERAGE_ENRICHED",
+        "sourceCounts": {
+            "mappings": len(folder.findall("MAPPING")),
+            "mapplets": len(mapplet_defs),
+            "folderReusableTransformations": len(folder_reusable),
+            "mappingTransformations": len(mapping_elem.findall("TRANSFORMATION")),
+            "mappingInstances": len(mapping_elem.findall("INSTANCE")),
+            "mappingConnectors": len(mapping_elem.findall("CONNECTOR")),
+        },
+        "generatedCounts": {
+            "templateTransformations": len(enriched.get("transformations", [])),
+            "flattenedMappletOrReusableTransformations": len(flattened),
+            "parsedConnectors": len(enriched.get("connectors", [])),
+            "parsedInstances": len(enriched.get("instances", [])),
+        },
+        "documentedEquivalents": documented_equivalents,
+        "unsupportedOrNeedsReview": unsupported_or_review,
+        "notes": [
+            "Mapplet and reusable transformation definitions are read from remediated XML during ZIP generation.",
+            "Mapplet internals are flattened into the parent DTEMPLATE to avoid silently missing reusable PowerCenter logic.",
+            "Original remediated XML is included in the ZIP as source-of-truth evidence for functional validation.",
+        ],
+    }
+    return enriched, coverage
 
 def _build_pcxml_template_bin(
     mapping: dict, folder_data: dict, parsed: dict, xml_filename: str,
@@ -1647,6 +1824,7 @@ class IICSPackageGenerator:
         }
         mapping_objects: list[dict] = []
         zip_contents: dict[str, bytes] = {}
+        coverage_manifests: list[dict[str, Any]] = []
         mapping_name_counts: dict[str, int] = {}
 
         def _unique_mapping_name(base: str) -> str:
@@ -1742,10 +1920,28 @@ class IICSPackageGenerator:
                     )
 
                     conn_guid = connections[self.CONNECTION_NAME]
+                    remediated_path, remediated_name = _resolve_remediated_xml(
+                        self.remediated_xml_dir,
+                        json_file.stem,
+                        mapping["mapping_name"],
+                    )
+                    enriched_mapping, coverage = _enrich_mapping_from_remediated_xml(
+                        mapping,
+                        folder_data,
+                        remediated_path,
+                    )
+                    enriched_mapping["mapping_name"] = m_name
+                    coverage["generatedMappingName"] = m_name
+                    coverage_manifests.append(coverage)
+                    evidence_prefix = f"PCXML/{self.FOLDER_NAME}"
+                    zip_contents[f"{evidence_prefix}/{remediated_name}"] = remediated_path.read_bytes()
+                    zip_contents[
+                        f"{evidence_prefix}/{m_name}_functional_coverage.json"
+                    ] = json.dumps(coverage, indent=2).encode("utf-8")
 
-                    # DTEMPLATE (native CDI mapping)
+                    # DTEMPLATE (native CDI mapping enriched from remediated XML)
                     dt_handle = _repo_handle()
-                    dtemplate_zip = _build_dtemplate_zip(mapping, folder_data, dtemplate_guid)
+                    dtemplate_zip = _build_dtemplate_zip(enriched_mapping, folder_data, dtemplate_guid)
                     dt_path = f"Explore/{self.PROJECT_NAME}/{self.FOLDER_NAME}/{m_name}.DTEMPLATE.zip"
                     zip_contents[dt_path] = dtemplate_zip
                     dtemplate_obj = {
@@ -1815,6 +2011,19 @@ class IICSPackageGenerator:
                         ),
                     })
 
+        package_coverage = {
+            "status": "FUNCTIONAL_COVERAGE_ENRICHED",
+            "coverageManifests": coverage_manifests,
+            "totalMappings": len(coverage_manifests),
+            "totalFlattenedComponents": sum(
+                item.get("generatedCounts", {}).get("flattenedMappletOrReusableTransformations", 0)
+                for item in coverage_manifests
+            ),
+        }
+        zip_contents[f"PCXML/{self.FOLDER_NAME}/functional_coverage_manifest.json"] = json.dumps(
+            package_coverage, indent=2
+        ).encode("utf-8")
+
         # Manifest order follows the single-taskflow client export shape.
         mtt_objects = [obj for obj in mapping_objects if obj["objectType"] == "MTT"]
         taskflow_objects = [obj for obj in mapping_objects if obj["objectType"] == "TASKFLOW"]
@@ -1871,6 +2080,7 @@ class IICSPackageGenerator:
             "output_zip": str(output_zip_path),
             "output_zip_size_bytes": output_zip_path.stat().st_size,
             "checksum_validated": ok,
+            "functional_coverage": package_coverage,
             "iics_import_instructions": "Admin → Import → Upload ZIP → Select objects → Import",
         }
         (self.output_dir / "generation_summary.json").write_text(
