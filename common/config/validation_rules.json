@@ -324,13 +324,20 @@
       "category": "Transformation Rules",
       "severity": "HIGH",
       "detection_logic": {
-        "type": "metadata_pattern",
-        "tables": ["instances", "transformations"],
-        "fields": ["instance_type", "transformation_type", "transformation_name"],
-        "patterns": ["MAPPLET"],
-        "case_insensitive": true
+        "type": "mapplet_nesting",
+        "max_auto_fix_depth": 2,
+        "complexity_thresholds": {
+          "simple_depth": 1,
+          "medium_depth": 2,
+          "high_depth": 3
+        }
       },
-      "recommendation": "Flatten or recreate nested mapplet logic in IDMC with AI assistance."
+      "severity_by_complexity": {
+        "SIMPLE": "MEDIUM",
+        "MEDIUM": "MEDIUM",
+        "HIGH": "HIGH"
+      },
+      "recommendation": "Flatten simple and medium nested mapplet logic with rule-based remediation; send high complexity nesting to AI-assisted manual review."
     },
     {
       "rule_id": "VAL-029",

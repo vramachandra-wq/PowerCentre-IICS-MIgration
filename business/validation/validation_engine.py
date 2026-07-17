@@ -11,6 +11,7 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
+import xml.etree.ElementTree as ET
 from typing import Any, Iterable
 
 from business.validation.datatype_harmonization import DatatypeHarmonizationEngine
@@ -28,6 +29,11 @@ class ValidationIssue:
     recommendation: str
     category: str = ""
     source_file: str = ""
+    mapplet_depth: int = 0
+    mapplet_complexity: str = ""
+    auto_fix_applied: bool = False
+    manual_review_required: bool = False
+    ai_recommendation_required: bool = False
 
 
 class ValidationEngine:
@@ -45,6 +51,11 @@ class ValidationEngine:
         "Rule ID",
         "Asset",
         "Source File",
+        "Mapplet Depth",
+        "Mapplet Complexity",
+        "Auto Fix Applied",
+        "Manual Review Required",
+        "AI Recommendation Required",
     ]
 
     def __init__(
@@ -107,6 +118,11 @@ class ValidationEngine:
                         "Rule ID": issue.rule_id,
                         "Asset": issue.asset,
                         "Source File": issue.source_file,
+                        "Mapplet Depth": issue.mapplet_depth or "",
+                        "Mapplet Complexity": issue.mapplet_complexity,
+                        "Auto Fix Applied": str(issue.auto_fix_applied),
+                        "Manual Review Required": str(issue.manual_review_required),
+                        "AI Recommendation Required": str(issue.ai_recommendation_required),
                     }
                 )
 
@@ -137,6 +153,7 @@ class ValidationEngine:
             "snowflake_keyword_conflicts": self._snowflake_keyword_conflicts,
             "field_unavailable": self._field_unavailable,
             "oracle_to_oracle_char_padding": self._oracle_to_oracle_char_padding,
+            "mapplet_nesting": self._mapplet_nesting,
         }
         handler = handlers.get(detection_type)
         if handler is None:
@@ -426,6 +443,175 @@ class ValidationEngine:
                 )
             )
         return issues
+
+    def _mapplet_nesting(self, rule: dict[str, Any]) -> list[ValidationIssue]:
+        """Detect mapplet nesting depth from metadata tables and source XML."""
+
+        logic = rule.get("detection_logic", {})
+        auto_fix_depth = int(logic.get("max_auto_fix_depth", 2))
+        mapplet_children = self._mapplet_child_index()
+        issues: list[ValidationIssue] = []
+        seen: set[tuple[str, str, str]] = set()
+
+        for row in self.tables.get("instances", []):
+            if not self._is_mapplet_row(row):
+                continue
+            source_file = row.get("file_name", "")
+            mapping_name = row.get("mapping_name", "")
+            asset = row.get("instance_name") or row.get("transformation_name", "")
+            if not mapping_name or self._same_name(mapping_name, row.get("transformation_name", "")):
+                continue
+            depth, circular = self._mapplet_depth(row.get("transformation_name") or asset, mapplet_children, set())
+            complexity = self._mapplet_complexity(depth, logic)
+            manual = circular or depth > auto_fix_depth
+            ai_required = manual
+            key = (source_file, mapping_name, asset)
+            if key in seen:
+                continue
+            seen.add(key)
+            issue_text = f"Mapplet Nesting detected. Depth={depth}; Complexity={complexity}."
+            if circular:
+                issue_text += " Circular reference detected."
+            issues.append(
+                ValidationIssue(
+                    rule_id=rule["rule_id"],
+                    issue=issue_text,
+                    severity=rule.get("severity_by_complexity", {}).get(complexity, rule["severity"]),
+                    asset=asset or mapping_name,
+                    recommendation=rule["recommendation"],
+                    category=rule.get("category", ""),
+                    source_file=source_file,
+                    mapplet_depth=depth,
+                    mapplet_complexity=complexity,
+                    auto_fix_applied=False,
+                    manual_review_required=manual,
+                    ai_recommendation_required=ai_required,
+                )
+            )
+        return issues
+
+    def _mapplet_child_index(self) -> dict[str, set[str]]:
+        """Build mapplet parent-child relationships from available metadata."""
+
+        children: dict[str, set[str]] = defaultdict(set)
+        for row in self.tables.get("instances", []):
+            if not self._is_mapplet_row(row):
+                continue
+            parent = row.get("mapping_name", "")
+            child = row.get("transformation_name") or row.get("instance_name", "")
+            if parent and child and not self._same_name(parent, child):
+                children[parent].add(child)
+
+        for xml_path in self._source_xml_paths():
+            try:
+                root = ET.parse(xml_path).getroot()
+            except ET.ParseError:
+                continue
+            for mapplet in root.findall(".//MAPPLET"):
+                parent = mapplet.get("NAME", "")
+                if not parent:
+                    continue
+                for instance in mapplet.findall("INSTANCE"):
+                    if self._is_mapplet_xml_instance(instance.attrib):
+                        child = instance.get("TRANSFORMATION_NAME") or instance.get("NAME", "")
+                        if child and not self._same_name(parent, child):
+                            children[parent].add(child)
+        return children
+
+    def _mapplet_depth(
+        self,
+        mapplet_name: str,
+        children: dict[str, set[str]],
+        visiting: set[str],
+    ) -> tuple[int, bool]:
+        """Calculate maximum nested mapplet layer depth."""
+
+        normalized = self._normalize_name(mapplet_name)
+        if normalized in visiting:
+            return 3, True
+        child_names = children.get(mapplet_name, set())
+        if not child_names:
+            normalized_children = {
+                child
+                for parent, child_set in children.items()
+                if self._same_name(parent, mapplet_name)
+                for child in child_set
+            }
+            child_names = normalized_children
+        if not child_names:
+            return 1, False
+        max_child_depth = 0
+        circular = False
+        next_visiting = {*visiting, normalized}
+        for child in child_names:
+            child_depth, child_circular = self._mapplet_depth(child, children, next_visiting)
+            max_child_depth = max(max_child_depth, child_depth)
+            circular = circular or child_circular
+        return max_child_depth + 1, circular
+
+    @staticmethod
+    def _mapplet_complexity(depth: int, logic: dict[str, Any]) -> str:
+        """Classify mapplet depth using configured thresholds."""
+
+        thresholds = logic.get("complexity_thresholds", {})
+        simple = int(thresholds.get("simple_depth", 1))
+        medium = int(thresholds.get("medium_depth", 2))
+        if depth <= simple:
+            return "SIMPLE"
+        if depth <= medium:
+            return "MEDIUM"
+        return "HIGH"
+
+    def _source_xml_paths(self) -> list[Path]:
+        """Return source XML paths referenced by metadata, if available."""
+
+        names = {
+            row.get("file_name", "")
+            for rows in self.tables.values()
+            for row in rows
+            if row.get("file_name", "")
+        }
+        candidates: list[Path] = []
+        for name in names:
+            path = Path(name)
+            if path.is_absolute() and path.exists():
+                candidates.append(path)
+                continue
+            for base in [self.project_root / "input_xml", self.output_folder, self.project_root]:
+                candidate = base / name
+                if candidate.exists():
+                    candidates.append(candidate)
+                    break
+        return sorted(set(candidates))
+
+    @staticmethod
+    def _is_mapplet_row(row: dict[str, str]) -> bool:
+        """Return true when a metadata row references a mapplet."""
+
+        return "MAPPLET" in " ".join(
+            [
+                row.get("instance_type", ""),
+                row.get("transformation_type", ""),
+                row.get("type", ""),
+            ]
+        ).upper()
+
+    @staticmethod
+    def _is_mapplet_xml_instance(attributes: dict[str, str]) -> bool:
+        """Return true when an XML INSTANCE references a mapplet."""
+
+        return "MAPPLET" in " ".join(
+            [
+                attributes.get("TYPE", ""),
+                attributes.get("TRANSFORMATION_TYPE", ""),
+            ]
+        ).upper()
+
+    @classmethod
+    def _same_name(cls, left: str, right: str) -> bool:
+        """Compare metadata names using the repository normalization convention."""
+
+        return cls._normalize_name(left) == cls._normalize_name(right)
 
     def _load_or_build_datatype_findings(self) -> list[dict[str, str]]:
         """Load or build datatype findings for the migration workflow."""

@@ -103,6 +103,8 @@ class RecommendationEngine:
         for row in rows:
             if self._resolved(row):
                 continue
+            if self._mapplet_not_ai_routed(row):
+                continue
             mapping = self.report_loader._mapping_from_row(row)
             failure = self._failure_from_row(row, mapping, metadata, validation_rows)
             key = self._dedupe_key(failure)
@@ -121,6 +123,8 @@ class RecommendationEngine:
         seen: set[tuple[str, str, str, str]] = set()
         for row in rows:
             if self._resolved(row):
+                continue
+            if self._mapplet_not_ai_routed(row):
                 continue
             mapping = self.report_loader._mapping_from_row(row)
             failure = self._failure_from_row(row, mapping, metadata, rows)
@@ -219,6 +223,18 @@ class RecommendationEngine:
             "resolved",
             "suppressed",
         }
+
+    def _mapplet_not_ai_routed(self, row: dict[str, str]) -> bool:
+        """Exclude simple/medium mapplet nesting from AI recommendation inputs."""
+
+        issue = self.report_loader.canonical_issue(row.get("Issue", ""))
+        if issue != "mapplet_nesting":
+            return False
+        explicit = str(row.get("AI Recommendation Required", "")).strip().lower()
+        if explicit:
+            return explicit not in {"true", "yes", "1"}
+        complexity = row.get("Mapplet Complexity", "").strip().upper()
+        return complexity in {"SIMPLE", "MEDIUM"}
 
     @staticmethod
     def _auto_fix_status(row: dict[str, str]) -> str:

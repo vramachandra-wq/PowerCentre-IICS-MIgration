@@ -87,6 +87,7 @@ class RemediationReportLoader:
                     auto_fixed=self._truthy(row.get("Auto Fixed")),
                     approval_required=self._truthy(row.get("Approval Required")) or status.lower() == "approval required",
                     ai_assistance_required=self._truthy(row.get("AI Assistance Required"))
+                    or self._truthy(row.get("AI Recommendation Required"))
                     or "ai assistance" in status.lower(),
                     source="remediation_report",
                 )

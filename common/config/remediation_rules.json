@@ -30,7 +30,8 @@
     {"issue": "lookup_hardcoded_schema", "auto_fix": true, "action": "remove_lookup_schema_prefix"},
     {"issue": "object_name_exceeds_65_characters", "auto_fix": true, "action": "shorten_object_names"},
     {"issue": "oracle_to_oracle_char_padding", "auto_fix": true, "action": "trim_oracle_fixed_char_fields"},
-    {"issue": "powercenter_schedule_not_copied", "auto_fix": true, "action": "generate_idmc_schedule_config"}
+    {"issue": "powercenter_schedule_not_copied", "auto_fix": true, "action": "generate_idmc_schedule_config"},
+    {"issue": "mapplet_nesting", "auto_fix": true, "action": "flatten_mapplet_nesting", "auto_fix_complexities": ["SIMPLE", "MEDIUM"]}
   ],
   "ai_assistance_rules": [
     {"issue": "stored_procedure_transformation", "ai_assistance_required": true},

@@ -37,6 +37,11 @@ class RemediationResult:
     approval_required: bool = False
     original_sql: str = ""
     proposed_sql: str = ""
+    mapplet_depth: int = 0
+    mapplet_complexity: str = ""
+    auto_fix_status: str = ""
+    manual_review_required: bool = False
+    ai_recommendation_required: bool = False
 
 
 @dataclass(frozen=True)
@@ -94,6 +99,11 @@ class Rule_Based_Validation_Engine:
         "Approval Required",
         "Original SQL",
         "Proposed SQL",
+        "Mapplet Depth",
+        "Mapplet Complexity",
+        "Auto Fix Status",
+        "Manual Review Required",
+        "AI Recommendation Required",
     ]
     REVALIDATION_COLUMNS = ["Before Fix Issues", "After Fix Issues", "Resolved Issues"]
 
@@ -195,6 +205,11 @@ class Rule_Based_Validation_Engine:
                         "Approval Required": str(result.approval_required),
                         "Original SQL": result.original_sql,
                         "Proposed SQL": result.proposed_sql,
+                        "Mapplet Depth": result.mapplet_depth or "",
+                        "Mapplet Complexity": result.mapplet_complexity,
+                        "Auto Fix Status": result.auto_fix_status or ("Yes" if result.auto_fixed else "No"),
+                        "Manual Review Required": str(result.manual_review_required),
+                        "AI Recommendation Required": str(result.ai_recommendation_required),
                     }
                 )
 
@@ -262,6 +277,9 @@ class Rule_Based_Validation_Engine:
         for issue in issues:
             canonical = self._canonical_issue(issue.issue, issue.rule_id)
             if canonical in self.VALIDATION_DATATYPE_ISSUES:
+                continue
+            if canonical == "mapplet_nesting":
+                results.append(self._remediate_mapplet_nesting(issue))
                 continue
             if canonical in self.rules["ai_assistance"]:
                 results.append(
@@ -401,6 +419,8 @@ class Rule_Based_Validation_Engine:
             return self._trim_oracle_fixed_char_fields(issue.asset, issue.source_file)
         if action == "generate_idmc_schedule_config":
             return self._generate_idmc_schedule_config(issue.asset)
+        if action == "flatten_mapplet_nesting":
+            return self._flatten_mapplet_nesting(issue.asset, issue.source_file)
         if action == "deduplicate_column_names":
             return self._deduplicate_columns(issue.asset)
         if action == "add_missing_target_binding_metadata":
@@ -420,6 +440,168 @@ class Rule_Based_Validation_Engine:
         if action == "propose_constraint_fix":
             return self._apply_constraint_fix(issue.asset)
         return False, issue.asset, issue.asset
+
+    def _remediate_mapplet_nesting(self, issue: ValidationIssue) -> RemediationResult:
+        """Auto-fix simple/medium mapplet nesting and route high complexity to AI."""
+
+        depth = issue.mapplet_depth
+        complexity = (issue.mapplet_complexity or self._mapplet_complexity(depth)).upper()
+        rule = self.rules["auto"].get("mapplet_nesting")
+        auto_complexities = {
+            str(value).upper()
+            for value in (rule or {}).get("auto_fix_complexities", ["SIMPLE", "MEDIUM"])
+        }
+        if rule and complexity in auto_complexities:
+            changed, before, after = self._apply_metadata_action(rule["action"], issue)
+            applied = changed or bool(before and before == after)
+            return RemediationResult(
+                issue="mapplet_nesting",
+                severity=issue.severity,
+                recommendation=issue.recommendation,
+                auto_fixed=applied,
+                fix_applied=rule["action"] if applied else "",
+                before_value=before,
+                after_value=after,
+                status="Auto Fixed" if applied else "Not Applied",
+                asset=issue.asset,
+                mapplet_depth=depth,
+                mapplet_complexity=complexity.title(),
+                auto_fix_status="Yes" if applied else "No",
+                manual_review_required=not applied,
+                ai_recommendation_required=not applied,
+            )
+        return RemediationResult(
+            issue="mapplet_nesting",
+            severity=issue.severity,
+            recommendation=issue.recommendation,
+            auto_fixed=False,
+            fix_applied="",
+            before_value=issue.asset,
+            after_value=issue.asset,
+            status="Manual Review Required",
+            asset=issue.asset,
+            ai_assistance_required=True,
+            mapplet_depth=depth,
+            mapplet_complexity=complexity.title(),
+            auto_fix_status="No",
+            manual_review_required=True,
+            ai_recommendation_required=True,
+        )
+
+    def _flatten_mapplet_nesting(self, asset: str, source_file: str = "") -> tuple[bool, str, str]:
+        """Flatten simple/medium mapplet metadata into the parent mapping tables."""
+
+        flattened: list[str] = []
+        visited: set[str] = set()
+        changed = self._flatten_mapplet_instance(asset, source_file, visited, flattened)
+        before = asset
+        after = ", ".join(flattened) if flattened else asset
+        return changed, before, after
+
+    def _flatten_mapplet_instance(
+        self,
+        asset: str,
+        source_file: str,
+        visited: set[str],
+        flattened: list[str],
+    ) -> bool:
+        """Merge a mapplet instance's child rows into its parent mapping."""
+
+        normalized_asset = self._normalize_name(asset)
+        if normalized_asset in visited:
+            return False
+        visited.add(normalized_asset)
+        parent_instances = [
+            row
+            for row in self.tables.get("instances", [])
+            if self._is_mapplet_row(row)
+            and self._same_value(self._normalize_name(row.get("instance_name", "")), normalized_asset)
+            and (not source_file or row.get("file_name", "") == source_file)
+        ]
+        changed = False
+        for parent in parent_instances:
+            parent_mapping = parent.get("mapping_name", "")
+            mapplet_name = parent.get("transformation_name") or parent.get("instance_name", "")
+            child_instances = self._child_rows("instances", mapplet_name)
+            for child in list(child_instances):
+                if self._is_mapplet_row(child):
+                    self._flatten_mapplet_instance(child.get("instance_name", ""), child.get("file_name", ""), visited, flattened)
+            prefix = parent.get("instance_name", "") or mapplet_name
+            for table_name in ["transformations", "ports", "connectors", "instances", "sql_overrides"]:
+                for child in self._child_rows(table_name, mapplet_name):
+                    merged = dict(child)
+                    merged["mapping_name"] = parent_mapping
+                    if source_file:
+                        merged["file_name"] = source_file
+                    self._prefix_embedded_names(merged, prefix)
+                    if merged not in self.tables.get(table_name, []):
+                        self.tables.setdefault(table_name, []).append(merged)
+                        changed = True
+            before_count = len(self.tables.get("instances", []))
+            self.tables["instances"] = [
+                row
+                for row in self.tables.get("instances", [])
+                if row is not parent
+            ]
+            changed = changed or len(self.tables.get("instances", [])) != before_count
+            self._retarget_mapplet_connectors(parent.get("instance_name", ""), prefix)
+            flattened.append(parent.get("instance_name", "") or mapplet_name)
+        return changed
+
+    def _child_rows(self, table_name: str, mapplet_name: str) -> list[dict[str, str]]:
+        """Return rows owned by a mapplet definition."""
+
+        return [
+            row
+            for row in self.tables.get(table_name, [])
+            if self._same_value(self._normalize_name(row.get("mapping_name", "")), self._normalize_name(mapplet_name))
+        ]
+
+    @staticmethod
+    def _is_mapplet_row(row: dict[str, str]) -> bool:
+        """Return true when a metadata row references a mapplet."""
+
+        return "MAPPLET" in " ".join(
+            [
+                row.get("instance_type", ""),
+                row.get("transformation_type", ""),
+                row.get("type", ""),
+            ]
+        ).upper()
+
+    def _prefix_embedded_names(self, row: dict[str, str], prefix: str) -> None:
+        """Preserve instance uniqueness when moving mapplet internals into a mapping."""
+
+        name_fields = ["transformation_name", "instance_name", "context_name", "from_instance", "to_instance"]
+        for field in name_fields:
+            value = row.get(field, "")
+            if value and not value.startswith(f"{prefix}_"):
+                row[field] = f"{prefix}_{value}"
+        if row.get("from_instance_type", "").upper() == "MAPPLET":
+            row["from_instance_type"] = row.get("transformation_type", "Transformation") or "Transformation"
+        if row.get("to_instance_type", "").upper() == "MAPPLET":
+            row["to_instance_type"] = row.get("transformation_type", "Transformation") or "Transformation"
+
+    def _retarget_mapplet_connectors(self, asset: str, prefix: str) -> None:
+        """Mark parent connectors as flattened while preserving rows and ports."""
+
+        for connector in self.tables.get("connectors", []):
+            if connector.get("from_instance") == asset:
+                connector["from_instance"] = f"{prefix}_Output"
+                connector["from_instance_type"] = "Output Transformation"
+            if connector.get("to_instance") == asset:
+                connector["to_instance"] = f"{prefix}_Input"
+                connector["to_instance_type"] = "Input Transformation"
+
+    @staticmethod
+    def _mapplet_complexity(depth: int) -> str:
+        """Classify mapplet depth for remediation fallback paths."""
+
+        if depth <= 1:
+            return "SIMPLE"
+        if depth == 2:
+            return "MEDIUM"
+        return "HIGH"
 
     def _add_concat_alias(self, asset: str) -> tuple[bool, str, str]:
         """Handle add concat alias using the provided asset."""
