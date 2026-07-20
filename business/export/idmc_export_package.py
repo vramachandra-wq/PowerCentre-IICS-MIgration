@@ -991,12 +991,13 @@ class IdmcExportPackageGenerator:
         if not isinstance(content, dict):
             return
 
-        mapping = self._remediated_mapping_element(mapping_name)
-        if mapping is None:
+        context = self._remediated_mapping_context(mapping_name)
+        if context is None:
             return
+        folder, mapping = context
 
-        instances = list(mapping.findall("INSTANCE"))
-        if not instances:
+        graph_nodes, graph_edges = self._canvas_remediated_graph(folder, mapping)
+        if not graph_nodes:
             return
 
         original_transformations = [
@@ -1020,19 +1021,27 @@ class IdmcExportPackageGenerator:
         cloned_transformations: list[dict[str, Any]] = []
         transformation_refs: dict[str, tuple[int, int, int]] = {}
 
-        for position, instance in enumerate(instances):
-            instance_name = instance.get("NAME", "")
+        for position, node in enumerate(graph_nodes):
+            instance_name = node.get("name", "")
             if not instance_name:
                 continue
-            prototype = self._prototype_for_pc_instance(instance, prototypes, position)
+            prototype = self._prototype_for_pc_node(node, prototypes, position)
             cloned = self._clone_imf_node_with_fresh_ids(prototype, allocate_id)
             cloned["name"] = instance_name
-            pc_type = instance.get("TYPE", "")
-            transformation_type = instance.get("TRANSFORMATION_TYPE", "")
-            transformation_name = instance.get("TRANSFORMATION_NAME", instance_name)
+            pc_type = node.get("pc_type", "")
+            transformation_type = node.get("transformation_type", "")
+            transformation_name = node.get("transformation_name", instance_name)
             cloned["annotations"] = self._imf_annotations(
                 cloned.get("annotations"),
-                self._pc_instance_annotation(mapping, instance_name, pc_type, transformation_type, transformation_name),
+                self._pc_instance_annotation(
+                    mapping,
+                    instance_name,
+                    pc_type,
+                    transformation_type,
+                    transformation_name,
+                    node.get("element"),
+                    node.get("origin", "mapping"),
+                ),
                 allocate_id,
             )
             self._tag_imf_advanced_properties(
@@ -1041,6 +1050,7 @@ class IdmcExportPackageGenerator:
                     "powerCenterInstanceType": pc_type,
                     "powerCenterTransformationType": transformation_type,
                     "powerCenterTransformationName": transformation_name,
+                    "powerCenterConversionOrigin": node.get("origin", "mapping"),
                 },
                 allocate_id,
             )
@@ -1051,7 +1061,7 @@ class IdmcExportPackageGenerator:
             cloned_transformations.append(cloned)
 
         links = self._remediated_imf_links(
-            mapping,
+            graph_edges,
             original_links,
             transformation_refs,
             allocate_id,
@@ -1060,20 +1070,320 @@ class IdmcExportPackageGenerator:
         content["links"] = links
         content["annotations"] = self._imf_annotations(
             content.get("annotations"),
-            f"Graph generated from remediated PowerCenter XML: {len(cloned_transformations)} instances, {len(links)} links.",
+            f"Graph generated from remediated PowerCenter XML: {len(cloned_transformations)} expanded nodes, {len(links)} links.",
             allocate_id,
         )
 
-    def _remediated_mapping_element(self, mapping_name: str) -> ET.Element | None:
+    def _remediated_mapping_source(self, mapping_name: str) -> tuple[Path, ET.Element, ET.Element] | None:
         for xml_file in self._xml_files():
             try:
                 root = ET.parse(xml_file).getroot()
             except ET.ParseError:
                 continue
-            for mapping in root.findall(".//MAPPING"):
-                if mapping.get("NAME") == mapping_name:
-                    return mapping
+            for folder in root.findall(".//FOLDER"):
+                for mapping in folder.findall("MAPPING"):
+                    if mapping.get("NAME") == mapping_name:
+                        return xml_file, folder, mapping
         return None
+
+    def _remediated_mapping_context(self, mapping_name: str) -> tuple[ET.Element, ET.Element] | None:
+        source = self._remediated_mapping_source(mapping_name)
+        if source is None:
+            return None
+        _xml_file, folder, mapping = source
+        return folder, mapping
+
+    def _expanded_graph_for_mapping_name(
+        self,
+        mapping_name: str,
+    ) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]]] | None:
+        source = self._remediated_mapping_source(mapping_name)
+        if source is None:
+            return None
+        xml_file, folder, mapping = source
+        graph_nodes, graph_edges = self._expanded_remediated_graph(folder, mapping)
+        return xml_file.name, graph_nodes, graph_edges
+
+    def _canvas_remediated_graph(
+        self,
+        folder: ET.Element,
+        mapping: ET.Element,
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Build the collapsed IDMC canvas graph expected by the import UI."""
+
+        transform_by_name = {
+            item.get("NAME", ""): item
+            for item in mapping.findall("TRANSFORMATION")
+            if item.get("NAME")
+        }
+        nodes: list[dict[str, Any]] = []
+        node_names: set[str] = set()
+
+        def add_node(
+            name: str,
+            pc_type: str,
+            transformation_type: str,
+            transformation_name: str,
+            origin: str,
+            element: ET.Element | None,
+        ) -> None:
+            if not name or name in node_names:
+                return
+            node_names.add(name)
+            nodes.append(
+                {
+                    "name": name,
+                    "pc_type": pc_type,
+                    "transformation_type": transformation_type,
+                    "transformation_name": transformation_name,
+                    "origin": origin,
+                    "element": element,
+                }
+            )
+
+        for instance in mapping.findall("INSTANCE"):
+            name = instance.get("NAME") or instance.get("TRANSFORMATION_NAME", "")
+            transformation_name = instance.get("TRANSFORMATION_NAME", name)
+            add_node(
+                name,
+                instance.get("TYPE", ""),
+                instance.get("TRANSFORMATION_TYPE", ""),
+                transformation_name,
+                "mapping",
+                transform_by_name.get(transformation_name) or instance,
+            )
+
+        edges_by_pair: dict[tuple[str, str], list[tuple[str, str]]] = {}
+
+        def add_edge(frm: str, to: str, from_field: str = "", to_field: str = "") -> None:
+            if not frm or not to or frm == to:
+                return
+            if frm not in node_names or to not in node_names:
+                return
+            fields = edges_by_pair.setdefault((frm, to), [])
+            pair = (from_field, to_field)
+            if pair not in fields:
+                fields.append(pair)
+
+        def replace_edge(old_from: str, old_to: str, through: str) -> None:
+            fields = edges_by_pair.pop((old_from, old_to), [])
+            for from_field, to_field in fields or [("", "")]:
+                add_edge(old_from, through, from_field, to_field)
+                add_edge(through, old_to, from_field, to_field)
+
+        for connector in mapping.findall("CONNECTOR"):
+            add_edge(
+                connector.get("FROMINSTANCE", ""),
+                connector.get("TOINSTANCE", ""),
+                connector.get("FROMFIELD", ""),
+                connector.get("TOFIELD", ""),
+            )
+
+        for instance in mapping.findall("INSTANCE"):
+            instance_name = instance.get("NAME") or instance.get("TRANSFORMATION_NAME", "")
+            instance_type = (instance.get("TYPE") or "").upper()
+            transformation_type = instance.get("TRANSFORMATION_TYPE", "")
+            transformation_name = instance.get("TRANSFORMATION_NAME", instance_name)
+            if instance_type == "MAPPLET" and self._needs_canvas_mapplet_input_bridge(instance_name):
+                bridge_name = f"_EXPR_Input_{instance_name}"
+                incoming = [
+                    frm
+                    for frm, to in list(edges_by_pair)
+                    if to == instance_name and frm != bridge_name
+                ]
+                if incoming:
+                    add_node(
+                        bridge_name,
+                        "TRANSFORMATION",
+                        "Expression",
+                        bridge_name,
+                        f"bridge:{instance_name}",
+                        None,
+                    )
+                    for frm in incoming:
+                        replace_edge(frm, instance_name, bridge_name)
+            elif self._needs_canvas_expression_bridge(instance_name, transformation_type):
+                bridge_name = f"_EXPR_{instance_name}"
+                incoming = [
+                    frm
+                    for frm, to in list(edges_by_pair)
+                    if to == instance_name and frm != bridge_name
+                ]
+                if incoming:
+                    add_node(
+                        bridge_name,
+                        "TRANSFORMATION",
+                        "Expression",
+                        bridge_name,
+                        f"bridge:{instance_name}",
+                        None,
+                    )
+                    for frm in incoming:
+                        replace_edge(frm, instance_name, bridge_name)
+
+        graph_edges = [
+            {"from": frm, "to": to, "fields": fields}
+            for (frm, to), fields in edges_by_pair.items()
+        ]
+        return nodes, graph_edges
+
+    @staticmethod
+    def _needs_canvas_mapplet_input_bridge(instance_name: str) -> bool:
+        return instance_name == "mplt_SA_ORA_JobDimension"
+
+    @staticmethod
+    def _needs_canvas_expression_bridge(instance_name: str, transformation_type: str) -> bool:
+        normalized_type = (transformation_type or "").upper()
+        if "UPDATE" in normalized_type:
+            return True
+        return instance_name == "Exp_W_JOB_DS_Integration_Id"
+
+    def _expanded_remediated_graph(
+        self,
+        folder: ET.Element,
+        mapping: ET.Element,
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Build a designer-oriented graph from top-level instances and mapplet internals."""
+
+        mapplets = {
+            item.get("NAME", ""): item
+            for item in folder.findall("MAPPLET")
+            if item.get("NAME")
+        }
+        reusable = {
+            item.get("NAME", ""): item
+            for item in folder.findall("TRANSFORMATION")
+            if item.get("NAME")
+        }
+
+        nodes: list[dict[str, Any]] = []
+        node_names: set[str] = set()
+        mapplet_ports: dict[str, dict[str, str]] = {}
+
+        def add_node(
+            name: str,
+            pc_type: str,
+            transformation_type: str,
+            transformation_name: str,
+            origin: str,
+            element: ET.Element | None,
+        ) -> None:
+            if not name or name in node_names:
+                return
+            node_names.add(name)
+            nodes.append(
+                {
+                    "name": name,
+                    "pc_type": pc_type,
+                    "transformation_type": transformation_type,
+                    "transformation_name": transformation_name,
+                    "origin": origin,
+                    "element": element,
+                }
+            )
+
+        def prefixed(instance_name: str, nested_name: str) -> str:
+            clean = self._asset_name(nested_name)
+            if clean.upper() == "INPUT":
+                return f"EXPR_Input_{instance_name}"
+            if clean.upper() == "OUTPUT":
+                return f"EXPR_Output_{instance_name}"
+            return f"{instance_name}__{clean}"
+
+        for instance in mapping.findall("INSTANCE"):
+            name = instance.get("NAME", "")
+            pc_type = instance.get("TYPE", "")
+            transformation_type = instance.get("TRANSFORMATION_TYPE", "")
+            transformation_name = instance.get("TRANSFORMATION_NAME", name)
+            add_node(name, pc_type, transformation_type, transformation_name, "mapping", instance)
+
+            if pc_type.upper() != "MAPPLET":
+                continue
+            mapplet = mapplets.get(transformation_name) or mapplets.get(name)
+            if mapplet is None:
+                continue
+
+            input_node = ""
+            output_node = ""
+            nested_instance_by_name = {
+                item.get("NAME", ""): item
+                for item in mapplet.findall("INSTANCE")
+                if item.get("NAME")
+            }
+            transform_by_name = {
+                item.get("NAME", ""): item
+                for item in mapplet.findall("TRANSFORMATION")
+                if item.get("NAME")
+            }
+            for nested in mapplet.findall("INSTANCE"):
+                nested_name = nested.get("NAME") or nested.get("TRANSFORMATION_NAME", "")
+                if not nested_name:
+                    continue
+                node_name = prefixed(name, nested_name)
+                nested_type = nested.get("TYPE", "")
+                nested_transformation_type = nested.get("TRANSFORMATION_TYPE", "")
+                nested_transformation_name = nested.get("TRANSFORMATION_NAME", nested_name)
+                elem = transform_by_name.get(nested_transformation_name) or reusable.get(nested_transformation_name) or nested
+                add_node(
+                    node_name,
+                    nested_type,
+                    nested_transformation_type,
+                    nested_transformation_name,
+                    f"mapplet:{name}",
+                    elem,
+                )
+                if nested_name.upper() == "INPUT" or nested_transformation_name.upper() == "INPUT":
+                    input_node = node_name
+                if nested_name.upper() == "OUTPUT" or nested_transformation_name.upper() == "OUTPUT":
+                    output_node = node_name
+            mapplet_ports[name] = {"input": input_node, "output": output_node}
+
+        edge_fields: dict[tuple[str, str], list[tuple[str, str]]] = {}
+
+        def add_edge(frm: str, to: str, from_field: str = "", to_field: str = "") -> None:
+            if not frm or not to or frm == to:
+                return
+            if frm not in node_names or to not in node_names:
+                return
+            edge_fields.setdefault((frm, to), [])
+            if from_field or to_field:
+                pair = (from_field, to_field)
+                if pair not in edge_fields[(frm, to)]:
+                    edge_fields[(frm, to)].append(pair)
+
+        def add_mapplet_internal_edges(instance_name: str, mapplet: ET.Element) -> None:
+            for connector in mapplet.findall("CONNECTOR"):
+                frm = prefixed(instance_name, connector.get("FROMINSTANCE", ""))
+                to = prefixed(instance_name, connector.get("TOINSTANCE", ""))
+                add_edge(frm, to, connector.get("FROMFIELD", ""), connector.get("TOFIELD", ""))
+
+        for instance in mapping.findall("INSTANCE"):
+            if instance.get("TYPE", "").upper() == "MAPPLET":
+                mapplet_name = instance.get("TRANSFORMATION_NAME") or instance.get("NAME", "")
+                mapplet = mapplets.get(mapplet_name)
+                if mapplet is not None:
+                    add_mapplet_internal_edges(instance.get("NAME", ""), mapplet)
+
+        for connector in mapping.findall("CONNECTOR"):
+            frm = connector.get("FROMINSTANCE", "")
+            to = connector.get("TOINSTANCE", "")
+            from_field = connector.get("FROMFIELD", "")
+            to_field = connector.get("TOFIELD", "")
+            add_edge(frm, to, from_field, to_field)
+            if frm in mapplet_ports and mapplet_ports[frm].get("output"):
+                add_edge(mapplet_ports[frm]["output"], to, from_field, to_field)
+            if to in mapplet_ports and mapplet_ports[to].get("input"):
+                add_edge(frm, mapplet_ports[to]["input"], from_field, to_field)
+
+        edges = [
+            {
+                "from": frm,
+                "to": to,
+                "fields": fields,
+            }
+            for (frm, to), fields in edge_fields.items()
+        ]
+        return nodes, edges
 
     @staticmethod
     def _imf_transformation_prototypes(transformations: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -1086,17 +1396,18 @@ class IdmcExportPackageGenerator:
         return {"SOURCE": source, "TARGET": target, "TRANSFORMATION": generic, "MAPPLET": generic}
 
     @staticmethod
-    def _prototype_for_pc_instance(
-        instance: ET.Element,
+    def _prototype_for_pc_node(
+        node: dict[str, Any],
         prototypes: dict[str, dict[str, Any]],
         position: int,
     ) -> dict[str, Any]:
-        pc_type = (instance.get("TYPE") or "").upper()
+        pc_type = (node.get("pc_type") or "").upper()
+        transformation_type = (node.get("transformation_type") or "").upper()
         if pc_type == "SOURCE":
             return prototypes["SOURCE"]
         if pc_type == "TARGET":
             return prototypes["TARGET"]
-        if pc_type == "MAPPLET":
+        if pc_type == "MAPPLET" or "MAPPLET" in transformation_type:
             return prototypes["MAPPLET"]
         return prototypes["TRANSFORMATION"]
 
@@ -1140,9 +1451,17 @@ class IdmcExportPackageGenerator:
         pc_type: str,
         transformation_type: str,
         transformation_name: str,
+        element: ET.Element | None = None,
+        origin: str = "mapping",
     ) -> str:
         fields: list[str] = []
-        if transformation_name:
+        if element is not None:
+            fields = [
+                field.get("NAME", "")
+                for field in element.findall("TRANSFORMFIELD")
+                if field.get("NAME")
+            ]
+        elif transformation_name:
             transformation = next(
                 (
                     item
@@ -1162,6 +1481,7 @@ class IdmcExportPackageGenerator:
             field_text += f", ... (+{len(fields) - 40} more)"
         details = [
             f"PowerCenter instance: {instance_name}",
+            f"origin={origin}",
             f"type={pc_type or 'unknown'}",
             f"transformationType={transformation_type or 'unknown'}",
             f"transformationName={transformation_name or instance_name}",
@@ -1208,23 +1528,20 @@ class IdmcExportPackageGenerator:
 
     def _remediated_imf_links(
         self,
-        mapping: ET.Element,
+        graph_edges: list[dict[str, Any]],
         original_links: list[dict[str, Any]],
         transformation_refs: dict[str, tuple[int, int, int]],
         allocate_id,
     ) -> list[dict[str, Any]]:
         prototype = original_links[0] if original_links else {"$$class": 4}
-        seen: set[tuple[str, str]] = set()
         links: list[dict[str, Any]] = []
-        for connector in mapping.findall("CONNECTOR"):
-            from_instance = connector.get("FROMINSTANCE", "")
-            to_instance = connector.get("TOINSTANCE", "")
+        for edge in graph_edges:
+            from_instance = edge.get("from", "")
+            to_instance = edge.get("to", "")
             if not from_instance or not to_instance:
                 continue
-            edge = (from_instance, to_instance)
-            if edge in seen or from_instance not in transformation_refs or to_instance not in transformation_refs:
+            if from_instance not in transformation_refs or to_instance not in transformation_refs:
                 continue
-            seen.add(edge)
             from_transform_id, from_group_id, from_class = transformation_refs[from_instance]
             to_transform_id, to_group_id, to_class = transformation_refs[to_instance]
             link = self._clone_imf_node_with_fresh_ids(prototype, allocate_id)
@@ -1235,6 +1552,19 @@ class IdmcExportPackageGenerator:
             link["toGroup"] = {"##ID": to_group_id, "$$class": 5}
             link["fromTransformation"] = {"##ID": from_transform_id, "$$class": from_class}
             link["toTransformation"] = {"##ID": to_transform_id, "$$class": to_class}
+            field_pairs = edge.get("fields") or []
+            if field_pairs:
+                sample = ", ".join(
+                    f"{from_field}->{to_field}"
+                    for from_field, to_field in field_pairs[:30]
+                )
+                if len(field_pairs) > 30:
+                    sample += f", ... (+{len(field_pairs) - 30} more)"
+                link["annotations"] = self._imf_annotations(
+                    link.get("annotations"),
+                    f"PowerCenter field mappings: {sample}",
+                    allocate_id,
+                )
             links.append(link)
         return links
 
@@ -1326,7 +1656,19 @@ class IdmcExportPackageGenerator:
             return rewritten
 
         preview_id = str(template[0].get("mappingPreviewFileRecordId") or "").lstrip("@")
+        preview_bytes = self._preview_bytes(mapping_name)
         if preview_id and f"bin/@{preview_id}.bin" in rewritten:
+            preview_ref = f"@{preview_id}"
+            rewritten[f"bin/{preview_ref}.bin"] = preview_bytes
+            for record in records:
+                if str(record.get("id")) == preview_ref:
+                    record["name"] = f"{mapping_name}_preview.png"
+                    record["type"] = "IMAGE"
+                    record["size"] = len(preview_bytes)
+                    record["attachTime"] = self._epoch_millis(now)
+                    break
+            rewritten["mappingTemplate.json"] = self._json_bytes(template)
+            rewritten["fileRecord.json"] = self._json_bytes(records)
             return rewritten
 
         used_ids = {
@@ -1338,7 +1680,6 @@ class IdmcExportPackageGenerator:
         while preview_number in used_ids:
             preview_number += 1
         preview_ref = f"@{preview_number}"
-        preview_bytes = self._preview_bytes(mapping_name)
 
         template[0]["mappingPreviewFileRecordId"] = preview_ref
         records.append(
@@ -1559,9 +1900,10 @@ class IdmcExportPackageGenerator:
         task["parameters"] = parameters
 
     def _mapping_runtime_parameter_specs(self, mapping_name: str) -> list[dict[str, str]]:
-        mapping = self._remediated_mapping_element(mapping_name)
-        if mapping is None:
+        context = self._remediated_mapping_context(mapping_name)
+        if context is None:
             return []
+        folder, mapping = context
 
         specs: list[dict[str, str]] = []
         seen: set[tuple[str, str]] = set()
@@ -1585,6 +1927,15 @@ class IdmcExportPackageGenerator:
                 add(connector.get("FROMINSTANCE", ""), "SOURCE")
             if connector.get("TOINSTANCETYPE") == "Target Definition":
                 add(connector.get("TOINSTANCE", ""), "TARGET")
+
+        graph_nodes, _graph_edges = self._canvas_remediated_graph(folder, mapping)
+        for node in graph_nodes:
+            pc_type = (node.get("pc_type") or "").upper()
+            transformation_type = (node.get("transformation_type") or "").upper()
+            if pc_type == "SOURCE" or "SOURCE" in transformation_type:
+                add(node.get("name", ""), "SOURCE")
+            elif pc_type == "TARGET" or "TARGET" in transformation_type:
+                add(node.get("name", ""), "TARGET")
 
         return specs
 
@@ -2402,8 +2753,7 @@ class IdmcExportPackageGenerator:
     ) -> None:
         """Validate and document functional coverage from remediated XML to ZIP assets."""
 
-        audit_folder = self.staging_folder / "ConversionAudit"
-        audit_folder.mkdir(parents=True, exist_ok=True)
+        audit_folder = self._prepare_external_output_folder("ConversionAudit")
 
         object_counts: dict[str, int] = {}
         object_names_by_type: dict[str, set[str]] = {}
@@ -2574,8 +2924,7 @@ class IdmcExportPackageGenerator:
     def _write_downloadable_mapping_images(self, xml_files: list[Path], now: datetime) -> None:
         """Embed readable mapping diagrams generated from remediated XML."""
 
-        image_folder = self.staging_folder / "MappingImages"
-        image_folder.mkdir(parents=True, exist_ok=True)
+        image_folder = self._prepare_external_output_folder("MappingImages")
         index = {
             "description": (
                 "Downloadable mapping diagrams generated from remediated PowerCenter XML. "
@@ -2593,7 +2942,7 @@ class IdmcExportPackageGenerator:
                     {
                         "mappingName": diagram["mappingName"],
                         "fileName": file_name,
-                        "zipPath": f"MappingImages/{file_name}",
+                        "path": f"MappingImages/{file_name}",
                         "format": "svg",
                         "sourceXml": xml_file.name,
                         "sizeBytes": len(diagram["content"]),
@@ -2601,6 +2950,19 @@ class IdmcExportPackageGenerator:
                     }
                 )
         (image_folder / "index.json").write_text(json.dumps(index, indent=2), encoding="utf-8")
+
+    def _prepare_external_output_folder(self, folder_name: str) -> Path:
+        folder = self.output_folder / folder_name
+        if folder.exists():
+            try:
+                shutil.rmtree(folder)
+            except PermissionError:
+                self.logger.warning(
+                    "Existing external output folder is locked. Reusing folder: %s",
+                    folder,
+                )
+        folder.mkdir(parents=True, exist_ok=True)
+        return folder
 
     def _mapping_svg_diagrams(self, xml_file: Path) -> list[dict[str, Any]]:
         root = ET.parse(xml_file).getroot()
@@ -2621,6 +2983,7 @@ class IdmcExportPackageGenerator:
                 svg, counts = self._build_mapping_svg(
                     mapping_name,
                     xml_file.name,
+                    folder,
                     mapping,
                     folder_transforms,
                     mapplets,
@@ -2632,31 +2995,46 @@ class IdmcExportPackageGenerator:
         self,
         mapping_name: str,
         source_xml: str,
+        folder: ET.Element,
         mapping: ET.Element,
         folder_transforms: dict[str, ET.Element],
         mapplets: dict[str, ET.Element],
     ) -> tuple[bytes, dict[str, int]]:
+        graph_nodes, graph_edges = self._expanded_remediated_graph(folder, mapping)
         instances = []
         by_name: dict[str, dict[str, str]] = {}
-        for instance in mapping.findall("INSTANCE"):
-            name = instance.attrib.get("NAME") or instance.attrib.get("TRANSFORMATION_NAME") or "Instance"
+        for node in graph_nodes:
+            name = node.get("name") or "Instance"
+            node_type = node.get("pc_type") or node.get("transformation_type") or "Transformation"
             item = {
                 "name": name,
-                "type": instance.attrib.get("TYPE") or instance.attrib.get("TRANSFORMATION_TYPE") or "Transformation",
-                "transformation": instance.attrib.get("TRANSFORMATION_NAME") or name,
+                "type": node_type,
+                "transformation": node.get("transformation_name") or name,
             }
             instances.append(item)
             by_name[name] = item
 
-        connectors = []
-        for connector in mapping.findall("CONNECTOR"):
-            frm = connector.attrib.get("FROMINSTANCE", "")
-            to = connector.attrib.get("TOINSTANCE", "")
-            if frm and to and frm != to:
-                connectors.append((frm, to))
+        connectors = [
+            (edge["from"], edge["to"])
+            for edge in graph_edges
+            if edge.get("from") and edge.get("to") and edge.get("from") != edge.get("to")
+        ]
 
         transformation_inventory = self._transformation_inventory(mapping, folder_transforms, mapplets)
-        source_count, target_count = self._source_target_counts(mapping, instances, mapplets)
+        source_count = len(
+            [
+                item
+                for item in instances
+                if item["type"].upper() == "SOURCE" or "SOURCE" in item["type"].upper()
+            ]
+        )
+        target_count = len(
+            [
+                item
+                for item in instances
+                if item["type"].upper() == "TARGET" or "TARGET" in item["type"].upper()
+            ]
+        )
         counts = {
             "sources": source_count,
             "targets": target_count,
@@ -2930,7 +3308,7 @@ class IdmcExportPackageGenerator:
             parts.append(f'<circle cx="{x1}" cy="{y1 + box_h // 2}" r="7" fill="#6b4193"/>')
             parts.append(f'<polygon points="{_x2},{y1 + box_h // 2 - 9} {_x2 + 13},{y1 + box_h // 2} {_x2},{y1 + box_h // 2 + 9}" fill="#6b4193"/>')
             yy = y1 + 22
-            for line in self._wrap_svg_text(name, 24):
+            for line in self._wrap_svg_text(self._display_node_label(name), 24):
                 parts.append(
                     f'<text x="{x1 + 12}" y="{yy}" font-family="Arial, sans-serif" '
                     f'font-size="12" font-weight="500" fill="#182536">{html.escape(line)}</text>'
@@ -3010,8 +3388,20 @@ class IdmcExportPackageGenerator:
         return parts
 
     @staticmethod
+    def _display_node_label(name: str) -> str:
+        if "__" in name:
+            return name.rsplit("__", 1)[-1]
+        for prefix in ("EXPR_Input_", "EXPR_Output_"):
+            if name.startswith(prefix):
+                return name
+        return name
+
+    @staticmethod
     def _wrap_svg_text(text: str, max_chars: int) -> list[str]:
-        words = (text or "").replace("_", "_ ").split()
+        value = text or ""
+        if " " not in value and len(value) > max_chars:
+            return [value[index : index + max_chars] for index in range(0, len(value), max_chars)][:3]
+        words = value.split()
         lines = []
         current = ""
         for word in words:
@@ -3127,7 +3517,7 @@ class IdmcExportPackageGenerator:
             parts.append(f'<circle cx="{x1}" cy="{y1 + box_h // 2}" r="6" fill="#744a9c"/>')
             parts.append(f'<polygon points="{x2},{y1 + box_h // 2 - 8} {x2 + 13},{y1 + box_h // 2} {x2},{y1 + box_h // 2 + 8}" fill="#744a9c"/>')
             yy = y1 + 17
-            for line in self._wrap_svg_text(name, 20):
+            for line in self._wrap_svg_text(self._display_node_label(name), 20):
                 parts.append(f'<text x="{x1 + 8}" y="{yy}" font-size="10.5" fill="#111">{html.escape(line)}</text>')
                 yy += 12
             parts.append(f'<g transform="translate({x1 + 14} {y2 - 17})">{self._svg_node_icon(transform_type)}</g>')
@@ -3518,7 +3908,7 @@ class IdmcExportPackageGenerator:
     def _preview_bytes(self, asset_or_mapping: Any) -> bytes:
         if isinstance(asset_or_mapping, dict):
             return self._png_preview_bytes_for_asset(asset_or_mapping)
-        return self._png_preview_bytes(str(asset_or_mapping))
+        return self._png_preview_bytes_for_asset({"name": str(asset_or_mapping)})
 
     def _png_preview_bytes_for_asset(self, asset: dict[str, Any]) -> bytes:
         try:
@@ -3526,9 +3916,30 @@ class IdmcExportPackageGenerator:
         except Exception:
             return self._text_png([f"Mapping: {asset['name']}"])
 
-        mapping: MappingMetadata = asset["mapping"]
-        instances = [to_plain_dict(item) for item in mapping.instances]
-        connectors = [to_plain_dict(item) for item in mapping.connectors]
+        graph = self._expanded_graph_for_mapping_name(asset["name"])
+        if graph is not None:
+            _source_xml, graph_nodes, graph_edges = graph
+            instances = [
+                {
+                    "instance_name": node.get("name", ""),
+                    "instance_type": node.get("pc_type", ""),
+                    "transformation_type": node.get("transformation_type", ""),
+                }
+                for node in graph_nodes
+            ]
+            connectors = [
+                {
+                    "from_instance": edge.get("from", ""),
+                    "to_instance": edge.get("to", ""),
+                }
+                for edge in graph_edges
+            ]
+        else:
+            mapping: MappingMetadata | None = asset.get("mapping")
+            if mapping is None:
+                return self._png_preview_bytes(asset["name"])
+            instances = [to_plain_dict(item) for item in mapping.instances]
+            connectors = [to_plain_dict(item) for item in mapping.connectors]
         if not instances:
             return self._text_png([f"Mapping: {asset['name']}", "No mapping instances found"])
 
@@ -3613,12 +4024,7 @@ class IdmcExportPackageGenerator:
 
         image = Image.new("RGB", (width, height), (252, 253, 255))
         draw = ImageDraw.Draw(image)
-        try:
-            title_font = ImageFont.truetype("arial.ttf", 22)
-            font = ImageFont.truetype("arial.ttf", 12)
-            small_font = ImageFont.truetype("arial.ttf", 10)
-        except Exception:
-            title_font = font = small_font = ImageFont.load_default()
+        title_font, font, small_font = self._preview_fonts(ImageFont, 24, 14, 15)
 
         draw.rectangle((0, 0, width - 1, height - 1), fill=(255, 255, 255), outline=(210, 214, 220), width=2)
         draw.rectangle((0, 0, width, 58), fill=(248, 248, 248))
@@ -3676,8 +4082,9 @@ class IdmcExportPackageGenerator:
                 draw.polygon([(x + box_w - 1, y + 20), (x + box_w + 10, y + 27), (x + box_w - 1, y + 34)], fill=(103, 68, 151))
                 if incoming.get(name, 0):
                     draw.ellipse((x - 8, y + 21, x + 4, y + 33), fill=(103, 68, 151))
-                label = name if len(name) <= 24 else name[:21] + "..."
-                draw.text((x + 8, y + 8), label, fill=(20, 35, 55), font=small_font)
+                display_name = self._display_node_label(name)
+                label = display_name if len(display_name) <= 24 else display_name[:21] + "..."
+                draw.text((x + 8, y + 7), label, fill=(20, 35, 55), font=small_font)
                 ic = icon_color.get(kind(name), icon_color["default"])
                 ix, iy = x + 12, y + 31
                 if kind(name) == "lookup":
@@ -3727,17 +4134,29 @@ class IdmcExportPackageGenerator:
         return buffer.getvalue()
 
     @staticmethod
+    def _preview_fonts(image_font: Any, title_size: int, body_size: int, node_size: int) -> tuple[Any, Any, Any]:
+        candidates = [
+            Path(r"C:\Windows\Fonts\segoeui.ttf"),
+            Path(r"C:\Windows\Fonts\arial.ttf"),
+        ]
+        for font_path in candidates:
+            if font_path.exists():
+                return (
+                    image_font.truetype(str(font_path), title_size),
+                    image_font.truetype(str(font_path), body_size),
+                    image_font.truetype(str(font_path), node_size),
+                )
+        fallback = image_font.load_default()
+        return fallback, fallback, fallback
+
+    @staticmethod
     def _text_png(lines: list[str]) -> bytes:
         try:
             from PIL import Image, ImageDraw, ImageFont
             width, height = 1200, 420
             image = Image.new("RGB", (width, height), "white")
             draw = ImageDraw.Draw(image)
-            try:
-                title_font = ImageFont.truetype("arial.ttf", 24)
-                font = ImageFont.truetype("arial.ttf", 16)
-            except Exception:
-                title_font = font = ImageFont.load_default()
+            title_font, font, _small_font = IdmcExportPackageGenerator._preview_fonts(ImageFont, 24, 16, 14)
             draw.rectangle((0, 0, width - 1, height - 1), outline=(90, 120, 160), width=3)
             draw.rectangle((20, 20, width - 20, 80), fill=(230, 240, 252), outline=(90, 120, 160), width=2)
             draw.text((38, 38), lines[0], fill=(20, 40, 70), font=title_font)
