@@ -10,6 +10,7 @@ import io
 import json
 import re
 import shutil
+import uuid
 import zlib
 import zipfile
 import xml.etree.ElementTree as ET
@@ -19,7 +20,10 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape
 
-from business.iics.iics_package_generator import _build_bin as _build_native_dtemplate_bin
+from business.iics.iics_package_generator import (
+    _build_bin as _build_native_dtemplate_bin,
+    _build_workflow_taskflow_xml as _build_native_taskflow_xml,
+)
 from business.iics.iics_success_benchmark import IICSSuccessBenchmark
 from business.parser.xml_parser import XMLParser
 from common.config.config import AppConfig
@@ -77,7 +81,10 @@ class IdmcExportPackageGenerator:
         self.package_name = package_name
         self.execution_strategy = execution_strategy
         self.reference_package = self._default_reference_package(reference_package)
-        self.folder_name = self.FOLDER_NAME
+        self.package_guid_seed = uuid.uuid4().hex
+        self.import_run_suffix = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        self.folder_name = f"{self.FOLDER_NAME}_{self.import_run_suffix}"
+        self.source_org_id, self.source_org_name, self.reference_project_id = self._reference_export_identity()
         self.package_path = self.output_folder / package_name
         self.staging_folder = self.output_folder / "idmc_export_package"
         self.parser = XMLParser(config=config, logger=logger)
@@ -111,17 +118,18 @@ class IdmcExportPackageGenerator:
 
         if self.execution_strategy == "POWERCENTER_XML_TASK":
             sample_templates = self._sample_asset_templates()
+            combine_unmatched_sample_templates = False
             if sample_templates:
                 asset_names = {asset["name"] for asset in mapping_assets}
                 template_names = {template.get("name", "") for template in sample_templates}
                 if not asset_names.issubset(template_names):
                     self.logger.warning(
                         "Reference package templates do not exactly match remediated mappings. "
-                        "Using remediated-XML functional payloads instead. mappings=%s templates=%s",
+                        "Rewriting available native IICS template artifacts for these mappings. mappings=%s templates=%s",
                         sorted(asset_names),
                         sorted(template_names),
                     )
-                    sample_templates = []
+                    combine_unmatched_sample_templates = True
             if sample_templates:
                 dependencies = self._reference_dependencies(sample_templates)
                 for dependency in dependencies:
@@ -178,11 +186,11 @@ class IdmcExportPackageGenerator:
                             {"objectPath": object_path, "objectName": asset["name"], "objectType": "MTT", "id": asset_ids.mtt},
                         ]
                     )
-                    group_key = asset.get("workflow_key") or asset["name"]
+                    group_key = self.folder_name if combine_unmatched_sample_templates else asset.get("workflow_key") or asset["name"]
                     group = taskflow_groups.setdefault(
                         group_key,
                         {
-                            "name": asset.get("workflow_name") or asset["name"],
+                            "name": self.folder_name if combine_unmatched_sample_templates else asset.get("workflow_name") or asset["name"],
                             "assets": [],
                             "links": asset.get("workflow_links", []),
                         },
@@ -192,15 +200,23 @@ class IdmcExportPackageGenerator:
                 for group in taskflow_groups.values():
                     taskflow_name = self._asset_name(group["name"])
                     taskflow_id = self._guid("taskflow", taskflow_name)
-                    workflow_templates = self._success_workflow_templates(len(group["assets"]))
-                    taskflow_text = self._workflow_taskflow_xml(
-                        taskflow_name,
-                        taskflow_id,
-                        group["assets"],
-                        sample_templates,
-                        now,
-                        workflow_templates=workflow_templates,
-                    )
+                    if combine_unmatched_sample_templates:
+                        taskflow_text = _build_native_taskflow_xml(
+                            {"workflow_name": taskflow_name},
+                            [(asset["name"], asset["ids"].mtt) for asset in group["assets"]],
+                            taskflow_id,
+                            f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml",
+                        )
+                    else:
+                        workflow_templates = self._success_workflow_templates(len(group["assets"]))
+                        taskflow_text = self._workflow_taskflow_xml(
+                            taskflow_name,
+                            taskflow_id,
+                            group["assets"],
+                            sample_templates,
+                            now,
+                            workflow_templates=workflow_templates,
+                        )
                     entry_id = self._taskflow_entry_id_from_text(taskflow_text) or f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
                     taskflow_refs = self._ordered_unique(
                         [
@@ -241,9 +257,12 @@ class IdmcExportPackageGenerator:
                     {"objectPath": "/SYS", "objectName": self.CONNECTION_NAME, "objectType": "Connection", "id": ids.connection}
                 )
                 self._write_pcxml_source_bundle(xml_files, mapping_assets, now)
+                taskflow_assets: list[dict[str, Any]] = []
                 for asset in mapping_assets:
                     asset_ids = self._asset_ids(asset["name"])
-                    self._write_mapping_artifacts(asset, asset_ids, now)
+                    asset["ids"] = asset_ids
+                    self._write_mapping_artifacts(asset, asset_ids, now, write_taskflow=False)
+                    taskflow_assets.append(asset)
                     object_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
                     exported_objects.extend(
                         [
@@ -266,26 +285,45 @@ class IdmcExportPackageGenerator:
                                 f"Generated functional mapping task wrapper for remediated XML : {asset['name']}",
                                 [asset_ids.dtemplate, ids.connection, ids.agent_group],
                             ),
-                            self._exported_object(
-                                asset_ids.taskflow,
-                                asset["name"],
-                                "TASKFLOW",
-                                object_path,
-                                "application/json; charset=utf-8",
-                                "VALID",
-                                "Generated PowerCenter XML taskflow wrapper.",
-                                [asset_ids.mtt],
-                                model_version={"major": 1, "minor": 0},
-                            ),
                         ]
                     )
                     contents_rows.extend(
                         [
                             {"objectPath": object_path, "objectName": asset["name"], "objectType": "DTEMPLATE", "id": asset_ids.dtemplate},
                             {"objectPath": object_path, "objectName": asset["name"], "objectType": "MTT", "id": asset_ids.mtt},
-                            {"objectPath": object_path, "objectName": asset["name"], "objectType": "TASKFLOW", "id": asset_ids.taskflow},
                         ]
                     )
+                taskflow_name = self.folder_name
+                taskflow_id = self._guid("taskflow", taskflow_name)
+                taskflow_entry_id = f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
+                taskflow_text = _build_native_taskflow_xml(
+                    {"workflow_name": taskflow_name},
+                    [(asset["name"], asset["ids"].mtt) for asset in taskflow_assets],
+                    taskflow_id,
+                    taskflow_entry_id,
+                )
+                mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
+                (mapping_folder / f"{taskflow_name}.TASKFLOW.xml").write_text(taskflow_text, encoding="utf-8")
+                object_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
+                mtt_refs = [asset["ids"].mtt for asset in taskflow_assets]
+                exported_objects.append(
+                    self._exported_object(
+                        taskflow_id,
+                        taskflow_name,
+                        "TASKFLOW",
+                        object_path,
+                        "application/json; charset=utf-8",
+                        "VALID",
+                        "These workflows are created from the Workflow Generation Wizard.",
+                        mtt_refs,
+                        model_version={"major": 1, "minor": 0},
+                        repo_handle=taskflow_entry_id,
+                        context_attributes=None,
+                    )
+                )
+                contents_rows.append(
+                    {"objectPath": object_path, "objectName": taskflow_name, "objectType": "TASKFLOW", "id": taskflow_id}
+                )
         else:
             self._write_system_artifacts(ids, now)
             exported_objects.append(
@@ -354,6 +392,7 @@ class IdmcExportPackageGenerator:
                 {"objectPath": "/SYS", "objectName": self.AGENT_GROUP_NAME, "objectType": "AgentGroup", "id": ids.agent_group}
             )
 
+        exported_objects = self._reference_order_exported_objects(exported_objects)
         self._write_export_metadata(exported_objects, now)
         self._write_contents_csv(contents_rows, now)
         self._assert_staging_dtemplate_integrity()
@@ -1598,7 +1637,13 @@ class IdmcExportPackageGenerator:
         )
         return taskflow_text
 
-    def _write_mapping_artifacts(self, asset: dict[str, Any], ids: _AssetIds, now: datetime) -> None:
+    def _write_mapping_artifacts(
+        self,
+        asset: dict[str, Any],
+        ids: _AssetIds,
+        now: datetime,
+        write_taskflow: bool = True,
+    ) -> None:
         mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
         mapping_name = asset["name"]
         template_payload = self._template_payload(asset)
@@ -1682,10 +1727,11 @@ class IdmcExportPackageGenerator:
                 "metadata.meta": self._json_bytes([{"@type": "objectRef", "id": "@1", "type": "mtTask"}]),
             },
         )
-        (mapping_folder / f"{mapping_name}.TASKFLOW.xml").write_text(
-            self._taskflow_xml(mapping_name, ids, now),
-            encoding="utf-8",
-        )
+        if write_taskflow:
+            (mapping_folder / f"{mapping_name}.TASKFLOW.xml").write_text(
+                self._taskflow_xml(mapping_name, ids, now),
+                encoding="utf-8",
+            )
 
     def _template_payload(self, asset: dict[str, Any]) -> dict[str, Any]:
         mapping: MappingMetadata = asset["mapping"]
@@ -1809,47 +1855,13 @@ class IdmcExportPackageGenerator:
         return [{"name": key, "value": value, "recommended": False} for key, value in properties.items()]
 
     def _taskflow_xml(self, mapping_name: str, ids: _AssetIds, now: datetime) -> str:
-        escaped_name = escape(mapping_name)
         entry_id = f"{ids.taskflow}-gt-{self._epoch_millis(now)}::tf.xml"
-        return f'''<aetgt:getResponse xmlns:aetgt="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd"
-                   xmlns:types1="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd">
-   <types1:Item>
-      <types1:EntryId>{entry_id}</types1:EntryId>
-      <types1:Name>{escaped_name}</types1:Name>
-      <types1:MimeType>application/xml+taskflow</types1:MimeType>
-      <types1:Description>PowerCenter XML task wrapper for remediated XML. Convert or deploy through supported IICS APIs before native CDI execution.</types1:Description>
-      <types1:VersionLabel>1.0</types1:VersionLabel>
-      <types1:State>CURRENT</types1:State>
-      <types1:CreationDate>{self._timestamp(now)}</types1:CreationDate>
-      <types1:PublicationStatus>published</types1:PublicationStatus>
-      <types1:PublishedContributionId>project:/tf.{escaped_name}/{escaped_name}.tf.xml</types1:PublishedContributionId>
-      <types1:Entry>
-         <taskflow xmlns="http://schemas.active-endpoints.com/appmodules/screenflow/2010/10/avosScreenflow.xsd"
-                   xmlns:tfm="http://schemas.active-endpoints.com/appmodules/screenflow/2021/04/taskflowModel.xsd"
-                   GUID="{ids.taskflow}"
-                   displayName="{escaped_name}"
-                   name="{escaped_name}"
-                   overrideAPIName="false">
-            <description>PowerCenter XML task wrapper for remediated XML. This is not a direct native CDI mapping upload.</description>
-            <generator>PC2Cloud Workflow Converter v1</generator>
-            <input>
-               <parameter name="InputMappingTaskParameterFileDir" type="string"/>
-               <parameter name="InputMappingTaskParameterFileName" type="string"/>
-               <parameter name="InputPowerCenterXmlFileName" type="string"/>
-            </input>
-            <tempFields>
-               <field description="" name="{escaped_name}" type="reference">
-                  <options>
-                     <option name="referenceTo">$po:{escape(mapping_name.replace("_", "-"))}</option>
-                     <option name="required">false</option>
-                  </options>
-               </field>
-            </tempFields>
-         </taskflow>
-      </types1:Entry>
-   </types1:Item>
-</aetgt:getResponse>
-'''
+        return _build_native_taskflow_xml(
+            {"workflow_name": mapping_name},
+            [(mapping_name, ids.mtt)],
+            ids.taskflow,
+            entry_id,
+        )
 
     def _assert_staging_dtemplate_integrity(self) -> None:
         """Validate every staged DTEMPLATE/MTT before packaging so broken zips never ship."""
@@ -1885,12 +1897,33 @@ class IdmcExportPackageGenerator:
 
     def _write_export_metadata(self, exported_objects: list[dict[str, Any]], now: datetime) -> None:
         payload = {
-            "name": self.folder_name,
-            "sourceOrgId": "combined-local-repair",
-            "sourceOrgName": "PC_IICS_MIGRATION",
+            "name": f"{self.folder_name}-{self._epoch_millis(now)}",
+            "sourceOrgId": self.source_org_id,
+            "sourceOrgName": self.source_org_name,
             "exportedObjects": exported_objects,
         }
         (self.staging_folder / "exportMetadata.v2.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    @staticmethod
+    def _reference_order_exported_objects(exported_objects: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        order = {
+            "Project": 0,
+            "Connection": 1,
+            "AgentGroup": 2,
+            "MTT": 3,
+            "Folder": 4,
+            "TASKFLOW": 5,
+            "DTEMPLATE": 6,
+            "DMAPPLET": 7,
+        }
+        return sorted(
+            exported_objects,
+            key=lambda obj: (
+                order.get(obj.get("objectType", ""), 99),
+                obj.get("path", ""),
+                obj.get("objectName", ""),
+            ),
+        )
 
     def _write_contents_csv(self, rows: list[dict[str, str]], now: datetime) -> None:
         csv_path = self.staging_folder / f"ContentsofExportPackage_{self.folder_name}.csv"
@@ -2095,7 +2128,7 @@ class IdmcExportPackageGenerator:
 
     def _base_ids(self) -> _AssetIds:
         return _AssetIds(
-            project=self._guid("project", self.PROJECT_NAME),
+            project=self.reference_project_id or self._guid("project", self.PROJECT_NAME),
             folder=self._guid("folder", self.folder_name),
             connection=self._guid("connection", self.CONNECTION_NAME),
             agent_group=self._guid("agent-group", self.AGENT_GROUP_NAME),
@@ -2636,9 +2669,8 @@ class IdmcExportPackageGenerator:
     def _repo_handle(object_guid: str) -> str:
         return hashlib.sha1(object_guid.encode("utf-8")).hexdigest()[:20].upper()
 
-    @staticmethod
-    def _guid(*parts: str) -> str:
-        digest = hashlib.sha256("|".join(parts).encode("utf-8")).digest()
+    def _guid(self, *parts: str) -> str:
+        digest = hashlib.sha256("|".join([self.package_guid_seed, *parts]).encode("utf-8")).digest()
         alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         number = int.from_bytes(digest[:16], "big")
         chars = []
@@ -2646,6 +2678,28 @@ class IdmcExportPackageGenerator:
             number, remainder = divmod(number, len(alphabet))
             chars.append(alphabet[remainder])
         return "".join(chars)
+
+    def _reference_export_identity(self) -> tuple[str, str, str]:
+        if not self.reference_package or not self.reference_package.exists():
+            return "gO4aVWAxgK0lY2UdXmECWZ", "Jacobs", ""
+        try:
+            with zipfile.ZipFile(self.reference_package) as package:
+                metadata = json.loads(package.read("exportMetadata.v2.json"))
+                project = next(
+                    (
+                        item
+                        for item in metadata.get("exportedObjects", [])
+                        if item.get("objectType") == "Project" and item.get("objectName") == self.PROJECT_NAME
+                    ),
+                    {},
+                )
+                return (
+                    metadata.get("sourceOrgId") or "gO4aVWAxgK0lY2UdXmECWZ",
+                    metadata.get("sourceOrgName") or "Jacobs",
+                    project.get("objectGuid", ""),
+                )
+        except (KeyError, OSError, zipfile.BadZipFile, json.JSONDecodeError):
+            return "gO4aVWAxgK0lY2UdXmECWZ", "Jacobs", ""
 
     @staticmethod
     def _asset_name(name: str) -> str:

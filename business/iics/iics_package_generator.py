@@ -1493,6 +1493,10 @@ def _build_workflow_taskflow_xml(
                </processObject>"""
 
     start_link = _h()
+    asgn1_id = _h()
+    asgn1_link = _h()
+    asgn2_id = _h()
+    asgn2_link = _h()
     parallel_id = _h()
     xml = f"""<aetgt:getResponse xmlns:aetgt="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd"
                    xmlns:types1="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd">
@@ -1525,8 +1529,22 @@ def _build_workflow_taskflow_xml(
             <flow id="a">
                <start id="b">
                   <title>Start</title>
-                  <link id="{start_link}" targetId="{parallel_id}"/>
+                  <link id="{start_link}" targetId="{asgn1_id}"/>
                </start>
+               <assignment id="{asgn1_id}">
+                  <title>Assignment_PC_Variables</title>
+                  <link id="{asgn1_link}" targetId="{asgn2_id}"/>
+               </assignment>
+               <assignment id="{asgn2_id}">
+                  <title>Assignment_PC_Workflow_Parameter_File</title>
+                  <operation source="formula" to="input.InputMappingTaskParameterFileDir">
+                     <expression language="XQuery">if (fn:empty($input.InputMappingTaskParameterFileDir)) then '' else $input.InputMappingTaskParameterFileDir</expression>
+                  </operation>
+                  <operation source="formula" to="input.InputMappingTaskParameterFileName">
+                     <expression language="XQuery">if (fn:empty($input.InputMappingTaskParameterFileName)) then '' else $input.InputMappingTaskParameterFileName</expression>
+                  </operation>
+                  <link id="{asgn2_link}" targetId="{parallel_id}"/>
+               </assignment>
                <container id="{parallel_id}" type="parallel">
 {branch_xml}
                </container>
