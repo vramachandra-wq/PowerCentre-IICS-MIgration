@@ -5,7 +5,9 @@ Generate IDMC export packages from remediated PowerCenter XML metadata.
 from __future__ import annotations
 
 import csv
+import copy
 import hashlib
+import html
 import io
 import json
 import re
@@ -395,6 +397,8 @@ class IdmcExportPackageGenerator:
         exported_objects = self._reference_order_exported_objects(exported_objects)
         self._write_export_metadata(exported_objects, now)
         self._write_contents_csv(contents_rows, now)
+        self._write_functional_conversion_audit(xml_files, mapping_assets, exported_objects, now)
+        self._write_downloadable_mapping_images(xml_files, now)
         self._assert_staging_dtemplate_integrity()
         self._write_checksum()
         self._zip_staging_folder()
@@ -967,11 +971,286 @@ class IdmcExportPackageGenerator:
         payload = self._replace_json_strings(payload, replacements)
         if isinstance(payload.get("content"), dict):
             payload["content"]["name"] = mapping_name
+            self._apply_remediated_mapping_graph(payload, mapping_name)
         if not isinstance(payload.get("metadata"), dict):
             payload["metadata"] = {"$$classInfo": class_info}
         elif not payload["metadata"].get("$$classInfo"):
             payload["metadata"]["$$classInfo"] = class_info
         return self._json_bytes(payload)
+
+    def _apply_remediated_mapping_graph(self, payload: dict[str, Any], mapping_name: str) -> None:
+        """Replace the sample IMF graph with the remediated XML mapping graph.
+
+        The reference export supplies the IDMC/IMF object shape and class registry;
+        the remediated XML supplies the actual PowerCenter mapping instances and
+        links. Keeping those roles separate avoids the previous issue where the
+        importable JSON still showed only the three sample-template objects.
+        """
+
+        content = payload.get("content")
+        if not isinstance(content, dict):
+            return
+
+        mapping = self._remediated_mapping_element(mapping_name)
+        if mapping is None:
+            return
+
+        instances = list(mapping.findall("INSTANCE"))
+        if not instances:
+            return
+
+        original_transformations = [
+            item
+            for item in content.get("transformations", [])
+            if isinstance(item, dict) and item.get("$$class") is not None
+        ]
+        if not original_transformations:
+            return
+
+        original_links = [item for item in content.get("links", []) if isinstance(item, dict)]
+        next_id = self._max_imf_id(payload) + 1
+
+        def allocate_id() -> int:
+            nonlocal next_id
+            value = next_id
+            next_id += 1
+            return value
+
+        prototypes = self._imf_transformation_prototypes(original_transformations)
+        cloned_transformations: list[dict[str, Any]] = []
+        transformation_refs: dict[str, tuple[int, int, int]] = {}
+
+        for position, instance in enumerate(instances):
+            instance_name = instance.get("NAME", "")
+            if not instance_name:
+                continue
+            prototype = self._prototype_for_pc_instance(instance, prototypes, position)
+            cloned = self._clone_imf_node_with_fresh_ids(prototype, allocate_id)
+            cloned["name"] = instance_name
+            pc_type = instance.get("TYPE", "")
+            transformation_type = instance.get("TRANSFORMATION_TYPE", "")
+            transformation_name = instance.get("TRANSFORMATION_NAME", instance_name)
+            cloned["annotations"] = self._imf_annotations(
+                cloned.get("annotations"),
+                self._pc_instance_annotation(mapping, instance_name, pc_type, transformation_type, transformation_name),
+                allocate_id,
+            )
+            self._tag_imf_advanced_properties(
+                cloned,
+                {
+                    "powerCenterInstanceType": pc_type,
+                    "powerCenterTransformationType": transformation_type,
+                    "powerCenterTransformationName": transformation_name,
+                },
+                allocate_id,
+            )
+            transformation_id = int(cloned.get("$$ID", allocate_id()))
+            group_id = self._first_imf_group_id(cloned) or transformation_id
+            transformation_class = int(cloned.get("$$class", prototype.get("$$class", 7)))
+            transformation_refs[instance_name] = (transformation_id, group_id, transformation_class)
+            cloned_transformations.append(cloned)
+
+        links = self._remediated_imf_links(
+            mapping,
+            original_links,
+            transformation_refs,
+            allocate_id,
+        )
+        content["transformations"] = cloned_transformations
+        content["links"] = links
+        content["annotations"] = self._imf_annotations(
+            content.get("annotations"),
+            f"Graph generated from remediated PowerCenter XML: {len(cloned_transformations)} instances, {len(links)} links.",
+            allocate_id,
+        )
+
+    def _remediated_mapping_element(self, mapping_name: str) -> ET.Element | None:
+        for xml_file in self._xml_files():
+            try:
+                root = ET.parse(xml_file).getroot()
+            except ET.ParseError:
+                continue
+            for mapping in root.findall(".//MAPPING"):
+                if mapping.get("NAME") == mapping_name:
+                    return mapping
+        return None
+
+    @staticmethod
+    def _imf_transformation_prototypes(transformations: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+        def by_class(class_id: int) -> dict[str, Any] | None:
+            return next((item for item in transformations if item.get("$$class") == class_id), None)
+
+        source = by_class(6) or transformations[0]
+        target = by_class(8) or transformations[-1]
+        generic = by_class(7) or source
+        return {"SOURCE": source, "TARGET": target, "TRANSFORMATION": generic, "MAPPLET": generic}
+
+    @staticmethod
+    def _prototype_for_pc_instance(
+        instance: ET.Element,
+        prototypes: dict[str, dict[str, Any]],
+        position: int,
+    ) -> dict[str, Any]:
+        pc_type = (instance.get("TYPE") or "").upper()
+        if pc_type == "SOURCE":
+            return prototypes["SOURCE"]
+        if pc_type == "TARGET":
+            return prototypes["TARGET"]
+        if pc_type == "MAPPLET":
+            return prototypes["MAPPLET"]
+        return prototypes["TRANSFORMATION"]
+
+    @staticmethod
+    def _clone_imf_node_with_fresh_ids(node: dict[str, Any], allocate_id) -> dict[str, Any]:
+        cloned = copy.deepcopy(node)
+        id_map: dict[int, int] = {}
+
+        def collect(value: Any) -> None:
+            if isinstance(value, dict):
+                if isinstance(value.get("$$ID"), int):
+                    id_map.setdefault(value["$$ID"], allocate_id())
+                for item in value.values():
+                    collect(item)
+            elif isinstance(value, list):
+                for item in value:
+                    collect(item)
+
+        def rewrite(value: Any) -> Any:
+            if isinstance(value, dict):
+                rewritten: dict[str, Any] = {}
+                for key, item in value.items():
+                    if key == "$$ID" and isinstance(item, int):
+                        rewritten[key] = id_map[item]
+                    elif key == "##ID" and isinstance(item, int) and item in id_map:
+                        rewritten[key] = id_map[item]
+                    else:
+                        rewritten[key] = rewrite(item)
+                return rewritten
+            if isinstance(value, list):
+                return [rewrite(item) for item in value]
+            return value
+
+        collect(cloned)
+        return rewrite(cloned)
+
+    def _pc_instance_annotation(
+        self,
+        mapping: ET.Element,
+        instance_name: str,
+        pc_type: str,
+        transformation_type: str,
+        transformation_name: str,
+    ) -> str:
+        fields: list[str] = []
+        if transformation_name:
+            transformation = next(
+                (
+                    item
+                    for item in mapping.findall("TRANSFORMATION")
+                    if item.get("NAME") == transformation_name or item.get("NAME") == instance_name
+                ),
+                None,
+            )
+            if transformation is not None:
+                fields = [
+                    field.get("NAME", "")
+                    for field in transformation.findall("TRANSFORMFIELD")
+                    if field.get("NAME")
+                ]
+        field_text = ", ".join(fields[:40])
+        if len(fields) > 40:
+            field_text += f", ... (+{len(fields) - 40} more)"
+        details = [
+            f"PowerCenter instance: {instance_name}",
+            f"type={pc_type or 'unknown'}",
+            f"transformationType={transformation_type or 'unknown'}",
+            f"transformationName={transformation_name or instance_name}",
+        ]
+        if field_text:
+            details.append(f"ports={field_text}")
+        return "; ".join(details)
+
+    def _imf_annotations(self, existing: Any, body: str, allocate_id) -> list[dict[str, Any]]:
+        annotations = [item for item in existing if isinstance(item, dict)] if isinstance(existing, list) else []
+        if annotations:
+            updated = copy.deepcopy(annotations)
+            updated[0]["body"] = body
+            return updated
+        return [{"$$ID": allocate_id(), "$$class": 2, "body": body}]
+
+    @staticmethod
+    def _tag_imf_advanced_properties(node: dict[str, Any], tags: dict[str, str], allocate_id) -> None:
+        properties = node.get("advancedProperties")
+        if not isinstance(properties, list):
+            properties = []
+            node["advancedProperties"] = properties
+        existing_names = {item.get("name") for item in properties if isinstance(item, dict)}
+        for name, value in tags.items():
+            if not value or name in existing_names:
+                continue
+            properties.append(
+                {
+                    "$$ID": allocate_id(),
+                    "$$class": 18,
+                    "name": name,
+                    "value": value,
+                }
+            )
+
+    @staticmethod
+    def _first_imf_group_id(node: dict[str, Any]) -> int | None:
+        groups = node.get("groups")
+        if isinstance(groups, list):
+            for group in groups:
+                if isinstance(group, dict) and isinstance(group.get("$$ID"), int):
+                    return group["$$ID"]
+        return None
+
+    def _remediated_imf_links(
+        self,
+        mapping: ET.Element,
+        original_links: list[dict[str, Any]],
+        transformation_refs: dict[str, tuple[int, int, int]],
+        allocate_id,
+    ) -> list[dict[str, Any]]:
+        prototype = original_links[0] if original_links else {"$$class": 4}
+        seen: set[tuple[str, str]] = set()
+        links: list[dict[str, Any]] = []
+        for connector in mapping.findall("CONNECTOR"):
+            from_instance = connector.get("FROMINSTANCE", "")
+            to_instance = connector.get("TOINSTANCE", "")
+            if not from_instance or not to_instance:
+                continue
+            edge = (from_instance, to_instance)
+            if edge in seen or from_instance not in transformation_refs or to_instance not in transformation_refs:
+                continue
+            seen.add(edge)
+            from_transform_id, from_group_id, from_class = transformation_refs[from_instance]
+            to_transform_id, to_group_id, to_class = transformation_refs[to_instance]
+            link = self._clone_imf_node_with_fresh_ids(prototype, allocate_id)
+            link["$$ID"] = allocate_id()
+            link["$$class"] = int(link.get("$$class", 4))
+            link["name"] = f"{from_instance}.DefaultGroup_to_{to_instance}.DefaultGroup"
+            link["fromGroup"] = {"##ID": from_group_id, "$$class": 5}
+            link["toGroup"] = {"##ID": to_group_id, "$$class": 5}
+            link["fromTransformation"] = {"##ID": from_transform_id, "$$class": from_class}
+            link["toTransformation"] = {"##ID": to_transform_id, "$$class": to_class}
+            links.append(link)
+        return links
+
+    @staticmethod
+    def _max_imf_id(value: Any) -> int:
+        max_id = 0
+        if isinstance(value, dict):
+            for key, item in value.items():
+                if key in {"$$ID", "##ID"} and isinstance(item, int):
+                    max_id = max(max_id, item)
+                else:
+                    max_id = max(max_id, IdmcExportPackageGenerator._max_imf_id(item))
+        elif isinstance(value, list):
+            for item in value:
+                max_id = max(max_id, IdmcExportPackageGenerator._max_imf_id(item))
+        return max_id
 
     def _sync_dtemplate_file_records(
         self,
@@ -1931,6 +2210,806 @@ class IdmcExportPackageGenerator:
             writer = csv.DictWriter(csv_file, fieldnames=["objectPath", "objectName", "objectType", "id"])
             writer.writeheader()
             writer.writerows(rows)
+
+    def _write_functional_conversion_audit(
+        self,
+        xml_files: list[Path],
+        mapping_assets: list[dict[str, Any]],
+        exported_objects: list[dict[str, Any]],
+        now: datetime,
+    ) -> None:
+        """Validate and document functional coverage from remediated XML to ZIP assets."""
+
+        audit_folder = self.staging_folder / "ConversionAudit"
+        audit_folder.mkdir(parents=True, exist_ok=True)
+
+        object_counts: dict[str, int] = {}
+        object_names_by_type: dict[str, set[str]] = {}
+        exported_by_type: dict[str, list[dict[str, Any]]] = {}
+        for obj in exported_objects:
+            object_type = obj.get("objectType", "")
+            exported_by_type.setdefault(object_type, []).append(obj)
+
+        for path in xml_files:
+            xml_summary = self._summarize_remediated_xml(path)
+            for key, value in xml_summary["counts"].items():
+                object_counts[key] = object_counts.get(key, 0) + value
+            for key, values in xml_summary["names"].items():
+                object_names_by_type.setdefault(key, set()).update(values)
+
+        mapping_names = [asset["name"] for asset in mapping_assets]
+        generated_names = {
+            "mappings": [obj["objectName"] for obj in exported_by_type.get("DTEMPLATE", [])],
+            "mappingTasks": [obj["objectName"] for obj in exported_by_type.get("MTT", [])],
+            "taskflows": [obj["objectName"] for obj in exported_by_type.get("TASKFLOW", [])],
+        }
+
+        errors = []
+        if len(generated_names["mappings"]) != len(mapping_names):
+            errors.append(
+                f"Expected {len(mapping_names)} generated mappings, found {len(generated_names['mappings'])}"
+            )
+        if sorted(generated_names["mappings"]) != sorted(mapping_names):
+            errors.append(
+                f"Generated mapping names {sorted(generated_names['mappings'])} do not match XML mappings {sorted(mapping_names)}"
+            )
+        if len(generated_names["mappingTasks"]) != len(mapping_names):
+            errors.append(
+                f"Expected {len(mapping_names)} mapping tasks, found {len(generated_names['mappingTasks'])}"
+            )
+        if object_counts.get("WORKFLOW", 0) and not generated_names["taskflows"]:
+            errors.append("Remediated XML contains workflows but generated ZIP has no taskflow")
+
+        supported_types = {
+            "Aggregator",
+            "Expression",
+            "Filter",
+            "Joiner",
+            "Lookup Procedure",
+            "Mapplet",
+            "Normalizer",
+            "Rank",
+            "Router",
+            "Sequence",
+            "Source Qualifier",
+            "Stored Procedure",
+            "Update Strategy",
+        }
+        transformation_types = object_names_by_type.get("TRANSFORMATION_TYPE", set())
+        unsupported_types = sorted(item for item in transformation_types if item and item not in supported_types)
+        supported_present = sorted(item for item in transformation_types if item in supported_types)
+
+        mapping_reports = []
+        for asset in mapping_assets:
+            mapping_reports.append(self._functional_coverage(asset))
+
+        audit = {
+            "status": "PASSED" if not errors else "FAILED",
+            "generatedAt": self._timestamp(now),
+            "source": "remediated_xml",
+            "package": {
+                "name": self.package_name,
+                "project": self.PROJECT_NAME,
+                "folder": self.folder_name,
+            },
+            "xmlCounts": object_counts,
+            "generatedAssetCounts": {
+                "mappings": len(generated_names["mappings"]),
+                "mappingTasks": len(generated_names["mappingTasks"]),
+                "taskflows": len(generated_names["taskflows"]),
+                "connections": len(exported_by_type.get("Connection", [])),
+                "agentGroups": len(exported_by_type.get("AgentGroup", [])),
+            },
+            "generatedAssets": generated_names,
+            "supportedTransformationTypesRepresented": supported_present,
+            "unsupportedTransformationTypesDocumented": unsupported_types,
+            "mappingCoverage": mapping_reports,
+            "validationErrors": errors,
+            "notes": [
+                "This audit is generated only from remediated XML during ZIP generation.",
+                "Native IDMC assets are sample-backed for import compatibility; functional coverage is cross-checked and documented here.",
+                "Unsupported PowerCenter object types are documented instead of silently dropped.",
+            ],
+        }
+
+        (audit_folder / "functional_conversion_manifest.json").write_text(
+            json.dumps(audit, indent=2),
+            encoding="utf-8",
+        )
+        for mapping_report in mapping_reports:
+            name = self._asset_name(mapping_report["mapping"])
+            (audit_folder / f"{name}_functional_coverage.json").write_text(
+                json.dumps(mapping_report, indent=2),
+                encoding="utf-8",
+            )
+        if errors:
+            raise ValueError("Functional conversion audit failed: " + "; ".join(errors))
+
+    def _summarize_remediated_xml(self, path: Path) -> dict[str, Any]:
+        root = ET.parse(path).getroot()
+        names: dict[str, set[str]] = {
+            "MAPPING": set(),
+            "MAPPLET": set(),
+            "TRANSFORMATION": set(),
+            "TRANSFORMATION_TYPE": set(),
+            "SOURCE": set(),
+            "TARGET": set(),
+            "SESSION": set(),
+            "WORKFLOW": set(),
+            "PARAMETER": set(),
+            "VARIABLE": set(),
+            "SQL_OVERRIDE": set(),
+        }
+        counts = {
+            "MAPPING": 0,
+            "MAPPLET": 0,
+            "TRANSFORMATION": 0,
+            "INSTANCE": 0,
+            "CONNECTOR": 0,
+            "SOURCE": 0,
+            "TARGET": 0,
+            "SESSION": 0,
+            "WORKFLOW": 0,
+            "WORKLET": 0,
+            "PARAMETER": 0,
+            "VARIABLE": 0,
+            "SQL_OVERRIDE": 0,
+        }
+        for tag in ["MAPPING", "MAPPLET", "TRANSFORMATION", "INSTANCE", "CONNECTOR", "SOURCE", "TARGET", "SESSION", "WORKFLOW", "WORKLET"]:
+            for elem in root.iter(tag):
+                counts[tag] += 1
+                elem_name = elem.attrib.get("NAME")
+                if elem_name and tag in names:
+                    names[tag].add(elem_name)
+                if tag == "TRANSFORMATION":
+                    transform_type = elem.attrib.get("TYPE", "")
+                    if transform_type:
+                        names["TRANSFORMATION_TYPE"].add(transform_type)
+
+        for elem in root.iter():
+            for key, value in elem.attrib.items():
+                upper_key = key.upper()
+                upper_value = value.upper()
+                if upper_key in {"NAME", "USERDEFINED", "PARAMETER", "VARIABLE"} and value.startswith("$$"):
+                    counts["PARAMETER"] += 1
+                    names["PARAMETER"].add(value)
+                if upper_key in {"NAME", "USERDEFINED", "VARIABLE"} and value.startswith("$") and not value.startswith("$$"):
+                    counts["VARIABLE"] += 1
+                    names["VARIABLE"].add(value)
+                if "SQL" in upper_key and value.strip():
+                    counts["SQL_OVERRIDE"] += 1
+                    names["SQL_OVERRIDE"].add(elem.attrib.get("NAME", value[:80]))
+                if "SQL" in upper_value and elem.attrib.get("VALUE"):
+                    counts["SQL_OVERRIDE"] += 1
+                    names["SQL_OVERRIDE"].add(elem.attrib.get("NAME", elem.attrib.get("VALUE", "")[:80]))
+
+        return {
+            "file": path.name,
+            "counts": counts,
+            "names": {key: sorted(value) for key, value in names.items()},
+        }
+
+    def _write_downloadable_mapping_images(self, xml_files: list[Path], now: datetime) -> None:
+        """Embed readable mapping diagrams generated from remediated XML."""
+
+        image_folder = self.staging_folder / "MappingImages"
+        image_folder.mkdir(parents=True, exist_ok=True)
+        index = {
+            "description": (
+                "Downloadable mapping diagrams generated from remediated PowerCenter XML. "
+                "Each diagram includes flow links, transformation inventory, and validation counts."
+            ),
+            "generatedAt": self._timestamp(now),
+            "images": [],
+        }
+        for xml_file in xml_files:
+            for diagram in self._mapping_svg_diagrams(xml_file):
+                file_name = f"{self._asset_name(diagram['mappingName'])}.svg"
+                svg_path = image_folder / file_name
+                svg_path.write_bytes(diagram["content"])
+                index["images"].append(
+                    {
+                        "mappingName": diagram["mappingName"],
+                        "fileName": file_name,
+                        "zipPath": f"MappingImages/{file_name}",
+                        "format": "svg",
+                        "sourceXml": xml_file.name,
+                        "sizeBytes": len(diagram["content"]),
+                        "counts": diagram["counts"],
+                    }
+                )
+        (image_folder / "index.json").write_text(json.dumps(index, indent=2), encoding="utf-8")
+
+    def _mapping_svg_diagrams(self, xml_file: Path) -> list[dict[str, Any]]:
+        root = ET.parse(xml_file).getroot()
+        diagrams = []
+        for folder in root.iter("FOLDER"):
+            folder_transforms = {
+                item.attrib.get("NAME", ""): item
+                for item in folder.findall("TRANSFORMATION")
+                if item.attrib.get("NAME")
+            }
+            mapplets = {
+                item.attrib.get("NAME", ""): item
+                for item in folder.findall("MAPPLET")
+                if item.attrib.get("NAME")
+            }
+            for mapping in folder.findall("MAPPING"):
+                mapping_name = mapping.attrib.get("NAME", xml_file.stem)
+                svg, counts = self._build_mapping_svg(
+                    mapping_name,
+                    xml_file.name,
+                    mapping,
+                    folder_transforms,
+                    mapplets,
+                )
+                diagrams.append({"mappingName": mapping_name, "content": svg, "counts": counts})
+        return diagrams
+
+    def _build_mapping_svg(
+        self,
+        mapping_name: str,
+        source_xml: str,
+        mapping: ET.Element,
+        folder_transforms: dict[str, ET.Element],
+        mapplets: dict[str, ET.Element],
+    ) -> tuple[bytes, dict[str, int]]:
+        instances = []
+        by_name: dict[str, dict[str, str]] = {}
+        for instance in mapping.findall("INSTANCE"):
+            name = instance.attrib.get("NAME") or instance.attrib.get("TRANSFORMATION_NAME") or "Instance"
+            item = {
+                "name": name,
+                "type": instance.attrib.get("TYPE") or instance.attrib.get("TRANSFORMATION_TYPE") or "Transformation",
+                "transformation": instance.attrib.get("TRANSFORMATION_NAME") or name,
+            }
+            instances.append(item)
+            by_name[name] = item
+
+        connectors = []
+        for connector in mapping.findall("CONNECTOR"):
+            frm = connector.attrib.get("FROMINSTANCE", "")
+            to = connector.attrib.get("TOINSTANCE", "")
+            if frm and to and frm != to:
+                connectors.append((frm, to))
+
+        transformation_inventory = self._transformation_inventory(mapping, folder_transforms, mapplets)
+        source_count, target_count = self._source_target_counts(mapping, instances, mapplets)
+        counts = {
+            "sources": source_count,
+            "targets": target_count,
+            "instances": len(instances),
+            "connectors": len(connectors),
+            "transformations": len(transformation_inventory),
+            "mapplets": len([item for item in transformation_inventory if item["origin"].startswith("mapplet:")]),
+            "sqlOverrides": len([item for item in transformation_inventory if item["sqlOverride"]]),
+            "expressions": len([item for item in transformation_inventory if item["expressionCount"]]),
+        }
+
+        node_names = [item["name"] for item in instances] or [mapping_name]
+        if mapping_name not in by_name and not instances:
+            by_name[mapping_name] = {"name": mapping_name, "type": "Mapping", "transformation": mapping_name}
+        ranks = self._layout_ranks(node_names, connectors)
+        columns: dict[int, list[str]] = {}
+        for name in node_names:
+            columns.setdefault(ranks.get(name, 0), []).append(name)
+        max_rank = max(columns.keys(), default=0)
+        row_count = max((len(names) for names in columns.values()), default=1)
+        box_w = 124
+        box_h = 54
+        x_gap = 58
+        y_gap = 34
+        margin = 64
+        header = 204
+        palette_w = 112
+        flow_width = margin * 2 + palette_w + (max_rank + 1) * box_w + max_rank * x_gap
+        width = max(1450, flow_width + 84)
+        height = max(600, header + margin + row_count * box_h + max(0, row_count - 1) * y_gap)
+        boxes = self._node_boxes(columns, max_rank, row_count, box_w, box_h, x_gap, y_gap, margin, header, height)
+        boxes = {
+            name: (x1 + palette_w, y1, x2 + palette_w, y2)
+            for name, (x1, y1, x2, y2) in boxes.items()
+        }
+        parts = [
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+            '<defs>'
+            '<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7a579a"/></marker>'
+            '<style>text{font-family:"Segoe UI",Arial,sans-serif;letter-spacing:0}.title{font-size:20px;fill:#1f1f1f}.ui{font-size:13px;fill:#222}.small{font-size:11px;fill:#111}.tiny{font-size:10px;fill:#111}</style>'
+            '</defs>',
+            '<rect width="100%" height="100%" fill="#fff"/>',
+            *self._svg_idmc_frame(mapping_name, source_xml, source_count, target_count, len(transformation_inventory), len(connectors), width, height, palette_w),
+        ]
+        parts.extend(self._svg_edges(connectors, boxes))
+        parts.extend(self._svg_nodes(boxes, by_name, box_w, box_h))
+        parts.append("</svg>")
+        return "".join(parts).encode("utf-8"), counts
+
+    def _svg_idmc_frame(
+        self,
+        mapping_name: str,
+        source_xml: str,
+        source_count: int,
+        target_count: int,
+        transformation_count: int,
+        connector_count: int,
+        width: int,
+        height: int,
+        palette_w: int,
+    ) -> list[str]:
+        palette_items = [
+            ("Source", "#daeef7"),
+            ("Target", "#e8f4dc"),
+            ("Access Policy", "#f4d9ff"),
+            ("Aggregator", "#ffe2c9"),
+            ("B2B", "#eee5ff"),
+            ("Cleanse", "#edf1f5"),
+            ("Data Masking", "#edf1f5"),
+        ]
+        parts = [
+            '<rect x="0" y="0" width="100%" height="58" fill="#f7f7f8" stroke="#d8dce2"/>',
+            f'<text x="34" y="36" font-family="Arial, sans-serif" font-size="20" fill="#222">{html.escape(mapping_name)}</text>',
+            '<circle cx="260" cy="28" r="9" fill="#00a33d"/>',
+            '<text x="276" y="33" font-family="Arial, sans-serif" font-size="14" fill="#222">Valid</text>',
+            '<rect x="900" y="16" width="214" height="27" rx="2" fill="#4b207e"/>',
+            '<text x="926" y="35" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#fff">Switch to Advanced...</text>',
+            '<rect x="1160" y="18" width="86" height="25" fill="#ffffff"/>',
+            '<text x="1193" y="35" font-family="Arial, sans-serif" font-size="14" fill="#555">Save</text>',
+            '<rect x="1260" y="16" width="82" height="27" rx="2" fill="#0b57d0"/>',
+            '<text x="1288" y="35" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#fff">Run</text>',
+            '<text x="1370" y="35" font-family="Arial, sans-serif" font-size="22" fill="#555">⋮</text>',
+            '<text x="54" y="96" font-family="Arial, sans-serif" font-size="16" fill="#000">Design</text>',
+            f'<rect x="54" y="112" width="{width - 88}" height="{height - 126}" fill="#fff" stroke="#0969da" stroke-width="1.3"/>',
+            f'<rect x="54" y="112" width="{palette_w - 8}" height="{height - 126}" fill="#f7fbff" stroke="#0969da" stroke-width="1"/>',
+            '<rect x="1158" y="80" width="30" height="20" rx="10" fill="#3b3b3b"/>',
+            '<text x="1194" y="96" font-family="Arial, sans-serif" font-size="12" fill="#333">OFF</text>',
+            '<text x="1268" y="101" font-family="Arial, sans-serif" font-size="27" fill="#222">▦</text>',
+            '<text x="1348" y="101" font-family="Arial, sans-serif" font-size="24" fill="#9aa0a6">⌫</text>',
+            '<text x="1400" y="101" font-family="Arial, sans-serif" font-size="24" fill="#222">⊕</text>',
+            f'<text x="{palette_w + 80}" y="{height - 22}" font-family="Arial, sans-serif" font-size="12" fill="#596579">Source XML: {html.escape(source_xml)} | Sources {source_count} | Targets {target_count} | Transformations {transformation_count} | Connectors {connector_count}</text>',
+        ]
+        y = 146
+        for label, color in palette_items:
+            parts.extend(
+                [
+                    f'<rect x="84" y="{y}" width="23" height="18" rx="3" fill="{color}" stroke="#4e5965"/>',
+                    f'<circle cx="103" cy="{y + 14}" r="3" fill="#4d2d7a"/>',
+                    f'<text x="70" y="{y + 38}" font-family="Arial, sans-serif" font-size="12" fill="#000">{html.escape(label)}</text>',
+                ]
+            )
+            y += 60
+        return parts
+
+    def _transformation_inventory(
+        self,
+        mapping: ET.Element,
+        folder_transforms: dict[str, ET.Element],
+        mapplets: dict[str, ET.Element],
+    ) -> list[dict[str, Any]]:
+        inventory = []
+        seen: set[tuple[str, str]] = set()
+
+        def add(elem: ET.Element, origin: str) -> None:
+            name = elem.attrib.get("NAME", "")
+            transform_type = elem.attrib.get("TYPE", "")
+            key = (origin, name)
+            if not name or key in seen:
+                return
+            seen.add(key)
+            fields = elem.findall("TRANSFORMFIELD")
+            attrs = elem.findall("TABLEATTRIBUTE")
+            expressions = [
+                field.attrib.get("EXPRESSION", "")
+                for field in fields
+                if field.attrib.get("EXPRESSION")
+            ]
+            sql_overrides = [
+                attr.attrib.get("VALUE", "")
+                for attr in attrs
+                if "SQL" in attr.attrib.get("NAME", "").upper() and attr.attrib.get("VALUE")
+            ]
+            inventory.append(
+                {
+                    "name": name,
+                    "type": transform_type,
+                    "origin": origin,
+                    "portCount": len(fields),
+                    "expressionCount": len(expressions),
+                    "sqlOverride": bool(sql_overrides),
+                    "sampleLogic": self._logic_sample(expressions or sql_overrides),
+                }
+            )
+
+        for transform in mapping.findall("TRANSFORMATION"):
+            add(transform, "mapping")
+        for instance in mapping.findall("INSTANCE"):
+            trans_name = instance.attrib.get("TRANSFORMATION_NAME", "")
+            if instance.attrib.get("TYPE", "").upper() == "MAPPLET" and trans_name in mapplets:
+                for transform in mapplets[trans_name].findall("TRANSFORMATION"):
+                    add(transform, f"mapplet:{trans_name}")
+            elif instance.attrib.get("REUSABLE", "").upper() == "YES" and trans_name in folder_transforms:
+                add(folder_transforms[trans_name], "reusable")
+        return inventory
+
+    @staticmethod
+    def _source_target_counts(
+        mapping: ET.Element,
+        instances: list[dict[str, str]],
+        mapplets: dict[str, ET.Element],
+    ) -> tuple[int, int]:
+        sources = {
+            item["name"]
+            for item in instances
+            if item.get("type", "").upper() == "SOURCE"
+            or item.get("transformation", "").lower().startswith("src")
+        }
+        targets = {item["name"] for item in instances if item.get("type", "").upper() == "TARGET"}
+        for connector in mapping.findall("CONNECTOR"):
+            if connector.attrib.get("FROMINSTANCETYPE") == "Source Definition" and connector.attrib.get("FROMINSTANCE"):
+                sources.add(connector.attrib["FROMINSTANCE"])
+            if connector.attrib.get("TOINSTANCETYPE") == "Target Definition" and connector.attrib.get("TOINSTANCE"):
+                targets.add(connector.attrib["TOINSTANCE"])
+        for instance in mapping.findall("INSTANCE"):
+            if instance.attrib.get("TYPE", "").upper() != "MAPPLET":
+                continue
+            mapplet_name = instance.attrib.get("TRANSFORMATION_NAME", "")
+            mapplet = mapplets.get(mapplet_name)
+            if mapplet is None:
+                continue
+            for nested in mapplet.findall("INSTANCE"):
+                nested_name = nested.attrib.get("NAME") or nested.attrib.get("TRANSFORMATION_NAME")
+                nested_type = nested.attrib.get("TYPE", "").upper()
+                if nested_type == "SOURCE" and nested_name:
+                    sources.add(f"{mapplet_name}.{nested_name}")
+                elif nested_type == "TARGET" and nested_name:
+                    targets.add(f"{mapplet_name}.{nested_name}")
+            for connector in mapplet.findall("CONNECTOR"):
+                if connector.attrib.get("FROMINSTANCETYPE") == "Source Definition" and connector.attrib.get("FROMINSTANCE"):
+                    sources.add(f"{mapplet_name}.{connector.attrib['FROMINSTANCE']}")
+                if connector.attrib.get("TOINSTANCETYPE") == "Target Definition" and connector.attrib.get("TOINSTANCE"):
+                    targets.add(f"{mapplet_name}.{connector.attrib['TOINSTANCE']}")
+        return len(sources), len(targets)
+
+    @staticmethod
+    def _logic_sample(values: list[str]) -> str:
+        text = next((value.strip() for value in values if value and value.strip()), "")
+        text = " ".join(text.split())
+        return text[:110] + ("..." if len(text) > 110 else "")
+
+    @staticmethod
+    def _layout_ranks(node_names: list[str], connectors: list[tuple[str, str]]) -> dict[str, int]:
+        ranks = {name: 0 for name in node_names}
+        for _ in range(max(1, len(node_names))):
+            changed = False
+            for frm, to in connectors:
+                if frm in ranks and to in ranks and ranks[to] < ranks[frm] + 1:
+                    ranks[to] = ranks[frm] + 1
+                    changed = True
+            if not changed:
+                break
+        return ranks
+
+    @staticmethod
+    def _node_boxes(
+        columns: dict[int, list[str]],
+        max_rank: int,
+        row_count: int,
+        box_w: int,
+        box_h: int,
+        x_gap: int,
+        y_gap: int,
+        margin: int,
+        header: int,
+        height: int,
+    ) -> dict[str, tuple[int, int, int, int]]:
+        boxes = {}
+        for rank in range(max_rank + 1):
+            names = columns.get(rank, [])
+            x = margin + rank * (box_w + x_gap)
+            total_h = len(names) * box_h + max(0, len(names) - 1) * y_gap
+            y0 = header + max(24, (height - header - total_h) // 2)
+            for index, name in enumerate(names):
+                y = y0 + index * (box_h + y_gap)
+                boxes[name] = (x, y, x + box_w, y + box_h)
+        return boxes
+
+    def _svg_edges(self, connectors: list[tuple[str, str]], boxes: dict[str, tuple[int, int, int, int]]) -> list[str]:
+        parts = []
+        for frm, to in connectors:
+            if frm not in boxes or to not in boxes:
+                continue
+            x1, y1, x2, y2 = boxes[frm]
+            a1, b1, _a2, b2 = boxes[to]
+            start_x = x2
+            start_y = (y1 + y2) // 2
+            end_x = a1
+            end_y = (b1 + b2) // 2
+            mid_x = start_x + max(24, (end_x - start_x) // 2)
+            parts.append(
+                f'<path d="M {start_x} {start_y} L {mid_x} {start_y} L {mid_x} {end_y} L {end_x} {end_y}" '
+                'fill="none" stroke="#6f6f78" stroke-width="1.4" marker-end="url(#arrow)"/>'
+            )
+        return parts
+
+    def _svg_nodes(
+        self,
+        boxes: dict[str, tuple[int, int, int, int]],
+        by_name: dict[str, dict[str, str]],
+        box_w: int,
+        box_h: int,
+    ) -> list[str]:
+        parts = []
+        for name, (x1, y1, _x2, y2) in boxes.items():
+            item = by_name.get(name, {})
+            transform_type = item.get("type", "Transformation")
+            parts.append(
+                f'<rect x="{x1}" y="{y1}" width="{box_w}" height="{box_h}" rx="8" '
+                f'fill="{self._svg_fill(transform_type)}" stroke="#b8dcf6" stroke-width="2" filter="url(#shadow)"/>'
+            )
+            parts.append(f'<circle cx="{x1}" cy="{y1 + box_h // 2}" r="7" fill="#6b4193"/>')
+            parts.append(f'<polygon points="{_x2},{y1 + box_h // 2 - 9} {_x2 + 13},{y1 + box_h // 2} {_x2},{y1 + box_h // 2 + 9}" fill="#6b4193"/>')
+            yy = y1 + 22
+            for line in self._wrap_svg_text(name, 24):
+                parts.append(
+                    f'<text x="{x1 + 12}" y="{yy}" font-family="Arial, sans-serif" '
+                    f'font-size="12" font-weight="500" fill="#182536">{html.escape(line)}</text>'
+                )
+                yy += 15
+            parts.append(
+                f'<text x="{x1 + 12}" y="{y2 - 12}" font-family="Arial, sans-serif" '
+                f'font-size="10" fill="#5d6673">{html.escape(transform_type)}</text>'
+            )
+        return parts
+
+    @staticmethod
+    def _svg_fill(transform_type: str) -> str:
+        value = (transform_type or "").upper()
+        if value == "SOURCE":
+            return "#daeef7"
+        if value == "TARGET":
+            return "#e8f4dc"
+        if "MAPPLET" in value:
+            return "#eee5ff"
+        if "LOOKUP" in value:
+            return "#f3e7f6"
+        if "EXPRESSION" in value:
+            return "#fff0dc"
+        if "UPDATE" in value:
+            return "#ffe7d7"
+        if "FILTER" in value:
+            return "#f4e6ff"
+        return "#ebf0fa"
+
+    def _svg_inventory_panel(
+        self,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        inventory: list[dict[str, Any]],
+        counts: dict[str, int],
+    ) -> list[str]:
+        parts = [
+            f'<rect x="{x}" y="{y}" width="{width}" height="{height}" rx="10" fill="#fbfcfe" stroke="#d7dee8"/>',
+            f'<text x="{x + 18}" y="{y + 28}" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#172033">Functional Coverage</text>',
+            f'<text x="{x + 18}" y="{y + 52}" font-family="Arial, sans-serif" font-size="12" fill="#596579">Sources {counts["sources"]} | Targets {counts["targets"]} | Transformations {counts["transformations"]}</text>',
+            f'<text x="{x + 18}" y="{y + 72}" font-family="Arial, sans-serif" font-size="12" fill="#596579">SQL overrides {counts["sqlOverrides"]} | Expression transforms {counts["expressions"]}</text>',
+        ]
+        yy = y + 104
+        for item in inventory[:18]:
+            label = f'{item["name"]} ({item["type"] or "Transformation"})'
+            parts.append(
+                f'<text x="{x + 18}" y="{yy}" font-family="Arial, sans-serif" font-size="12" '
+                f'font-weight="600" fill="#27364a">{html.escape(label[:58])}</text>'
+            )
+            yy += 16
+            detail = f'origin={item["origin"]}; ports={item["portCount"]}; expressions={item["expressionCount"]}'
+            if item["sqlOverride"]:
+                detail += "; SQL override=yes"
+            parts.append(
+                f'<text x="{x + 28}" y="{yy}" font-family="Arial, sans-serif" font-size="11" '
+                f'fill="#657184">{html.escape(detail[:68])}</text>'
+            )
+            yy += 15
+            if item["sampleLogic"]:
+                parts.append(
+                    f'<text x="{x + 28}" y="{yy}" font-family="Arial, sans-serif" font-size="10" '
+                    f'fill="#7a4f1c">{html.escape(item["sampleLogic"][:74])}</text>'
+                )
+                yy += 15
+            yy += 3
+            if yy > y + height - 42:
+                break
+        remaining = max(0, len(inventory) - 18)
+        if remaining:
+            parts.append(
+                f'<text x="{x + 18}" y="{y + height - 20}" font-family="Arial, sans-serif" '
+                f'font-size="12" fill="#596579">+ {remaining} more transformations documented in ConversionAudit</text>'
+            )
+        return parts
+
+    @staticmethod
+    def _wrap_svg_text(text: str, max_chars: int) -> list[str]:
+        words = (text or "").replace("_", "_ ").split()
+        lines = []
+        current = ""
+        for word in words:
+            if len(current) + len(word) + 1 <= max_chars:
+                current = f"{current} {word}".strip()
+            else:
+                if current:
+                    lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+        return lines[:3] or [""]
+
+    def _svg_idmc_frame(
+        self,
+        mapping_name: str,
+        source_xml: str,
+        source_count: int,
+        target_count: int,
+        transformation_count: int,
+        connector_count: int,
+        width: int,
+        height: int,
+        palette_w: int,
+    ) -> list[str]:
+        palette_items = [
+            ("Source", "source"),
+            ("Target", "target"),
+            ("Access\nPolicy", "shield"),
+            ("Aggregator", "sigma"),
+            ("B2B", "chain"),
+            ("Cleanse", "nodes"),
+            ("Data\nMasking", "mask"),
+        ]
+        parts = [
+            '<rect x="0" y="0" width="100%" height="66" fill="#f7f7f8" stroke="#d8d8d8"/>',
+            f'<g transform="translate(34 27)">{self._svg_mapping_header_icon()}</g>',
+            f'<text x="68" y="42" class="title">{html.escape(mapping_name)}</text>',
+            '<line x1="232" y1="18" x2="232" y2="50" stroke="#c8c8c8"/>',
+            '<circle cx="264" cy="29" r="9" fill="#03a33d"/>',
+            '<path d="M259 29 l4 4 l7 -9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+            '<text x="287" y="37" class="ui">Valid</text>',
+            f'<rect x="{width - 530}" y="17" width="214" height="26" rx="2" fill="#4b207e"/>',
+            f'<text x="{width - 488}" y="36" font-size="15" font-weight="600" fill="#fff">Switch to Advanced...</text>',
+            f'<circle cx="{width - 300}" cy="30" r="6" fill="#111"/><text x="{width - 303}" y="34" font-size="9" fill="#fff">?</text>',
+            f'<rect x="{width - 254}" y="18" width="86" height="25" fill="#fff"/>',
+            f'<text x="{width - 219}" y="37" font-size="14" fill="#555">Save</text>',
+            f'<rect x="{width - 152}" y="16" width="82" height="27" rx="2" fill="#0b57d0"/>',
+            f'<text x="{width - 126}" y="36" font-size="15" font-weight="600" fill="#fff">Run</text>',
+            f'<circle cx="{width - 30}" cy="20" r="2" fill="#111"/><circle cx="{width - 30}" cy="30" r="2" fill="#111"/><circle cx="{width - 30}" cy="40" r="2" fill="#111"/>',
+            '<rect x="36" y="66" width="100%" height="52" fill="#fff" stroke="#d8d8d8"/>',
+            '<text x="70" y="102" font-size="18" fill="#000">Design</text>',
+            f'<rect x="54" y="112" width="{width - 54}" height="{height - 112}" fill="#fff" stroke="#0969da" stroke-width="1"/>',
+            f'<rect x="54" y="112" width="{palette_w - 8}" height="{height - 112}" fill="#f7fbff" stroke="#0969da" stroke-width="1"/>',
+            '<rect x="150" y="113" width="10" height="100" rx="5" fill="#8f9499"/>',
+            '<rect x="56" y="562" width="94" height="9" rx="5" fill="#8f9499"/>',
+            f'<rect x="184" y="{height - 11}" width="{min(width - 338, 1300)}" height="8" rx="4" fill="#8f9499"/>',
+            f'<rect x="{width - 43}" y="{height - 47}" width="18" height="18" rx="2" fill="none" stroke="#111" stroke-width="2"/><rect x="{width - 39}" y="{height - 43}" width="10" height="8" fill="none" stroke="#111" stroke-width="1.5"/>',
+            f'<g transform="translate({width - 278} 88)"><rect x="0" y="-6" width="46" height="18" rx="9" fill="#fff" stroke="#333"/><rect x="2" y="-5" width="20" height="16" rx="3" fill="#333"/><text x="25" y="7" font-size="11" fill="#111">OFF</text></g>',
+            f'<g transform="translate({width - 170} 90)">{self._svg_grid_icon("#111")}</g>',
+            f'<g transform="translate({width - 98} 88)">{self._svg_trash_icon("#aeb4bb")}</g>',
+            f'<g transform="translate({width - 64} 88)">{self._svg_cut_icon("#aeb4bb")}</g>',
+        ]
+        y = 146
+        for label, icon in palette_items:
+            parts.append(f'<g transform="translate(101 {y})">{self._svg_palette_icon(icon)}</g>')
+            lines = label.split("\n")
+            if len(lines) == 1:
+                parts.append(f'<text x="82" y="{y + 27}" class="small">{html.escape(lines[0])}</text>')
+            else:
+                parts.append(f'<text x="82" y="{y + 22}" class="small">{html.escape(lines[0])}</text>')
+                parts.append(f'<text x="82" y="{y + 38}" class="small">{html.escape(lines[1])}</text>')
+            y += 60
+        return parts
+
+    def _svg_edges(self, connectors: list[tuple[str, str]], boxes: dict[str, tuple[int, int, int, int]]) -> list[str]:
+        parts = []
+        for frm, to in connectors:
+            if frm not in boxes or to not in boxes:
+                continue
+            x1, y1, x2, y2 = boxes[frm]
+            a1, b1, _a2, b2 = boxes[to]
+            start_x = x2
+            start_y = (y1 + y2) // 2
+            end_x = a1
+            end_y = (b1 + b2) // 2
+            if end_x > start_x:
+                mid_x = start_x + max(18, (end_x - start_x) // 2)
+                path = f"M {start_x} {start_y} C {mid_x} {start_y}, {mid_x} {end_y}, {end_x} {end_y}"
+            else:
+                bend_x = start_x + 26
+                path = f"M {start_x} {start_y} C {bend_x} {start_y}, {bend_x} {end_y}, {end_x} {end_y}"
+            parts.append(
+                f'<path d="{path}" fill="none" stroke="#6f6f6f" stroke-width="1.15" marker-end="url(#arrow)"/>'
+            )
+        return parts
+
+    def _svg_nodes(
+        self,
+        boxes: dict[str, tuple[int, int, int, int]],
+        by_name: dict[str, dict[str, str]],
+        box_w: int,
+        box_h: int,
+    ) -> list[str]:
+        parts = []
+        for name, (x1, y1, x2, y2) in boxes.items():
+            item = by_name.get(name, {})
+            transform_type = item.get("type", "Transformation")
+            parts.append(
+                f'<rect x="{x1}" y="{y1}" width="{box_w}" height="{box_h}" rx="4" '
+                'fill="#d7ebfb" stroke="#b7def8" stroke-width="2"/>'
+            )
+            parts.append(f'<circle cx="{x1}" cy="{y1 + box_h // 2}" r="6" fill="#744a9c"/>')
+            parts.append(f'<polygon points="{x2},{y1 + box_h // 2 - 8} {x2 + 13},{y1 + box_h // 2} {x2},{y1 + box_h // 2 + 8}" fill="#744a9c"/>')
+            yy = y1 + 17
+            for line in self._wrap_svg_text(name, 20):
+                parts.append(f'<text x="{x1 + 8}" y="{yy}" font-size="10.5" fill="#111">{html.escape(line)}</text>')
+                yy += 12
+            parts.append(f'<g transform="translate({x1 + 14} {y2 - 17})">{self._svg_node_icon(transform_type)}</g>')
+        return parts
+
+    @staticmethod
+    def _svg_mapping_header_icon() -> str:
+        return (
+            '<path d="M-16 -5 h8 m-8 0 a3 3 0 1 0 0.1 0 M-3 -12 v24 m0 -24 a3 3 0 1 0 0.1 0 '
+            'M-3 12 a3 3 0 1 0 0.1 0 M0 -12 h8 M0 12 h8" fill="none" stroke="#111" stroke-width="2" '
+            'stroke-linecap="round" stroke-linejoin="round"/>'
+        )
+
+    @staticmethod
+    def _svg_grid_icon(color: str) -> str:
+        cells = []
+        for y in (0, 7, 14):
+            for x in (0, 7, 14):
+                cells.append(f'<rect x="{x}" y="{y}" width="4" height="4" rx="1" fill="{color}"/>')
+        return "".join(cells)
+
+    @staticmethod
+    def _svg_trash_icon(color: str) -> str:
+        return (
+            f'<path d="M2 5 h18 M8 5 v15 M14 5 v15 M5 5 l1 18 h12 l1 -18 M8 2 h8" '
+            f'fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round"/>'
+        )
+
+    @staticmethod
+    def _svg_cut_icon(color: str) -> str:
+        return (
+            f'<circle cx="5" cy="5" r="3" fill="none" stroke="{color}" stroke-width="2"/>'
+            f'<circle cx="5" cy="19" r="3" fill="none" stroke="{color}" stroke-width="2"/>'
+            f'<path d="M8 7 l15 14 M8 17 l15 -14" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round"/>'
+        )
+
+    def _svg_palette_icon(self, icon: str) -> str:
+        if icon == "source":
+            return '<rect x="-10" y="-8" width="20" height="15" rx="2" fill="#d7ebfb" stroke="#4b5563" stroke-width="2"/><path d="M-7 -3 h11 M-7 2 h9" stroke="#4b5563" stroke-width="1.5"/><circle cx="7" cy="5" r="3" fill="#8bc34a" stroke="#4b5563"/>'
+        if icon == "target":
+            return '<rect x="-10" y="-8" width="20" height="15" rx="2" fill="#f5c29e" stroke="#4b5563" stroke-width="2"/><path d="M-7 -2 h11 M-7 3 h9" stroke="#4b5563" stroke-width="1.5"/><path d="M-17 0 h13" stroke="#0f766e" stroke-width="2"/><path d="M-8 -4 l4 4 l-4 4" fill="none" stroke="#0f766e" stroke-width="2"/>'
+        if icon == "shield":
+            return '<path d="M0 -12 l10 4 v8 c0 8 -6 12 -10 14 c-4 -2 -10 -6 -10 -14 v-8 z" fill="#f3d6ff" stroke="#4b5563" stroke-width="2"/>'
+        if icon == "sigma":
+            return '<circle cx="0" cy="0" r="11" fill="#f8c9a8" stroke="#4b5563" stroke-width="2"/><text x="-6" y="5" font-size="16" font-weight="600" fill="#111">S</text>'
+        if icon == "chain":
+            return '<circle cx="-6" cy="-5" r="5" fill="#f8c9a8" stroke="#4b5563" stroke-width="2"/><circle cx="6" cy="5" r="5" fill="#d7ebfb" stroke="#4b5563" stroke-width="2"/><path d="M-2 -2 l4 4" stroke="#4b5563" stroke-width="2"/>'
+        if icon == "nodes":
+            return self._svg_grid_icon("#4b5563")
+        return '<rect x="-8" y="-10" width="12" height="18" rx="2" fill="#d7ebfb" stroke="#4b5563" stroke-width="2"/><circle cx="7" cy="2" r="4" fill="#fff" stroke="#4b5563" stroke-width="2"/><path d="M5 0 l4 4" stroke="#4b5563" stroke-width="1.5"/>'
+
+    def _svg_node_icon(self, transform_type: str) -> str:
+        value = (transform_type or "").upper()
+        if value == "SOURCE":
+            return self._svg_palette_icon("source")
+        if value == "TARGET":
+            return self._svg_palette_icon("target")
+        if "LOOKUP" in value:
+            return '<rect x="-5" y="-7" width="10" height="13" rx="1" fill="#f4d7ef" stroke="#4b5563" stroke-width="1.5"/><circle cx="6" cy="6" r="3" fill="none" stroke="#7a287a" stroke-width="1.5"/>'
+        if "FILTER" in value:
+            return '<path d="M-8 -8 h16 l-6 7 v6 l-4 3 v-9 z" fill="#b65ad6" stroke="#4b5563" stroke-width="1.2"/>'
+        if "UPDATE" in value or "EXPRESSION" in value:
+            return '<text x="-8" y="6" font-size="16" font-style="italic" fill="#7a3b12">fx</text>'
+        return '<rect x="-8" y="-8" width="4" height="4" fill="#f5c29e" stroke="#4b5563"/><rect x="-1" y="1" width="4" height="4" fill="#f5c29e" stroke="#4b5563"/><rect x="6" y="8" width="4" height="4" fill="#f5c29e" stroke="#4b5563"/>'
 
     def _write_checksum(self) -> None:
         rows = [
