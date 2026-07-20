@@ -57,8 +57,8 @@ class _AssetIds:
 class IdmcExportPackageGenerator:
     """Builds one combined IDMC-style export package from remediated XML files."""
 
-    PROJECT_NAME = "BIAINFADEV2_FLEX"
-    FOLDER_NAME = "RPA_PC_Modernization"
+    PROJECT_NAME = "RPA_PC_Modernization"
+    FOLDER_NAME = "Custom_SDE_SupplyChain"
     CONNECTION_NAME = "DataWarehouse_PA"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
     PARAMETER_FILE_DIRECTORY = "/JacobsAnalytics/IICS/Data_Integration/Param"
@@ -85,7 +85,7 @@ class IdmcExportPackageGenerator:
         self.reference_package = self._default_reference_package(reference_package)
         self.package_guid_seed = uuid.uuid4().hex
         self.import_run_suffix = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        self.folder_name = f"{self.FOLDER_NAME}_{self.import_run_suffix}"
+        self.folder_name = self.FOLDER_NAME
         self.source_org_id, self.source_org_name, self.reference_project_id = self._reference_export_identity()
         self.package_path = self.output_folder / package_name
         self.staging_folder = self.output_folder / "idmc_export_package"
@@ -1480,6 +1480,7 @@ class IdmcExportPackageGenerator:
                 payload[0].setdefault("paramFileType", "PARAM_FILE_LOCAL")
                 payload[0].setdefault("serverlessProperties", {})
                 self._apply_parameter_file_fields(payload[0], mapping_name)
+                self._apply_mapping_runtime_parameters(payload[0], mapping_name, ids)
                 self._apply_empty_inout_parameters(payload[0])
             return self._json_bytes(payload)
         return self._replace_text_bytes(content, replacements)
@@ -1517,6 +1518,199 @@ class IdmcExportPackageGenerator:
                     "required": False,
                 }
             )
+
+    def _apply_mapping_runtime_parameters(
+        self,
+        task: dict[str, Any],
+        mapping_name: str,
+        ids: _AssetIds,
+    ) -> None:
+        specs = self._mapping_runtime_parameter_specs(mapping_name)
+        if not specs:
+            return
+
+        existing = [item for item in task.get("parameters", []) if isinstance(item, dict)]
+        source_proto = next((item for item in existing if item.get("type") == "SOURCE"), None)
+        target_proto = next((item for item in existing if item.get("type") == "TARGET"), None)
+        source_connection = self._runtime_connection_id(existing, "SOURCE", f"@{ids.connection}")
+        target_connection = self._runtime_connection_id(existing, "TARGET", f"@{ids.connection}")
+        start_id = max([int(item.get("id", 0)) for item in existing if isinstance(item.get("id"), int)] or [1000]) + 1
+        parameters: list[dict[str, Any]] = []
+
+        for offset, spec in enumerate(specs):
+            if spec["type"] == "SOURCE":
+                parameters.append(
+                    self._runtime_source_parameter(
+                        spec["name"],
+                        start_id + offset,
+                        source_connection,
+                        source_proto,
+                    )
+                )
+            elif spec["type"] == "TARGET":
+                parameters.append(
+                    self._runtime_target_parameter(
+                        spec["name"],
+                        start_id + offset,
+                        target_connection,
+                        target_proto,
+                    )
+                )
+        task["parameters"] = parameters
+
+    def _mapping_runtime_parameter_specs(self, mapping_name: str) -> list[dict[str, str]]:
+        mapping = self._remediated_mapping_element(mapping_name)
+        if mapping is None:
+            return []
+
+        specs: list[dict[str, str]] = []
+        seen: set[tuple[str, str]] = set()
+
+        def add(name: str, param_type: str) -> None:
+            key = (name, param_type)
+            if name and key not in seen:
+                seen.add(key)
+                specs.append({"name": name, "type": param_type})
+
+        for instance in mapping.findall("INSTANCE"):
+            instance_type = (instance.get("TYPE") or "").upper()
+            name = instance.get("NAME") or instance.get("TRANSFORMATION_NAME") or ""
+            if instance_type == "SOURCE":
+                add(name, "SOURCE")
+            elif instance_type == "TARGET":
+                add(name, "TARGET")
+
+        for connector in mapping.findall("CONNECTOR"):
+            if connector.get("FROMINSTANCETYPE") == "Source Definition":
+                add(connector.get("FROMINSTANCE", ""), "SOURCE")
+            if connector.get("TOINSTANCETYPE") == "Target Definition":
+                add(connector.get("TOINSTANCE", ""), "TARGET")
+
+        return specs
+
+    @staticmethod
+    def _runtime_connection_id(parameters: list[dict[str, Any]], parameter_type: str, default_id: str) -> str:
+        key_by_type = {
+            "SOURCE": "sourceConnectionId",
+            "TARGET": "targetConnectionId",
+        }
+        key = key_by_type[parameter_type]
+        for parameter in parameters:
+            if parameter.get("type") == parameter_type and parameter.get(key):
+                return str(parameter[key])
+        return default_id
+
+    def _runtime_source_parameter(
+        self,
+        source_name: str,
+        parameter_id: int,
+        connection_id: str,
+        prototype: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        parameter = copy.deepcopy(prototype) if prototype else {"@type": "mtTaskParameter"}
+        parameter.update(
+            {
+                "@type": "mtTaskParameter",
+                "id": parameter_id,
+                "name": f"${source_name}$",
+                "type": "SOURCE",
+                "label": "DBConnection_OLAP",
+                "description": "",
+                "sourceConnectionId": connection_id,
+                "sourceObject": source_name,
+                "sourceObjectLabel": source_name,
+                "newFlatFile": False,
+                "newObject": False,
+                "showBusinessNames": True,
+                "naturalOrder": True,
+                "truncateTarget": False,
+                "bulkApiDBTarget": False,
+            }
+        )
+        parameter.pop("targetConnectionId", None)
+        parameter.pop("targetObject", None)
+        parameter.pop("targetObjectLabel", None)
+        ui = parameter.setdefault("uiProperties", {})
+        if isinstance(ui, dict):
+            ui.update(
+                {
+                    "cnxtype": "Oracle",
+                    "connectionParameterized": "true",
+                    "paramName": "DBConnection_OLAP",
+                    "paramLabel": "",
+                    "paramType-mapping": "Connection",
+                    "logcnx": "DBConnection_OLAP",
+                    "isSelectDistinct": "false",
+                    "objectParameterized": "false",
+                    "visible": "false",
+                    "isCustomQueryRetainMetaData": "true",
+                    "flags": "SUPPORTS_MULTI_SCHEMA",
+                    "originalPath": source_name,
+                }
+            )
+        parameter.setdefault("customFuncCfg", {"@type": "customFuncConfig", "id": -1, "connections": [], "inputMap": [], "outputFields": []})
+        parameter.setdefault("targetRefsV2", {})
+        parameter.setdefault("targetUpdateColumns", [])
+        parameter.setdefault("fieldOrderList", [])
+        parameter.setdefault("runtimeAttrs", {})
+        return parameter
+
+    def _runtime_target_parameter(
+        self,
+        target_name: str,
+        parameter_id: int,
+        connection_id: str,
+        prototype: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        parameter = copy.deepcopy(prototype) if prototype else {"@type": "mtTaskParameter"}
+        parameter.update(
+            {
+                "@type": "mtTaskParameter",
+                "id": parameter_id,
+                "name": f"${target_name}$",
+                "type": "TARGET",
+                "label": "DBConnection_OLAP",
+                "description": "",
+                "targetConnectionId": connection_id,
+                "targetObject": target_name,
+                "targetObjectLabel": target_name,
+                "operationType": "Insert",
+                "newFlatFile": False,
+                "newObject": False,
+                "showBusinessNames": True,
+                "naturalOrder": True,
+                "truncateTarget": False,
+                "bulkApiDBTarget": False,
+            }
+        )
+        parameter.pop("sourceConnectionId", None)
+        parameter.pop("sourceObject", None)
+        parameter.pop("sourceObjectLabel", None)
+        ui = parameter.setdefault("uiProperties", {})
+        if isinstance(ui, dict):
+            ui.update(
+                {
+                    "cnxtype": "Oracle",
+                    "connectionParameterized": "true",
+                    "paramName": "DBConnection_OLAP",
+                    "paramLabel": "",
+                    "paramType-mapping": "Connection",
+                    "logcnx": "DBConnection_OLAP",
+                    "default": target_name,
+                    "objectParameterized": "false",
+                    "visible": "false",
+                    "flags": "SUPPORTS_MULTI_SCHEMA",
+                    "defaultTargetUpdateColumns": "",
+                    "supportApplyDDLChanges": "false",
+                    "originalPath": target_name,
+                }
+            )
+        parameter.setdefault("customFuncCfg", {"@type": "customFuncConfig", "id": -1, "connections": [], "inputMap": [], "outputFields": []})
+        parameter.setdefault("targetRefsV2", {})
+        parameter.setdefault("targetUpdateColumns", [])
+        parameter.setdefault("fieldOrderList", [])
+        parameter.setdefault("runtimeAttrs", {})
+        return parameter
 
     @staticmethod
     def _apply_empty_inout_parameters(task: dict[str, Any]) -> None:
@@ -2039,26 +2233,14 @@ class IdmcExportPackageGenerator:
     def _mtt_payload(self, asset: dict[str, Any], ids: _AssetIds) -> dict[str, Any]:
         mapping: MappingMetadata = asset["mapping"]
         session: SessionMetadata | None = asset["session"]
-        target_parameters = [
-            {
-                "@type": "mtTaskParameter",
-                "id": index + 1,
-                "name": f"${target.target_name}$",
-                "type": "TARGET",
-                "label": "DBConnection_OLAP",
-                "targetConnectionId": f"@{ids.connection}",
-                "targetObject": target.target_name,
-                "targetObjectLabel": target.target_name,
-                "operationType": "Insert",
-                "truncateTarget": False,
-                "runtimeParameterData": {
-                    "@type": "mtTaskRuntimeParameterData",
-                    "isConnectionRuntimeParameter": True,
-                    "isObjectRuntimeParameter": False,
-                    "connectionParameterName": "DBConnection_OLAP",
-                },
-            }
-            for index, target in enumerate(asset["targets"])
+        parameter_specs = self._mapping_runtime_parameter_specs(asset["name"])
+        if not parameter_specs:
+            parameter_specs = [{"name": target.target_name, "type": "TARGET"} for target in asset["targets"]]
+        runtime_parameters = [
+            self._runtime_source_parameter(spec["name"], index + 1, f"@{ids.connection}")
+            if spec["type"] == "SOURCE"
+            else self._runtime_target_parameter(spec["name"], index + 1, f"@{ids.connection}")
+            for index, spec in enumerate(parameter_specs)
         ]
         return {
             "@type": "mtTask",
@@ -2106,7 +2288,7 @@ class IdmcExportPackageGenerator:
                 },
             ],
             "optimizationPlan": "NONE",
-            "parameters": target_parameters,
+            "parameters": runtime_parameters,
             "sequences": [],
             "inOutParameters": [
                 {"@type": "mtTaskInOutParameter", "name": "", "type": "", "value": ""},
