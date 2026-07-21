@@ -73,12 +73,6 @@ class IdmcExportPackageGenerator:
         self.package_name = package_name
         self.execution_strategy = execution_strategy
         self.reference_package = self._default_reference_package(reference_package)
-<<<<<<< Updated upstream
-=======
-        self.package_guid_seed = uuid.uuid4().hex
-        self.materialize_remediated_graph = False
-        self.import_run_suffix = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
->>>>>>> Stashed changes
         self.folder_name = self.FOLDER_NAME
         self.package_path = self.output_folder / package_name
         self.staging_folder = self.output_folder / "idmc_export_package"
@@ -808,11 +802,6 @@ class IdmcExportPackageGenerator:
         payload = self._replace_json_strings(payload, replacements)
         if isinstance(payload.get("content"), dict):
             payload["content"]["name"] = mapping_name
-<<<<<<< Updated upstream
-=======
-            if self.materialize_remediated_graph:
-                self._apply_remediated_mapping_graph(payload, mapping_name)
->>>>>>> Stashed changes
         if not isinstance(payload.get("metadata"), dict):
             payload["metadata"] = {"$$classInfo": class_info}
         elif not payload["metadata"].get("$$classInfo"):
@@ -1001,13 +990,6 @@ class IdmcExportPackageGenerator:
                 payload[0]["frsGuid"] = ids.mtt
                 payload[0].setdefault("paramFileType", "PARAM_FILE_LOCAL")
                 payload[0].setdefault("serverlessProperties", {})
-<<<<<<< Updated upstream
-=======
-                self._apply_parameter_file_fields(payload[0], mapping_name)
-                if self.materialize_remediated_graph:
-                    self._apply_mapping_runtime_parameters(payload[0], mapping_name, ids)
-                self._apply_empty_inout_parameters(payload[0])
->>>>>>> Stashed changes
             return self._json_bytes(payload)
         return self._replace_text_bytes(content, replacements)
 
