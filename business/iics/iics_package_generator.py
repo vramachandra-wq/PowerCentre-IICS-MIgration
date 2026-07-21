@@ -1301,6 +1301,10 @@ def _build_workflow_taskflow_xml(
                </processObject>"""
 
     start_link = _h()
+    assignment_vars_id = _h()
+    assignment_file_id = _h()
+    assignment_vars_link = _h()
+    assignment_file_link = _h()
     parallel_id = _h()
     xml = f"""<aetgt:getResponse xmlns:aetgt="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd"
                    xmlns:types1="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd">
@@ -1333,8 +1337,16 @@ def _build_workflow_taskflow_xml(
             <flow id="a">
                <start id="b">
                   <title>Start</title>
-                  <link id="{start_link}" targetId="{parallel_id}"/>
+                  <link id="{start_link}" targetId="{assignment_vars_id}"/>
                </start>
+               <assignment id="{assignment_vars_id}">
+                  <title>Assignment_PC_Variables</title>
+                  <link id="{assignment_vars_link}" targetId="{assignment_file_id}"/>
+               </assignment>
+               <assignment id="{assignment_file_id}">
+                  <title>Assignment_PC_Workflow_Parameter_File</title>
+                  <link id="{assignment_file_link}" targetId="{parallel_id}"/>
+               </assignment>
                <container id="{parallel_id}" type="parallel">
 {branch_xml}
                </container>

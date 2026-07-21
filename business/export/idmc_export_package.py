@@ -10,13 +10,16 @@ import io
 import json
 import re
 import shutil
+import uuid
 import zipfile
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape
 
+from business.iics.iics_package_generator import _build_workflow_taskflow_xml
 from business.iics.iics_success_benchmark import IICSSuccessBenchmark
 from business.parser.xml_parser import XMLParser
 from common.config.config import AppConfig
@@ -48,10 +51,11 @@ class _AssetIds:
 class IdmcExportPackageGenerator:
     """Builds one combined IDMC-style export package from remediated XML files."""
 
-    PROJECT_NAME = "BIAINFADEV2_FLEX"
-    FOLDER_NAME = "Custom_Project"
-    CONNECTION_NAME = "DBConnection_OLAP_Oracle"
+    PROJECT_NAME = "RPA_PC_Modernization"
+    FOLDER_NAME = "Custom_SDE_SupplyChain"
+    CONNECTION_NAME = "DataWarehouse_PA"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
+    PARAMETER_FILE_DIRECTORY = "/JacobsAnalytics/IICS/Data_Integration/Param"
 
     def __init__(
         self,
@@ -73,12 +77,9 @@ class IdmcExportPackageGenerator:
         self.package_name = package_name
         self.execution_strategy = execution_strategy
         self.reference_package = self._default_reference_package(reference_package)
-<<<<<<< Updated upstream
-=======
         self.package_guid_seed = uuid.uuid4().hex
         self.materialize_remediated_graph = False
         self.import_run_suffix = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
->>>>>>> Stashed changes
         self.folder_name = self.FOLDER_NAME
         self.package_path = self.output_folder / package_name
         self.staging_folder = self.output_folder / "idmc_export_package"
@@ -181,11 +182,11 @@ class IdmcExportPackageGenerator:
                             {"objectPath": object_path, "objectName": asset["name"], "objectType": "MTT", "id": asset_ids.mtt},
                         ]
                     )
-                    group_key = asset.get("workflow_key") or asset["name"]
+                    group_key = self.folder_name
                     group = taskflow_groups.setdefault(
                         group_key,
                         {
-                            "name": asset.get("workflow_name") or asset["name"],
+                            "name": self.folder_name,
                             "assets": [],
                             "links": asset.get("workflow_links", []),
                         },
@@ -195,16 +196,13 @@ class IdmcExportPackageGenerator:
                 for group in taskflow_groups.values():
                     taskflow_name = self._asset_name(group["name"])
                     taskflow_id = self._guid("taskflow", taskflow_name)
-                    workflow_templates = self._success_workflow_templates(len(group["assets"]))
-                    taskflow_text = self._workflow_taskflow_xml(
-                        taskflow_name,
+                    entry_id = f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
+                    taskflow_text = _build_workflow_taskflow_xml(
+                        {"workflow_name": taskflow_name},
+                        [(asset["name"], asset["ids"].mtt) for asset in group["assets"]],
                         taskflow_id,
-                        group["assets"],
-                        sample_templates,
-                        now,
-                        workflow_templates=workflow_templates,
+                        entry_id,
                     )
-                    entry_id = self._taskflow_entry_id_from_text(taskflow_text) or f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
                     taskflow_refs = self._ordered_unique(
                         [
                             *[asset["ids"].mtt for asset in group["assets"]],
@@ -343,6 +341,8 @@ class IdmcExportPackageGenerator:
 
         self._write_export_metadata(exported_objects, now)
         self._write_contents_csv(contents_rows, now)
+        self._write_reference_mapping_images(mapping_assets, now)
+        self._write_xml_zip_comparison_reports(xml_files, mapping_assets, now)
         self._assert_staging_dtemplate_integrity()
         self._write_checksum()
         self._zip_staging_folder()
@@ -741,6 +741,7 @@ class IdmcExportPackageGenerator:
 
         if str(output_path).endswith(".DTEMPLATE.zip"):
             rewritten = self._sync_dtemplate_file_records(rewritten, mapping_name, now)
+            rewritten = self._ensure_dtemplate_preview(rewritten, mapping_name, now)
 
         with zipfile.ZipFile(Path(output_path), "w", compression=zipfile.ZIP_DEFLATED) as output_zip:
             for member, content in rewritten.items():
@@ -808,16 +809,66 @@ class IdmcExportPackageGenerator:
         payload = self._replace_json_strings(payload, replacements)
         if isinstance(payload.get("content"), dict):
             payload["content"]["name"] = mapping_name
-<<<<<<< Updated upstream
-=======
             if self.materialize_remediated_graph:
                 self._apply_remediated_mapping_graph(payload, mapping_name)
->>>>>>> Stashed changes
         if not isinstance(payload.get("metadata"), dict):
             payload["metadata"] = {"$$classInfo": class_info}
         elif not payload["metadata"].get("$$classInfo"):
             payload["metadata"]["$$classInfo"] = class_info
         return self._json_bytes(payload)
+
+    def _ensure_dtemplate_preview(
+        self,
+        rewritten: dict[str, bytes],
+        mapping_name: str,
+        now: datetime,
+    ) -> dict[str, bytes]:
+        preview_bytes = self._mapping_reference_preview_bytes(mapping_name)
+        if not preview_bytes:
+            return rewritten
+
+        preview_id = "@3"
+        rewritten[f"bin/{preview_id}.bin"] = preview_bytes
+
+        if "mappingTemplate.json" in rewritten:
+            payload = json.loads(rewritten["mappingTemplate.json"].decode("utf-8"))
+            if isinstance(payload, list) and payload:
+                payload[0]["mappingPreviewFileRecordId"] = preview_id
+            rewritten["mappingTemplate.json"] = self._json_bytes(payload)
+
+        records = []
+        if "fileRecord.json" in rewritten:
+            loaded = json.loads(rewritten["fileRecord.json"].decode("utf-8"))
+            records = loaded if isinstance(loaded, list) else []
+        records = [record for record in records if record.get("id") != preview_id]
+        records.append(
+            {
+                "@type": "fileRecord",
+                "id": preview_id,
+                "name": f"{mapping_name}_preview.jpeg",
+                "type": "IMAGE",
+                "size": len(preview_bytes),
+                "attachTime": self._epoch_millis(now),
+            }
+        )
+        rewritten["fileRecord.json"] = self._json_bytes(records)
+        return rewritten
+
+    def _mapping_reference_preview_bytes(self, mapping_name: str) -> bytes:
+        image_folder = self.output_folder / "downloadable_mapping_images_from_zip"
+        candidates = [
+            image_folder / f"{mapping_name}_full_transformations.jpeg",
+            image_folder / f"{mapping_name}_full_transformations.jpg",
+            image_folder / f"{mapping_name}_full_transformations.png",
+            image_folder / f"{mapping_name}_valid_mapping.jpeg",
+            image_folder / f"{mapping_name}_valid_mapping.jpg",
+            image_folder / f"{mapping_name}_valid_mapping.png",
+            image_folder / f"{mapping_name}.png",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate.read_bytes()
+        return self._preview_bytes(mapping_name)
 
     def _sync_dtemplate_file_records(
         self,
@@ -931,14 +982,14 @@ class IdmcExportPackageGenerator:
                         f"{record.get('name')!r} != {mapping_name!r}"
                     )
 
-                # IMF content must be parseable JSON; truncated/corrupt bins cause metaClass null.
-                try:
-                    payload = json.loads(bin_members[bin_member].decode("utf-8"))
-                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-                    raise ValueError(
-                        f"DTEMPLATE {path.name} bin {bin_member} is not valid IMF JSON: {exc}"
-                    ) from exc
                 if record.get("type") == "IMFOBJECT":
+                    # IMF content must be parseable JSON; truncated/corrupt bins cause metaClass null.
+                    try:
+                        payload = json.loads(bin_members[bin_member].decode("utf-8"))
+                    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                        raise ValueError(
+                            f"DTEMPLATE {path.name} bin {bin_member} is not valid IMF JSON: {exc}"
+                        ) from exc
                     content = payload.get("content") if isinstance(payload, dict) else None
                     if not isinstance(content, dict) or content.get("name") != mapping_name:
                         raise ValueError(
@@ -1001,15 +1052,108 @@ class IdmcExportPackageGenerator:
                 payload[0]["frsGuid"] = ids.mtt
                 payload[0].setdefault("paramFileType", "PARAM_FILE_LOCAL")
                 payload[0].setdefault("serverlessProperties", {})
-<<<<<<< Updated upstream
-=======
                 self._apply_parameter_file_fields(payload[0], mapping_name)
                 if self.materialize_remediated_graph:
                     self._apply_mapping_runtime_parameters(payload[0], mapping_name, ids)
                 self._apply_empty_inout_parameters(payload[0])
->>>>>>> Stashed changes
             return self._json_bytes(payload)
         return self._replace_text_bytes(content, replacements)
+
+    def _apply_parameter_file_fields(self, task: dict[str, Any], mapping_name: str) -> None:
+        task["paramFileType"] = "PARAM_FILE_LOCAL"
+        task_properties = task.setdefault("taskProperties", [])
+        if not isinstance(task_properties, list):
+            task_properties = []
+            task["taskProperties"] = task_properties
+        by_name = {item.get("name"): item for item in task_properties if isinstance(item, dict)}
+        values = {
+            "parameterFileDir": self.PARAMETER_FILE_DIRECTORY,
+            "parameterFileName": f"{mapping_name}.param",
+        }
+        labels = {
+            "parameterFileDir": "label.parameterFileDir",
+            "parameterFileName": "label.parameterFileName",
+        }
+        for name, value in values.items():
+            item = by_name.get(name)
+            if item is None:
+                item = {"@type": "taskProperty", "name": name}
+                task_properties.append(item)
+            item.update({"currentValue": value, "type": "STRING", "label": labels[name], "required": False})
+
+    @staticmethod
+    def _apply_empty_inout_parameters(task: dict[str, Any]) -> None:
+        task["inOutParameters"] = [{"@type": "mtTaskInOutParameter", "name": "", "type": "", "value": ""}]
+
+    def _apply_mapping_runtime_parameters(self, task: dict[str, Any], mapping_name: str, ids: _AssetIds) -> None:
+        # This is intentionally used only for the experimental XML-materialized path.
+        # The default import-compatible path keeps the reference-valid parameters.
+        specs = self._mapping_runtime_parameter_specs(mapping_name)
+        if not specs:
+            return
+        existing = [item for item in task.get("parameters", []) if isinstance(item, dict)]
+        source_proto = next((item for item in existing if item.get("type") == "SOURCE"), None)
+        target_proto = next((item for item in existing if item.get("type") == "TARGET"), None)
+        start_id = max([int(item.get("id", 0)) for item in existing if isinstance(item.get("id"), int)] or [1000]) + 1
+        parameters = []
+        for offset, spec in enumerate(specs):
+            prototype = source_proto if spec["type"] == "SOURCE" else target_proto
+            parameter = json.loads(json.dumps(prototype or {"@type": "mtTaskParameter"}))
+            parameter.update(
+                {
+                    "@type": "mtTaskParameter",
+                    "id": start_id + offset,
+                    "name": f"${spec['name']}$",
+                    "type": spec["type"],
+                    "label": "DBConnection_OLAP",
+                    "newFlatFile": False,
+                    "newObject": False,
+                    "showBusinessNames": True,
+                    "naturalOrder": True,
+                    "truncateTarget": False,
+                    "bulkApiDBTarget": False,
+                }
+            )
+            if spec["type"] == "SOURCE":
+                parameter["sourceConnectionId"] = f"@{ids.connection}"
+                parameter["sourceObject"] = spec["name"]
+                parameter.pop("targetConnectionId", None)
+                parameter.pop("targetObject", None)
+            else:
+                parameter["targetConnectionId"] = f"@{ids.connection}"
+                parameter["targetObject"] = spec["name"]
+                parameter["targetObjectLabel"] = spec["name"]
+                parameter.setdefault("operationType", "Insert")
+                parameter.pop("sourceConnectionId", None)
+                parameter.pop("sourceObject", None)
+            parameters.append(parameter)
+        task["parameters"] = parameters
+
+    def _mapping_runtime_parameter_specs(self, mapping_name: str) -> list[dict[str, str]]:
+        mapping = self._remediated_mapping_element(mapping_name)
+        if mapping is None:
+            return []
+        specs: list[dict[str, str]] = []
+        seen: set[tuple[str, str]] = set()
+
+        def add(name: str, param_type: str) -> None:
+            key = (name, param_type)
+            if name and key not in seen:
+                seen.add(key)
+                specs.append({"name": name, "type": param_type})
+
+        for instance in mapping.findall("INSTANCE"):
+            instance_type = (instance.get("TYPE") or "").upper()
+            if instance_type == "SOURCE":
+                add(instance.get("NAME", ""), "SOURCE")
+            elif instance_type == "TARGET":
+                add(instance.get("NAME", ""), "TARGET")
+        for connector in mapping.findall("CONNECTOR"):
+            if connector.get("FROMINSTANCETYPE") == "Source Definition":
+                add(connector.get("FROMINSTANCE", ""), "SOURCE")
+            if connector.get("TOINSTANCETYPE") == "Target Definition":
+                add(connector.get("TOINSTANCE", ""), "TARGET")
+        return specs
 
     def _workflow_taskflow_xml(
         self,
@@ -1662,9 +1806,9 @@ class IdmcExportPackageGenerator:
 
     def _write_export_metadata(self, exported_objects: list[dict[str, Any]], now: datetime) -> None:
         payload = {
-            "name": f"job-{self._epoch_millis(now)}",
-            "sourceOrgId": "generated",
-            "sourceOrgName": "PC_IICS_MIGRATION",
+            "name": f"{self.folder_name}-{self._epoch_millis(now)}",
+            "sourceOrgId": "gO4aVWAxgK0lY2UdXmECWZ",
+            "sourceOrgName": "Jacobs",
             "exportedObjects": exported_objects,
         }
         (self.staging_folder / "exportMetadata.v2.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -1675,6 +1819,181 @@ class IdmcExportPackageGenerator:
             writer = csv.DictWriter(csv_file, fieldnames=["objectPath", "objectName", "objectType", "id"])
             writer.writeheader()
             writer.writerows(rows)
+
+    def _write_xml_zip_comparison_reports(
+        self,
+        xml_files: list[Path],
+        mapping_assets: list[dict[str, Any]],
+        now: datetime,
+    ) -> None:
+        report_folder = self.staging_folder / "ValidationReports"
+        report_folder.mkdir(parents=True, exist_ok=True)
+        input_by_mapping = self._xml_mapping_summaries(self.project_root / "input_xml")
+        remediated_by_mapping = self._xml_mapping_summaries(self.remediated_folder)
+        zip_by_mapping = self._staged_dtemplate_summaries(mapping_assets)
+        rows = []
+        for asset in mapping_assets:
+            name = asset["name"]
+            input_summary = input_by_mapping.get(name, {})
+            remediated_summary = remediated_by_mapping.get(name, {})
+            zip_summary = zip_by_mapping.get(name, {})
+            rows.append(
+                {
+                    "mapping": name,
+                    "inputXmlFile": input_summary.get("file", ""),
+                    "remediatedXmlFile": remediated_summary.get("file", ""),
+                    "inputInstances": input_summary.get("instances", 0),
+                    "remediatedInstances": remediated_summary.get("instances", 0),
+                    "zipImportableTransformations": zip_summary.get("transformations", 0),
+                    "inputTransformations": input_summary.get("transformations", 0),
+                    "remediatedTransformations": remediated_summary.get("transformations", 0),
+                    "inputConnectors": input_summary.get("connectors", 0),
+                    "remediatedConnectors": remediated_summary.get("connectors", 0),
+                    "zipImportableLinks": zip_summary.get("links", 0),
+                    "inputInstanceNames": input_summary.get("instanceNames", []),
+                    "remediatedInstanceNames": remediated_summary.get("instanceNames", []),
+                    "zipImportableTransformationNames": zip_summary.get("transformationNames", []),
+                    "status": (
+                        "IMPORT_COMPATIBLE_WITH_XML_SOURCE_BUNDLED"
+                        if zip_summary.get("transformations", 0) > 0
+                        else "MISSING_IMPORTABLE_DTEMPLATE"
+                    ),
+                    "note": (
+                        "Input XML and remediated XML are preserved in the package. "
+                        "The importable DTEMPLATE uses IDMC-supported template metadata; "
+                        "full PowerCenter instance coverage is documented by XML source records and MappingImages."
+                    ),
+                }
+            )
+        report = {
+            "generatedAt": self._timestamp(now),
+            "packageName": self.package_name,
+            "project": self.PROJECT_NAME,
+            "folder": self.folder_name,
+            "sourceXmlFiles": [path.name for path in xml_files],
+            "mappings": rows,
+        }
+        (report_folder / "xml_zip_mapping_comparison.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+        with (report_folder / "xml_zip_mapping_comparison.csv").open("w", newline="", encoding="utf-8") as csv_file:
+            fieldnames = [
+                "mapping",
+                "inputXmlFile",
+                "remediatedXmlFile",
+                "inputInstances",
+                "remediatedInstances",
+                "zipImportableTransformations",
+                "inputTransformations",
+                "remediatedTransformations",
+                "inputConnectors",
+                "remediatedConnectors",
+                "zipImportableLinks",
+                "status",
+            ]
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in rows:
+                writer.writerow({key: row[key] for key in fieldnames})
+
+    def _write_reference_mapping_images(self, mapping_assets: list[dict[str, Any]], now: datetime) -> None:
+        source_folder = self.output_folder / "downloadable_mapping_images_from_zip"
+        image_folder = self.staging_folder / "MappingImages"
+        image_folder.mkdir(parents=True, exist_ok=True)
+        index = {
+            "description": (
+                "IDMC mapping and taskflow reference images bundled with this package. "
+                "DTEMPLATE preview records use the full-transformation mapping images where available."
+            ),
+            "generatedAt": self._timestamp(now),
+            "images": [],
+        }
+        candidates = [
+            ("Custom_SDE_SupplyChain", "taskflow_reference", "Custom_SDE_SupplyChain_taskflow_reference.png"),
+        ]
+        for asset in mapping_assets:
+            name = asset["name"]
+            candidates.extend(
+                [
+                    (name, "valid_mapping", f"{name}_valid_mapping.png"),
+                    (name, "full_transformations", f"{name}_full_transformations.png"),
+                ]
+            )
+        for mapping_name, kind, file_name in candidates:
+            source = source_folder / file_name
+            if not source.exists():
+                continue
+            data = source.read_bytes()
+            (image_folder / file_name).write_bytes(data)
+            index["images"].append(
+                {
+                    "mappingName": mapping_name,
+                    "kind": kind,
+                    "fileName": file_name,
+                    "zipPath": f"MappingImages/{file_name}",
+                    "format": "png",
+                    "sizeBytes": len(data),
+                    "sha256": hashlib.sha256(data).hexdigest().upper(),
+                }
+            )
+        (image_folder / "index.json").write_text(json.dumps(index, indent=2), encoding="utf-8")
+
+    def _xml_mapping_summaries(self, folder: Path) -> dict[str, dict[str, Any]]:
+        summaries: dict[str, dict[str, Any]] = {}
+        if not folder.exists():
+            return summaries
+        for path in sorted([*folder.glob("*.XML"), *folder.glob("*.xml")]):
+            try:
+                root = ET.parse(path).getroot()
+            except ET.ParseError:
+                continue
+            for mapping in root.iter("MAPPING"):
+                name = mapping.get("NAME", "")
+                if not name:
+                    continue
+                summaries[name] = {
+                    "file": path.name,
+                    "instances": len(mapping.findall("INSTANCE")),
+                    "transformations": len(mapping.findall("TRANSFORMATION")),
+                    "connectors": len(mapping.findall("CONNECTOR")),
+                    "instanceNames": [item.get("NAME", "") for item in mapping.findall("INSTANCE")],
+                    "transformationNames": [item.get("NAME", "") for item in mapping.findall("TRANSFORMATION")],
+                }
+        return summaries
+
+    def _staged_dtemplate_summaries(self, mapping_assets: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+        summaries: dict[str, dict[str, Any]] = {}
+        mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
+        for asset in mapping_assets:
+            name = asset["name"]
+            path = mapping_folder / f"{name}.DTEMPLATE.zip"
+            if not path.exists():
+                summaries[name] = {}
+                continue
+            try:
+                with zipfile.ZipFile(path) as dtemplate:
+                    bin_member = next(
+                        member
+                        for member in dtemplate.namelist()
+                        if member.startswith("bin/") and member.endswith(".bin")
+                    )
+                    payload = json.loads(dtemplate.read(bin_member).decode("utf-8"))
+            except (OSError, StopIteration, zipfile.BadZipFile, UnicodeDecodeError, json.JSONDecodeError):
+                summaries[name] = {}
+                continue
+            content = payload.get("content", {}) if isinstance(payload, dict) else {}
+            transformations = content.get("transformations", []) if isinstance(content, dict) else []
+            links = content.get("links", []) if isinstance(content, dict) else []
+            summaries[name] = {
+                "transformations": len(transformations) if isinstance(transformations, list) else 0,
+                "links": len(links) if isinstance(links, list) else 0,
+                "transformationNames": [
+                    item.get("name", "")
+                    for item in transformations
+                    if isinstance(item, dict)
+                ]
+                if isinstance(transformations, list)
+                else [],
+            }
+        return summaries
 
     def _write_checksum(self) -> None:
         rows = [
@@ -2046,9 +2365,8 @@ class IdmcExportPackageGenerator:
     def _repo_handle(object_guid: str) -> str:
         return hashlib.sha1(object_guid.encode("utf-8")).hexdigest()[:20].upper()
 
-    @staticmethod
-    def _guid(*parts: str) -> str:
-        digest = hashlib.sha256("|".join(parts).encode("utf-8")).digest()
+    def _guid(self, *parts: str) -> str:
+        digest = hashlib.sha256("|".join([self.package_guid_seed, *parts]).encode("utf-8")).digest()
         alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         number = int.from_bytes(digest[:16], "big")
         chars = []
