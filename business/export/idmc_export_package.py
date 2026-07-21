@@ -50,8 +50,8 @@ class IdmcExportPackageGenerator:
 
     PROJECT_NAME = "BIAINFADEV2_FLEX"
     FOLDER_NAME = "Custom_Project_Export"
-    CONNECTION_NAME = "DataWarehouse_PA"
-    AGENT_GROUP_NAME = "PC Secure Agent Group"
+    CONNECTION_NAME = "Oracle_Connection"
+    AGENT_GROUP_NAME = "Secure_Agent_Group"
 
     def __init__(
         self,
@@ -344,6 +344,7 @@ class IdmcExportPackageGenerator:
         self._assert_staging_dtemplate_integrity()
         self._write_checksum()
         self._zip_staging_folder()
+        self._sanitize_client_runtime_dependencies()
         self.logger.info(
             "Generated combined IDMC export package. xml_files=%s mappings=%s package=%s",
             len(xml_files),
@@ -795,11 +796,17 @@ class IdmcExportPackageGenerator:
         mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
         mapping_folder.mkdir(parents=True, exist_ok=True)
         mapping_name = asset["name"]
+        if template.get("name") != mapping_name and self._write_native_cdi_mapping_artifacts(
+            asset, ids, base_ids, mapping_folder
+        ):
+            return
+
         replacements = {
             template["name"]: mapping_name,
             template["dtemplate_id"]: ids.dtemplate,
             template["mtt_id"]: ids.mtt,
         }
+        self._add_asset_name_replacements(replacements, template.get("name", ""), mapping_name)
         for agent_group_id in template.get("agent_group_ids", []):
             if agent_group_id:
                 replacements[agent_group_id] = template.get("runtime_environment_id", agent_group_id)
@@ -824,6 +831,98 @@ class IdmcExportPackageGenerator:
             mapping_name,
             ids,
             now,
+        )
+
+    def _write_native_cdi_mapping_artifacts(
+        self,
+        asset: dict[str, Any],
+        ids: _AssetIds,
+        base_ids: _AssetIds,
+        mapping_folder: Path,
+    ) -> bool:
+        mapping = asset.get("mapping")
+        if mapping is None:
+            return False
+        try:
+            from business.iics.iics_package_generator import _build_dtemplate_zip, _build_mtt_zip
+            from data.models.mapping_model import to_plain_dict
+        except Exception as exc:  # pragma: no cover
+            self.logger.warning("Native CDI builders unavailable: %s", exc)
+            return False
+
+        mapping_name = asset["name"]
+        mapping_dict = to_plain_dict(mapping)
+        mapping_dict["mapping_name"] = mapping_name
+        session_dict = to_plain_dict(asset["session"]) if asset.get("session") else {
+            "session_name": mapping_name,
+            "mapping_name": mapping_name,
+            "attributes": {},
+        }
+        folder_data = {
+            "sources": [to_plain_dict(item) for item in asset.get("sources", [])],
+            "targets": [to_plain_dict(item) for item in asset.get("targets", [])],
+            "sessions": [session_dict],
+        }
+        conn_guids = {
+            self.CONNECTION_NAME: base_ids.connection,
+            "Oracle_Connection": base_ids.connection,
+            "DBConnection_OLAP": base_ids.connection,
+            "DBConnection_OLAP_Oracle": base_ids.connection,
+            "DataWarehouse_PA": base_ids.connection,
+        }
+        try:
+            dtemplate_bytes = _build_dtemplate_zip(mapping_dict, folder_data, ids.dtemplate)
+            mtt_bytes = _build_mtt_zip(
+                session_dict,
+                ids.mtt,
+                ids.dtemplate,
+                base_ids.agent_group,
+                conn_guids,
+                folder_data,
+                mapping_name,
+            )
+        except Exception as exc:
+            self.logger.warning(
+                "Native CDI mapping build failed for %s; falling back to sample rewrite: %s",
+                mapping_name,
+                exc,
+            )
+            return False
+
+        dtemplate_path = mapping_folder / f"{mapping_name}.DTEMPLATE.zip"
+        mtt_path = mapping_folder / f"{mapping_name}.MTT.zip"
+        dtemplate_path.write_bytes(dtemplate_bytes)
+        mtt_path.write_bytes(mtt_bytes)
+        self._assert_dtemplate_integrity(dtemplate_path, mapping_name)
+        self._assert_mtt_integrity(mtt_path, mapping_name, ids)
+        self.logger.info("Wrote native CDI mapping artifacts for %s", mapping_name)
+        return True
+
+    def _sanitize_client_runtime_dependencies(self) -> None:
+        if not self.package_path.exists():
+            return
+        from business.export.sanitize_runtime_dependencies import (
+            assert_no_foreign_runtime_names,
+            sanitize_export_runtime_dependencies,
+        )
+
+        sanitized = self.package_path.with_suffix(".sanitized.zip")
+        sanitize_export_runtime_dependencies(
+            self.package_path,
+            sanitized,
+            connection_name=self.CONNECTION_NAME,
+            agent_group_name=self.AGENT_GROUP_NAME,
+        )
+        sanitized.replace(self.package_path)
+        assert_no_foreign_runtime_names(
+            self.package_path,
+            allowed_connection_names={self.CONNECTION_NAME},
+            allowed_agent_names={self.AGENT_GROUP_NAME},
+        )
+        self.logger.info(
+            "Sanitized client runtime dependencies to %s / %s",
+            self.CONNECTION_NAME,
+            self.AGENT_GROUP_NAME,
         )
 
     def _rewrite_sample_zip(
@@ -1138,6 +1237,9 @@ class IdmcExportPackageGenerator:
         if template is None:
             template = self._select_rewriteable_workflow_template(workflow_templates, len(assets))
 
+        if len(assets) == 1 and template.get("name") != taskflow_name:
+            return self._native_single_asset_taskflow_xml(taskflow_name, taskflow_id, assets[0], now)
+
         entry_id = f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
         replacements: dict[str, str] = {
             template.get("taskflow_id", ""): taskflow_id,
@@ -1268,6 +1370,29 @@ class IdmcExportPackageGenerator:
         if "<service" not in taskflow_text:
             raise ValueError(f"Rewritten taskflow {taskflow_name} is missing MTT service references")
         self._assert_taskflow_process_objects(taskflow_text, taskflow_name, retained_service_titles)
+        return taskflow_text
+
+    def _native_single_asset_taskflow_xml(
+        self,
+        taskflow_name: str,
+        taskflow_id: str,
+        asset: dict[str, Any],
+        now: datetime,
+    ) -> str:
+        from business.iics.iics_package_generator import _build_taskflow_xml
+
+        entry_id = f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
+        mtt_name = asset["name"]
+        taskflow_text = _build_taskflow_xml(
+            {"workflow_name": taskflow_name},
+            asset["ids"].mtt,
+            mtt_name,
+            taskflow_id,
+            entry_id,
+        )
+        self._assert_taskflow_process_objects(taskflow_text, taskflow_name, {mtt_name})
+        if asset["ids"].mtt not in taskflow_text:
+            raise ValueError(f"Native taskflow {taskflow_name} is missing MTT GUID {asset['ids'].mtt}")
         return taskflow_text
 
     @staticmethod
