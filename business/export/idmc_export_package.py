@@ -1067,8 +1067,8 @@ class IdmcExportPackageGenerator:
             task["taskProperties"] = task_properties
         by_name = {item.get("name"): item for item in task_properties if isinstance(item, dict)}
         values = {
-            "parameterFileDir": self.PARAMETER_FILE_DIRECTORY,
-            "parameterFileName": f"{mapping_name}.param",
+            "parameterFileDir": "",
+            "parameterFileName": "",
         }
         labels = {
             "parameterFileDir": "label.parameterFileDir",
