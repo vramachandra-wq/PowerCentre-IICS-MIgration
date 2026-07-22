@@ -51,8 +51,8 @@ class _AssetIds:
 class IdmcExportPackageGenerator:
     """Builds one combined IDMC-style export package from remediated XML files."""
 
-    PROJECT_NAME = "BIAINFADEV2_FLEX"
-    FOLDER_NAME = "Custom_Project_Export"
+    PROJECT_NAME = "RPA_PC_Modernization"
+    FOLDER_NAME = "Custom_SDE_SupplyChain"
     CONNECTION_NAME = "DataWarehouse_PA"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
     PARAMETER_FILE_DIRECTORY = "/JacobsAnalytics/IICS/Data_Integration/Param"
@@ -139,7 +139,7 @@ class IdmcExportPackageGenerator:
                         ids,
                         now,
                     )
-                    object_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
+                    object_path = self._asset_object_path()
                     exported_objects.extend(
                         [
                             self._exported_object(
@@ -187,9 +187,9 @@ class IdmcExportPackageGenerator:
                             *self._taskflow_mtt_refs(taskflow_text),
                         ]
                     )
-                    mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
+                    mapping_folder = self._mapping_folder()
                     (mapping_folder / f"{taskflow_name}.TASKFLOW.xml").write_text(taskflow_text, encoding="utf-8")
-                    object_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
+                    object_path = self._asset_object_path()
                     exported_objects.append(
                         self._exported_object(
                             taskflow_id,
@@ -223,7 +223,7 @@ class IdmcExportPackageGenerator:
                 for asset in mapping_assets:
                     asset_ids = self._asset_ids(asset["name"])
                     self._write_mapping_artifacts(asset, asset_ids, now)
-                    object_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
+                    object_path = self._asset_object_path()
                     exported_objects.extend(
                         [
                             self._exported_object(
@@ -276,7 +276,7 @@ class IdmcExportPackageGenerator:
             for asset in mapping_assets:
                 asset_ids = self._asset_ids(asset["name"])
                 self._write_mapping_artifacts(asset, asset_ids, now)
-                object_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
+                object_path = self._asset_object_path()
                 exported_objects.extend(
                     [
                         self._exported_object(
@@ -494,11 +494,17 @@ class IdmcExportPackageGenerator:
             },
         )
 
+    def _asset_object_path(self) -> str:
+        return f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
+
+    def _mapping_folder(self) -> Path:
+        return self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
+
     def _write_container_artifacts(self, ids: _AssetIds, now: datetime, mapping_count: int) -> None:
         explore = self.staging_folder / "Explore"
         project_folder = explore / self.PROJECT_NAME
         project_folder.mkdir(parents=True, exist_ok=True)
-        (project_folder / self.folder_name).mkdir(parents=True, exist_ok=True)
+        self._mapping_folder().mkdir(parents=True, exist_ok=True)
         (explore / f"{self.PROJECT_NAME}.Project.json").write_text(
             json.dumps(
                 self._odata_document(
@@ -756,7 +762,7 @@ class IdmcExportPackageGenerator:
             artifact_name = artifact
             dependency_path = obj.get("path", "")
             if object_type == "DMAPPLET":
-                dependency_path = f"/Explore/{self.PROJECT_NAME}/{self.folder_name}"
+                dependency_path = self._asset_object_path()
                 exported_object["path"] = dependency_path
                 artifact_name = f"Explore/{self.PROJECT_NAME}/{self.folder_name}/{name}.DMAPPLET.zip"
             dependencies.append(
@@ -788,7 +794,7 @@ class IdmcExportPackageGenerator:
         base_ids: _AssetIds,
         now: datetime,
     ) -> None:
-        mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
+        mapping_folder = self._mapping_folder()
         mapping_folder.mkdir(parents=True, exist_ok=True)
         mapping_name = asset["name"]
         replacements = {
@@ -1674,7 +1680,7 @@ class IdmcExportPackageGenerator:
         return taskflow_text
 
     def _write_mapping_artifacts(self, asset: dict[str, Any], ids: _AssetIds, now: datetime) -> None:
-        mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
+        mapping_folder = self._mapping_folder()
         mapping_name = asset["name"]
         template_payload = self._template_payload(asset)
         template_bytes = self._json_bytes(template_payload)
@@ -1938,7 +1944,7 @@ class IdmcExportPackageGenerator:
     def _assert_staging_dtemplate_integrity(self) -> None:
         """Validate every staged DTEMPLATE/MTT before packaging so broken zips never ship."""
 
-        explore_root = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
+        explore_root = self._mapping_folder()
         if not explore_root.exists():
             return
         for dtemplate_path in sorted(explore_root.glob("*.DTEMPLATE.zip")):
@@ -2124,7 +2130,7 @@ class IdmcExportPackageGenerator:
 
     def _staged_dtemplate_summaries(self, mapping_assets: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
         summaries: dict[str, dict[str, Any]] = {}
-        mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
+        mapping_folder = self._mapping_folder()
         for asset in mapping_assets:
             name = asset["name"]
             path = mapping_folder / f"{name}.DTEMPLATE.zip"

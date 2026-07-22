@@ -1616,8 +1616,8 @@ def _sha256_bytes(data: bytes) -> str:
 class IICSPackageGenerator:
     """Generate a complete IICS import package from all parsed PC XML files."""
 
-    PROJECT_NAME     = "BIAINFADEV2_FLEX"
-    FOLDER_NAME      = "Custom_Project"
+    PROJECT_NAME     = "RPA_PC_Modernization"
+    FOLDER_NAME      = "Custom_SDE_SupplyChain"
     CONNECTION_NAME  = "DataWarehouse_PA"
     CONNECTION_PARAM = "DBConnection_OLAP"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
