@@ -324,6 +324,25 @@ class IdmcExportIntegrityTests(unittest.TestCase):
         self.assertNotIn("INFA-commandTask", rewritten)
         self.assertIn(self.ids.mtt, rewritten)
 
+    def test_single_service_taskflow_is_linearized(self) -> None:
+        taskflow_xml = '''<flow id="a">
+           <eventContainer id="svc">
+              <service id="s1"><title>SIL_JobDimension</title></service>
+              <link id="to_condition" targetId="condition"/>
+           </eventContainer>
+           <container id="condition" type="exclusive">
+              <title>Link_Condition_condition</title>
+              <flow id="branch"><link id="branch_link" targetId="c" type="containerLink"/></flow>
+           </container>
+           <end id="c"/>
+        </flow>'''
+
+        rewritten = self.generator._linearize_single_service_taskflow(taskflow_xml, "SIL_JobDimension")
+
+        self.assertIn('targetId="c"', rewritten)
+        self.assertNotIn('type="exclusive"', rewritten)
+        self.assertNotIn("Link_Condition", rewritten)
+
 
 if __name__ == "__main__":
     unittest.main()

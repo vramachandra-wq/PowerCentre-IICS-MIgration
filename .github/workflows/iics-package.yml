@@ -36,14 +36,14 @@ jobs:
         run: python app.py --mode iics-package
 
       - name: Validate generated package
-        run: python app.py --mode iics-package --iics-zip output/iics_generated/iics_generated_package_checksum.zip
+        run: python app.py --mode iics-package --iics-zip output/Custom_Project_Export.zip
 
       - name: Upload IICS package artifact
         uses: actions/upload-artifact@v4
         with:
           name: iics-import-package
           path: |
-            output/iics_generated/iics_generated_package_checksum.zip
-            output/iics_generated/generation_summary.json
+            output/Custom_Project_Export.zip
+            output/generation_summary.json
             output/iics/iics_import_package.zip
             output/iics/summary.json
