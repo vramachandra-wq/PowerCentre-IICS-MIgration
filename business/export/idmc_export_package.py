@@ -21,6 +21,7 @@ from xml.sax.saxutils import escape
 
 from business.iics.iics_package_generator import _build_workflow_taskflow_xml
 from business.iics.iics_success_benchmark import IICSSuccessBenchmark
+from business.iics.native_mapping_graph import VISUAL_EDGE_OVERRIDES, graph_from_mapping_element
 from business.parser.xml_parser import XMLParser
 from common.config.config import AppConfig
 from data.models.mapping_model import MappingMetadata, ParsedXmlMetadata, SessionMetadata, TargetMetadata, to_plain_dict
@@ -78,7 +79,10 @@ class IdmcExportPackageGenerator:
         self.execution_strategy = execution_strategy
         self.reference_package = self._default_reference_package(reference_package)
         self.package_guid_seed = uuid.uuid4().hex
-        self.materialize_remediated_graph = True
+        # Keep the production package reference-backed. The experimental native
+        # graph can render the desired canvas shape, but IDMC currently rejects
+        # its Mapping Task import without a complete real class-prototype set.
+        self.materialize_remediated_graph = False
         self.import_run_suffix = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         self.folder_name = self.FOLDER_NAME
         self.package_path = self.output_folder / package_name
@@ -936,8 +940,16 @@ class IdmcExportPackageGenerator:
             self.logger.warning("No usable DTEMPLATE prototypes found for %s; keeping reference graph.", mapping_name)
             return
 
-        nodes = self._native_graph_nodes(mapping)
-        edges = self._native_graph_edges(mapping)
+        graph = graph_from_mapping_element(mapping, visual_overrides=True)
+        nodes = [
+            {
+                "name": node.name,
+                "instance_type": node.kind,
+                "transformation_type": node.transformation_type,
+            }
+            for node in graph.nodes
+        ]
+        edges = [(edge.from_node, edge.to_node) for edge in graph.edges]
         if not nodes:
             return
 
@@ -949,6 +961,7 @@ class IdmcExportPackageGenerator:
             prototype = prototypes[self._prototype_kind(node)]
             cloned, id_map, next_id = self._clone_dtemplate_object(prototype, next_id)
             self._rename_dtemplate_node(cloned, node["name"])
+            self._sync_dtemplate_node_adapter(cloned, node)
             transformations.append(cloned)
             old_tx_id = int(prototype.get("$$ID", 0))
             old_group_id = self._first_group_id(prototype)
@@ -1057,9 +1070,9 @@ class IdmcExportPackageGenerator:
     def _prototype_kind(node: dict[str, str]) -> str:
         instance_type = node.get("instance_type", "").upper()
         transformation_type = node.get("transformation_type", "").lower()
-        if instance_type == "TARGET" or "target" in transformation_type:
+        if instance_type == "TARGET":
             return "target"
-        if instance_type == "SOURCE" or "source" in transformation_type:
+        if instance_type == "SOURCE" or "source qualifier" in transformation_type:
             return "source"
         return "expression"
 
@@ -1138,6 +1151,44 @@ class IdmcExportPackageGenerator:
 
         rewrite(node)
         node["name"] = name
+
+    @staticmethod
+    def _sync_dtemplate_node_adapter(node: dict[str, Any], graph_node: dict[str, str]) -> None:
+        prototype_kind = IdmcExportPackageGenerator._prototype_kind(graph_node)
+        if prototype_kind not in {"source", "target"}:
+            return
+        data_adapter = node.get("dataAdapter")
+        if not isinstance(data_adapter, dict):
+            return
+        object_name = graph_node.get("name", "")
+        if not object_name:
+            return
+        data_adapter.pop("customQuery", None)
+        data_adapter["objectType"] = "SINGLE"
+        data_adapter["multipleObject"] = "false"
+        data_adapter["useDynamicFileName"] = "false"
+        adapter_object = data_adapter.setdefault("object", {})
+        if isinstance(adapter_object, dict):
+            adapter_object.update(
+                {
+                    "name": object_name,
+                    "label": object_name,
+                    "path": object_name,
+                    "customQuery": "",
+                    "retainMetadata": "false",
+                }
+            )
+            fields = adapter_object.get("fields")
+            if isinstance(fields, list):
+                for field in fields:
+                    if not isinstance(field, dict):
+                        continue
+                    properties = field.get("properties")
+                    if not isinstance(properties, list):
+                        continue
+                    for prop in properties:
+                        if isinstance(prop, dict) and prop.get("name") in {"parentObjectLabel", "parentLabel"}:
+                            prop["value"] = object_name
 
     @staticmethod
     def _first_group_id(node: dict[str, Any]) -> int:
@@ -1431,6 +1482,8 @@ class IdmcExportPackageGenerator:
                 payload[0].setdefault("serverlessProperties", {})
                 self._apply_parameter_file_fields(payload[0], mapping_name)
                 self._apply_empty_inout_parameters(payload[0])
+                if self.materialize_remediated_graph:
+                    self._apply_mapping_runtime_parameters(payload[0], mapping_name, ids)
             return self._json_bytes(payload)
         return self._replace_text_bytes(content, replacements)
 
@@ -1461,8 +1514,6 @@ class IdmcExportPackageGenerator:
         task["inOutParameters"] = [{"@type": "mtTaskInOutParameter", "name": "", "type": "", "value": ""}]
 
     def _apply_mapping_runtime_parameters(self, task: dict[str, Any], mapping_name: str, ids: _AssetIds) -> None:
-        # This is intentionally used only for the experimental XML-materialized path.
-        # The default import-compatible path keeps the reference-valid parameters.
         specs = self._mapping_runtime_parameter_specs(mapping_name)
         if not specs:
             return
@@ -1480,7 +1531,7 @@ class IdmcExportPackageGenerator:
                     "id": start_id + offset,
                     "name": f"${spec['name']}$",
                     "type": spec["type"],
-                    "label": "DBConnection_OLAP",
+                    "label": spec["name"],
                     "newFlatFile": False,
                     "newObject": False,
                     "showBusinessNames": True,
@@ -1489,18 +1540,53 @@ class IdmcExportPackageGenerator:
                     "bulkApiDBTarget": False,
                 }
             )
+            connection_parameter_name = "Source" if spec["type"] == "SOURCE" else "Target"
+            ui_properties = parameter.setdefault("uiProperties", {})
+            if not isinstance(ui_properties, dict):
+                ui_properties = {}
+                parameter["uiProperties"] = ui_properties
+            ui_properties.update(
+                {
+                    "cnxtype": "Oracle",
+                    "connectionParameterized": "true",
+                    "paramName": connection_parameter_name,
+                    "paramType-mapping": "Connection",
+                    "logcnx": connection_parameter_name,
+                    "objectParameterized": "false",
+                    "visible": "false",
+                    "flags": "SUPPORTS_MULTI_SCHEMA",
+                    "originalPath": spec["name"],
+                }
+            )
             if spec["type"] == "SOURCE":
                 parameter["sourceConnectionId"] = f"@{ids.connection}"
                 parameter["sourceObject"] = spec["name"]
+                parameter["objectName"] = spec["name"]
+                parameter["objectLabel"] = spec["name"]
+                parameter["runtimeAttrs"] = {}
+                parameter["customQuery"] = ""
                 parameter.pop("targetConnectionId", None)
                 parameter.pop("targetObject", None)
+                parameter.pop("targetObjectLabel", None)
+                parameter.pop("operationType", None)
             else:
                 parameter["targetConnectionId"] = f"@{ids.connection}"
                 parameter["targetObject"] = spec["name"]
                 parameter["targetObjectLabel"] = spec["name"]
+                parameter["objectName"] = spec["name"]
+                parameter["objectLabel"] = spec["name"]
                 parameter.setdefault("operationType", "Insert")
                 parameter.pop("sourceConnectionId", None)
                 parameter.pop("sourceObject", None)
+                parameter.pop("customQuery", None)
+                parameter["runtimeAttrs"] = {"INSERT": "YES"}
+                ui_properties["default"] = spec["name"]
+            parameter["runtimeParameterData"] = {
+                "@type": "mtTaskRuntimeParameterData",
+                "isConnectionRuntimeParameter": True,
+                "isObjectRuntimeParameter": False,
+                "connectionParameterName": connection_parameter_name,
+            }
             parameters.append(parameter)
         task["parameters"] = parameters
 
@@ -1508,6 +1594,25 @@ class IdmcExportPackageGenerator:
         mapping = self._remediated_mapping_element(mapping_name)
         if mapping is None:
             return []
+        if self.materialize_remediated_graph and mapping_name in VISUAL_EDGE_OVERRIDES:
+            graph = graph_from_mapping_element(mapping, visual_overrides=True)
+            specs: list[dict[str, str]] = []
+            seen: set[tuple[str, str]] = set()
+            for node in graph.nodes:
+                graph_node = {
+                    "name": node.name,
+                    "instance_type": node.kind,
+                    "transformation_type": node.transformation_type,
+                }
+                prototype_kind = self._prototype_kind(graph_node)
+                if prototype_kind not in {"source", "target"}:
+                    continue
+                param_type = "SOURCE" if prototype_kind == "source" else "TARGET"
+                key = (node.name, param_type)
+                if key not in seen:
+                    seen.add(key)
+                    specs.append({"name": node.name, "type": param_type})
+            return specs
         specs: list[dict[str, str]] = []
         seen: set[tuple[str, str]] = set()
 
@@ -2341,6 +2446,22 @@ class IdmcExportPackageGenerator:
                     "sha256": hashlib.sha256(data).hexdigest().upper(),
                 }
             )
+            graph_source = source.with_suffix(".graph.json")
+            if graph_source.exists():
+                graph_file_name = graph_source.name
+                graph_data = graph_source.read_bytes()
+                (image_folder / graph_file_name).write_bytes(graph_data)
+                index["images"].append(
+                    {
+                        "mappingName": mapping_name,
+                        "kind": f"{kind}_graph",
+                        "fileName": graph_file_name,
+                        "zipPath": f"MappingImages/{graph_file_name}",
+                        "format": "json",
+                        "sizeBytes": len(graph_data),
+                        "sha256": hashlib.sha256(graph_data).hexdigest().upper(),
+                    }
+                )
         (image_folder / "index.json").write_text(json.dumps(index, indent=2), encoding="utf-8")
 
     def _xml_mapping_summaries(self, folder: Path) -> dict[str, dict[str, Any]]:

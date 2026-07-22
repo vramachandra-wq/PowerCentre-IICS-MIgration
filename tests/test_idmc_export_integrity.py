@@ -188,6 +188,51 @@ class IdmcExportIntegrityTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "shortDescription still references sample template"):
                 IdmcExportPackageGenerator._assert_mtt_integrity(path, "SDE_ORA_JobDimension", self.ids)
 
+    def test_runtime_parameters_are_rebuilt_from_remediated_xml(self) -> None:
+        task = {
+            "parameters": [
+                {
+                    "@type": "mtTaskParameter",
+                    "id": 10,
+                    "name": "$SQ_WC_PBCS_BUDGET_ACTUALS_FS$",
+                    "type": "SOURCE",
+                    "sourceObject": "DUMMY_SQ_WC_PBCS_BUDGET_ACTUALS_FS",
+                    "runtimeParameterData": {"connectionParameterName": "Source"},
+                },
+                {
+                    "@type": "mtTaskParameter",
+                    "id": 11,
+                    "name": "$WC_PBCS_BUDGET_ACTUALS_F$",
+                    "type": "TARGET",
+                    "targetObject": "WC_PBCS_BUDGET_ACTUALS_F",
+                    "runtimeParameterData": {"connectionParameterName": "Target"},
+                },
+            ]
+        }
+        xml = """<POWERMART><REPOSITORY><FOLDER><MAPPING NAME="SIL_JobDimension">
+            <INSTANCE NAME="W_JOB_DS" TYPE="SOURCE"/>
+            <INSTANCE NAME="W_JOB_D" TYPE="TARGET"/>
+        </MAPPING></FOLDER></REPOSITORY></POWERMART>"""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            remediated = Path(tmp) / "remediated_xml"
+            remediated.mkdir()
+            (remediated / "SIL_JobDimension_remediated.xml").write_text(xml, encoding="utf-8")
+            self.generator.remediated_folder = remediated
+
+            self.generator._apply_mapping_runtime_parameters(task, "SIL_JobDimension", self.ids)
+
+        parameters = task["parameters"]
+        self.assertEqual(["$W_JOB_DS$", "$W_JOB_D$"], [item["name"] for item in parameters])
+        self.assertEqual(["SOURCE", "TARGET"], [item["type"] for item in parameters])
+        self.assertEqual(f"@{self.ids.connection}", parameters[0]["sourceConnectionId"])
+        self.assertEqual("W_JOB_D", parameters[1]["targetObject"])
+        self.assertEqual("Source", parameters[0]["runtimeParameterData"]["connectionParameterName"])
+        self.assertEqual("Target", parameters[1]["runtimeParameterData"]["connectionParameterName"])
+        self.assertNotIn("WC_PBCS", json.dumps(parameters))
+        self.assertEqual({}, parameters[0]["runtimeAttrs"])
+        self.assertEqual({"INSERT": "YES"}, parameters[1]["runtimeAttrs"])
+
     def test_processor_marks_size_mismatch_invalid(self) -> None:
         broken = _dtemplate_bytes("SDE_ORA_JobDimension", declared_size=99999)
         with tempfile.TemporaryDirectory() as tmp:
