@@ -1301,6 +1301,10 @@ def _build_workflow_taskflow_xml(
                </processObject>"""
 
     start_link = _h()
+    assignment_vars_id = _h()
+    assignment_file_id = _h()
+    assignment_vars_link = _h()
+    assignment_file_link = _h()
     parallel_id = _h()
     xml = f"""<aetgt:getResponse xmlns:aetgt="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd"
                    xmlns:types1="http://schemas.active-endpoints.com/appmodules/repository/2010/10/avrepository.xsd">
@@ -1333,8 +1337,16 @@ def _build_workflow_taskflow_xml(
             <flow id="a">
                <start id="b">
                   <title>Start</title>
-                  <link id="{start_link}" targetId="{parallel_id}"/>
+                  <link id="{start_link}" targetId="{assignment_vars_id}"/>
                </start>
+               <assignment id="{assignment_vars_id}">
+                  <title>Assignment_PC_Variables</title>
+                  <link id="{assignment_vars_link}" targetId="{assignment_file_id}"/>
+               </assignment>
+               <assignment id="{assignment_file_id}">
+                  <title>Assignment_PC_Workflow_Parameter_File</title>
+                  <link id="{assignment_file_link}" targetId="{parallel_id}"/>
+               </assignment>
                <container id="{parallel_id}" type="parallel">
 {branch_xml}
                </container>
@@ -1604,8 +1616,8 @@ def _sha256_bytes(data: bytes) -> str:
 class IICSPackageGenerator:
     """Generate a complete IICS import package from all parsed PC XML files."""
 
-    PROJECT_NAME     = "BIAINFADEV2_FLEX"
-    FOLDER_NAME      = "Custom_Project"
+    PROJECT_NAME     = "RPA_PC_Modernization"
+    FOLDER_NAME      = "Custom_SDE_SupplyChain"
     CONNECTION_NAME  = "DataWarehouse_PA"
     CONNECTION_PARAM = "DBConnection_OLAP"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
