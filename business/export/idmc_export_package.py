@@ -140,7 +140,6 @@ class IdmcExportPackageGenerator:
                             "id": dependency["id"],
                         }
                     )
-                taskflow_groups: dict[str, dict[str, Any]] = {}
                 for index, asset in enumerate(mapping_assets):
                     asset_ids = self._asset_ids(asset["name"])
                     asset["ids"] = asset_ids
@@ -182,30 +181,21 @@ class IdmcExportPackageGenerator:
                             {"objectPath": object_path, "objectName": asset["name"], "objectType": "MTT", "id": asset_ids.mtt},
                         ]
                     )
-                    group_key = self.folder_name
-                    group = taskflow_groups.setdefault(
-                        group_key,
-                        {
-                            "name": self.folder_name,
-                            "assets": [],
-                            "links": asset.get("workflow_links", []),
-                        },
-                    )
-                    group["assets"].append(asset)
 
-                for group in taskflow_groups.values():
-                    taskflow_name = self._asset_name(group["name"])
-                    taskflow_id = self._guid("taskflow", taskflow_name)
+                for asset in mapping_assets:
+                    asset_ids = asset["ids"]
+                    taskflow_name = asset["name"]
+                    taskflow_id = asset_ids.taskflow
                     entry_id = f"{taskflow_id}-gt-{self._epoch_millis(now)}::tf.xml"
                     taskflow_text = _build_workflow_taskflow_xml(
                         {"workflow_name": taskflow_name},
-                        [(asset["name"], asset["ids"].mtt) for asset in group["assets"]],
+                        [(taskflow_name, asset_ids.mtt)],
                         taskflow_id,
                         entry_id,
                     )
                     taskflow_refs = self._ordered_unique(
                         [
-                            *[asset["ids"].mtt for asset in group["assets"]],
+                            asset_ids.mtt,
                             *self._taskflow_mtt_refs(taskflow_text),
                         ]
                     )
@@ -845,10 +835,15 @@ class IdmcExportPackageGenerator:
             {
                 "@type": "fileRecord",
                 "id": preview_id,
-                "name": f"{mapping_name}_preview.jpeg",
+                "name": f"{mapping_name}_preview.png" if preview_bytes.startswith(b"\x89PNG\r\n\x1a\n") else f"{mapping_name}_preview.jpeg",
                 "type": "IMAGE",
                 "size": len(preview_bytes),
                 "attachTime": self._epoch_millis(now),
+                **(
+                    {"additionalInfo": "image/png", "mimeType": "image/png", "contentType": "image/png"}
+                    if preview_bytes.startswith(b"\x89PNG\r\n\x1a\n")
+                    else {}
+                ),
             }
         )
         rewritten["fileRecord.json"] = self._json_bytes(records)
@@ -868,7 +863,33 @@ class IdmcExportPackageGenerator:
         for candidate in candidates:
             if candidate.exists():
                 return candidate.read_bytes()
+        reference_preview = self._reference_package_preview_bytes(mapping_name)
+        if reference_preview:
+            return reference_preview
         return self._preview_bytes(mapping_name)
+
+    def _reference_package_preview_bytes(self, mapping_name: str) -> bytes | None:
+        if not self.reference_package or not self.reference_package.exists():
+            return None
+        try:
+            with zipfile.ZipFile(self.reference_package) as package:
+                for member in package.namelist():
+                    if not member.endswith(f"/{mapping_name}.DTEMPLATE.zip"):
+                        continue
+                    with zipfile.ZipFile(io.BytesIO(package.read(member))) as template_zip:
+                        if "fileRecord.json" not in template_zip.namelist():
+                            continue
+                        records = json.loads(template_zip.read("fileRecord.json").decode("utf-8"))
+                        for record in records if isinstance(records, list) else []:
+                            if record.get("type") != "IMAGE":
+                                continue
+                            record_id = str(record.get("id", "")).lstrip("@")
+                            bin_member = f"bin/@{record_id}.bin"
+                            if bin_member in template_zip.namelist():
+                                return template_zip.read(bin_member)
+        except (OSError, zipfile.BadZipFile, KeyError, json.JSONDecodeError) as exc:
+            self.logger.warning("Failed to load reference preview for %s: %s", mapping_name, exc)
+        return None
 
     def _sync_dtemplate_file_records(
         self,
@@ -2290,6 +2311,8 @@ class IdmcExportPackageGenerator:
             candidates.append(self._resolve_path(reference_package))
         candidates.extend(
             [
+                Path("D:/Download/Custom_Project_Export.zip"),
+                Path(r"D:/Downloads/Custom_Project_Export.zip"),
                 self.project_root / "reference_packages/iics_success/single_session/JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F-1784088987453.zip",
                 self.project_root / "reference_packages/iics_success/multi_session/TaskFlow_SDE_EmployeeHeadCount_Informatica_ConvTool.zip",
                 self.project_root / "reference_export_package.zip",
