@@ -78,7 +78,7 @@ class IdmcExportPackageGenerator:
         self.execution_strategy = execution_strategy
         self.reference_package = self._default_reference_package(reference_package)
         self.package_guid_seed = uuid.uuid4().hex
-        self.materialize_remediated_graph = False
+        self.materialize_remediated_graph = True
         self.import_run_suffix = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         self.folder_name = self.FOLDER_NAME
         self.package_path = self.output_folder / package_name
@@ -923,6 +923,246 @@ class IdmcExportPackageGenerator:
             payload["metadata"]["$$classInfo"] = class_info
         return self._json_bytes(payload)
 
+    def _apply_remediated_mapping_graph(self, payload: dict[str, Any], mapping_name: str) -> None:
+        """Replace the reference template graph with the remediated XML topology."""
+
+        mapping = self._remediated_mapping_element(mapping_name)
+        content = payload.get("content")
+        if mapping is None or not isinstance(content, dict):
+            return
+
+        prototypes = self._dtemplate_prototypes(content)
+        if not prototypes:
+            self.logger.warning("No usable DTEMPLATE prototypes found for %s; keeping reference graph.", mapping_name)
+            return
+
+        nodes = self._native_graph_nodes(mapping)
+        edges = self._native_graph_edges(mapping)
+        if not nodes:
+            return
+
+        next_id = self._max_dtemplate_id(payload) + 1
+        transformations: list[dict[str, Any]] = []
+        refs: dict[str, dict[str, int]] = {}
+
+        for node in self._ordered_graph_nodes(nodes, edges):
+            prototype = prototypes[self._prototype_kind(node)]
+            cloned, id_map, next_id = self._clone_dtemplate_object(prototype, next_id)
+            self._rename_dtemplate_node(cloned, node["name"])
+            transformations.append(cloned)
+            old_tx_id = int(prototype.get("$$ID", 0))
+            old_group_id = self._first_group_id(prototype)
+            refs[node["name"]] = {
+                "tx_id": id_map.get(old_tx_id, int(cloned.get("$$ID", 0))),
+                "group_id": id_map.get(old_group_id, self._first_group_id(cloned)),
+                "class": int(cloned.get("$$class", prototype.get("$$class", 7))),
+            }
+
+        links = []
+        for from_name, to_name in edges:
+            if from_name not in refs or to_name not in refs:
+                continue
+            link_id = next_id
+            next_id += 1
+            source = refs[from_name]
+            target = refs[to_name]
+            links.append(
+                {
+                    "$$ID": link_id,
+                    "$$class": 4,
+                    "name": f"link_{link_id}",
+                    "fromGroup": {"##ID": source["group_id"], "$$class": 5},
+                    "fromTransformation": {"##ID": source["tx_id"], "$$class": source["class"]},
+                    "toGroup": {"##ID": target["group_id"], "$$class": 5},
+                    "toTransformation": {"##ID": target["tx_id"], "$$class": target["class"]},
+                }
+            )
+
+        content["transformations"] = transformations
+        content["links"] = links
+        content["nativeCdiMapping"] = True
+        content["conversionNote"] = (
+            "Native DTEMPLATE graph materialized from PowerCenter XML INSTANCE and CONNECTOR metadata. "
+            "Unsupported transformation classes are represented with import-safe expression prototypes until "
+            "IDMC-native class samples are provided."
+        )
+
+    def _remediated_mapping_element(self, mapping_name: str) -> ET.Element | None:
+        for xml_path in self._xml_files():
+            try:
+                root = ET.parse(xml_path).getroot()
+            except ET.ParseError:
+                continue
+            for mapping in root.iter("MAPPING"):
+                if mapping.get("NAME") == mapping_name:
+                    return mapping
+        return None
+
+    @staticmethod
+    def _dtemplate_prototypes(content: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        prototypes: dict[str, dict[str, Any]] = {}
+        for item in content.get("transformations", []):
+            if not isinstance(item, dict):
+                continue
+            cls = item.get("$$class")
+            if cls == 6:
+                prototypes.setdefault("source", item)
+            elif cls == 8:
+                prototypes.setdefault("target", item)
+            elif cls == 7:
+                prototypes.setdefault("expression", item)
+        if "expression" not in prototypes:
+            return {}
+        prototypes.setdefault("source", prototypes["expression"])
+        prototypes.setdefault("target", prototypes["expression"])
+        return prototypes
+
+    @staticmethod
+    def _native_graph_nodes(mapping: ET.Element) -> list[dict[str, str]]:
+        nodes: list[dict[str, str]] = []
+        seen: set[str] = set()
+        transformations = {
+            item.get("NAME", ""): item.get("TYPE", "")
+            for item in mapping.findall("TRANSFORMATION")
+            if item.get("NAME")
+        }
+        for instance in mapping.findall("INSTANCE"):
+            name = instance.get("NAME", "")
+            if not name or name in seen:
+                continue
+            seen.add(name)
+            nodes.append(
+                {
+                    "name": name,
+                    "instance_type": instance.get("TYPE", ""),
+                    "transformation_type": instance.get("TRANSFORMATION_TYPE", "")
+                    or transformations.get(instance.get("TRANSFORMATION_NAME", ""), ""),
+                }
+            )
+        return nodes
+
+    @staticmethod
+    def _native_graph_edges(mapping: ET.Element) -> list[tuple[str, str]]:
+        edges: list[tuple[str, str]] = []
+        seen: set[tuple[str, str]] = set()
+        for connector in mapping.findall("CONNECTOR"):
+            edge = (connector.get("FROMINSTANCE", ""), connector.get("TOINSTANCE", ""))
+            if not edge[0] or not edge[1] or edge in seen:
+                continue
+            seen.add(edge)
+            edges.append(edge)
+        return edges
+
+    @staticmethod
+    def _prototype_kind(node: dict[str, str]) -> str:
+        instance_type = node.get("instance_type", "").upper()
+        transformation_type = node.get("transformation_type", "").lower()
+        if instance_type == "TARGET" or "target" in transformation_type:
+            return "target"
+        if instance_type == "SOURCE" or "source" in transformation_type:
+            return "source"
+        return "expression"
+
+    @staticmethod
+    def _ordered_graph_nodes(nodes: list[dict[str, str]], edges: list[tuple[str, str]]) -> list[dict[str, str]]:
+        by_name = {node["name"]: node for node in nodes}
+        incoming = {node["name"]: 0 for node in nodes}
+        outgoing: dict[str, list[str]] = {node["name"]: [] for node in nodes}
+        for from_name, to_name in edges:
+            if from_name in by_name and to_name in by_name:
+                outgoing[from_name].append(to_name)
+                incoming[to_name] += 1
+
+        order = {node["name"]: index for index, node in enumerate(nodes)}
+        queue = sorted([name for name, count in incoming.items() if count == 0], key=lambda name: order[name])
+        result: list[dict[str, str]] = []
+        while queue:
+            name = queue.pop(0)
+            result.append(by_name[name])
+            for target in sorted(outgoing[name], key=lambda item: order[item]):
+                incoming[target] -= 1
+                if incoming[target] == 0:
+                    queue.append(target)
+            queue.sort(key=lambda item: order[item])
+
+        emitted = {node["name"] for node in result}
+        result.extend(node for node in nodes if node["name"] not in emitted)
+        return result
+
+    @staticmethod
+    def _clone_dtemplate_object(prototype: dict[str, Any], next_id: int) -> tuple[dict[str, Any], dict[int, int], int]:
+        clone = json.loads(json.dumps(prototype))
+        id_map: dict[int, int] = {}
+
+        def collect(value: Any) -> None:
+            if isinstance(value, dict):
+                current = value.get("$$ID")
+                if isinstance(current, int) and current not in id_map:
+                    id_map[current] = len(id_map) + next_id
+                for item in value.values():
+                    collect(item)
+            elif isinstance(value, list):
+                for item in value:
+                    collect(item)
+
+        def rewrite(value: Any) -> None:
+            if isinstance(value, dict):
+                if isinstance(value.get("$$ID"), int):
+                    value["$$ID"] = id_map[value["$$ID"]]
+                if isinstance(value.get("##ID"), int) and value["##ID"] in id_map:
+                    value["##ID"] = id_map[value["##ID"]]
+                for item in value.values():
+                    rewrite(item)
+            elif isinstance(value, list):
+                for item in value:
+                    rewrite(item)
+
+        collect(clone)
+        rewrite(clone)
+        return clone, id_map, next_id + len(id_map)
+
+    @staticmethod
+    def _rename_dtemplate_node(node: dict[str, Any], name: str) -> None:
+        old_name = str(node.get("name", ""))
+
+        def rewrite(value: Any) -> None:
+            if isinstance(value, dict):
+                for key, item in list(value.items()):
+                    if isinstance(item, str):
+                        value[key] = item.replace(old_name, name) if old_name else item
+                    else:
+                        rewrite(item)
+            elif isinstance(value, list):
+                for item in value:
+                    rewrite(item)
+
+        rewrite(node)
+        node["name"] = name
+
+    @staticmethod
+    def _first_group_id(node: dict[str, Any]) -> int:
+        groups = node.get("groups", [])
+        if isinstance(groups, list) and groups and isinstance(groups[0], dict):
+            value = groups[0].get("$$ID")
+            if isinstance(value, int):
+                return value
+        return int(node.get("$$ID", 0))
+
+    @staticmethod
+    def _max_dtemplate_id(value: Any) -> int:
+        max_id = 0
+        if isinstance(value, dict):
+            for key in ("$$ID", "##ID"):
+                current = value.get(key)
+                if isinstance(current, int):
+                    max_id = max(max_id, current)
+            for item in value.values():
+                max_id = max(max_id, IdmcExportPackageGenerator._max_dtemplate_id(item))
+        elif isinstance(value, list):
+            for item in value:
+                max_id = max(max_id, IdmcExportPackageGenerator._max_dtemplate_id(item))
+        return max_id
+
     def _ensure_dtemplate_preview(
         self,
         rewritten: dict[str, bytes],
@@ -1190,8 +1430,6 @@ class IdmcExportPackageGenerator:
                 payload[0].setdefault("paramFileType", "PARAM_FILE_LOCAL")
                 payload[0].setdefault("serverlessProperties", {})
                 self._apply_parameter_file_fields(payload[0], mapping_name)
-                if self.materialize_remediated_graph:
-                    self._apply_mapping_runtime_parameters(payload[0], mapping_name, ids)
                 self._apply_empty_inout_parameters(payload[0])
             return self._json_bytes(payload)
         return self._replace_text_bytes(content, replacements)
