@@ -21,6 +21,7 @@ from xml.sax.saxutils import escape
 
 from business.iics.iics_package_generator import _build_workflow_taskflow_xml
 from business.iics.iics_success_benchmark import IICSSuccessBenchmark
+from business.iics.dtemplate_class_registry import DtemplateClassRegistry
 from business.iics.native_mapping_graph import VISUAL_EDGE_OVERRIDES, graph_from_mapping_element
 from business.parser.xml_parser import XMLParser
 from common.config.config import AppConfig
@@ -79,9 +80,9 @@ class IdmcExportPackageGenerator:
         self.execution_strategy = execution_strategy
         self.reference_package = self._default_reference_package(reference_package)
         self.package_guid_seed = uuid.uuid4().hex
-        # Keep the production package reference-backed. The experimental native
-        # graph can render the desired canvas shape, but IDMC currently rejects
-        # its Mapping Task import without a complete real class-prototype set.
+        # Keep the production package reference-backed. The expanded native
+        # graph renders the desired canvas shape, but IDMC rejects the related
+        # Mapping Task import without a complete real class-prototype set.
         self.materialize_remediated_graph = False
         self.import_run_suffix = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         self.folder_name = self.FOLDER_NAME
@@ -340,6 +341,7 @@ class IdmcExportPackageGenerator:
         self._write_export_metadata(exported_objects, now)
         self._write_contents_csv(contents_rows, now)
         self._write_reference_mapping_images(mapping_assets, now)
+        self._write_native_prototype_status()
         self._write_xml_zip_comparison_reports(xml_files, mapping_assets, now)
         self._assert_staging_dtemplate_integrity()
         self._write_checksum()
@@ -953,6 +955,18 @@ class IdmcExportPackageGenerator:
         if not nodes:
             return
 
+        required_types = self._required_native_prototype_types(nodes)
+        registry_status = DtemplateClassRegistry(self.project_root / "reference_packages/iics_native_classes").status(
+            required_types
+        )
+        if not registry_status.complete:
+            self.logger.warning(
+                "Native DTEMPLATE graph for %s requires missing IDMC prototype(s) %s; keeping import-safe reference graph.",
+                mapping_name,
+                registry_status.missing_types,
+            )
+            return
+
         next_id = self._max_dtemplate_id(payload) + 1
         transformations: list[dict[str, Any]] = []
         refs: dict[str, dict[str, int]] = {}
@@ -996,9 +1010,53 @@ class IdmcExportPackageGenerator:
         content["nativeCdiMapping"] = True
         content["conversionNote"] = (
             "Native DTEMPLATE graph materialized from PowerCenter XML INSTANCE and CONNECTOR metadata. "
-            "Unsupported transformation classes are represented with import-safe expression prototypes until "
-            "IDMC-native class samples are provided."
+            "All required transformation classes were backed by real IDMC-native class samples."
         )
+
+    def _write_native_prototype_status(self) -> None:
+        DtemplateClassRegistry(self.project_root / "reference_packages/iics_native_classes").write_status_report(
+            self.output_folder / "native_dtemplate_prototype_status.json"
+        )
+
+    @staticmethod
+    def _required_native_prototype_types(nodes: list[dict[str, str]]) -> list[str]:
+        required: list[str] = []
+        seen: set[str] = set()
+
+        def add(item: str) -> None:
+            if item not in seen:
+                seen.add(item)
+                required.append(item)
+
+        for node in nodes:
+            instance_type = node.get("instance_type", "").upper()
+            transformation_type = node.get("transformation_type", "").lower()
+            name = node.get("name", "").lower()
+            if instance_type == "SOURCE":
+                add("source")
+            elif instance_type == "TARGET":
+                add("target")
+            elif "source qualifier" in transformation_type or name.startswith("sq_"):
+                add("source_qualifier")
+            elif "lookup" in transformation_type or name.startswith("lkp_"):
+                add("lookup")
+            elif "filter" in transformation_type or name.startswith("fil_"):
+                add("filter")
+            elif "update strategy" in transformation_type or name.startswith("upd_"):
+                add("update_strategy")
+            elif "mapplet" in transformation_type or name.startswith("mplt_"):
+                add("mapplet")
+            elif "router" in transformation_type:
+                add("router")
+            elif "joiner" in transformation_type:
+                add("joiner")
+            elif "aggregator" in transformation_type:
+                add("aggregator")
+            elif "sequence" in transformation_type:
+                add("sequence_generator")
+            else:
+                add("expression")
+        return required
 
     def _remediated_mapping_element(self, mapping_name: str) -> ET.Element | None:
         for xml_path in self._xml_files():
