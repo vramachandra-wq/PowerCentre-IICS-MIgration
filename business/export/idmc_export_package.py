@@ -117,8 +117,9 @@ class IdmcExportPackageGenerator:
         mapping_assets = self._publishable_mapping_assets(mapping_assets)
         if not mapping_assets:
             raise ValueError(f"No mappings found in XML files under {self.remediated_folder}")
-        if self._can_generate_client_native_jobdimension_package(mapping_assets):
-            return self._generate_client_native_jobdimension_package(xml_files, mapping_assets, now)
+        client_native_sources = self._client_native_sources_for_mappings(mapping_assets)
+        if client_native_sources:
+            return self._generate_client_native_package(xml_files, mapping_assets, now, client_native_sources)
 
         ids = self._base_ids()
         sample_templates: list[dict[str, Any]] = []
@@ -713,8 +714,6 @@ class IdmcExportPackageGenerator:
             candidates.append(self.reference_package)
         candidates.extend(
             [
-                Path("D:/Download/SIL_JobDimension-1784817642871.zip"),
-                Path("D:/Download/SDE_ORA_JobDimension-1784818062356.zip"),
                 Path("D:/Download/SIL_EmployeeDimension-1784818567598.zip"),
                 Path("D:/Download/SDE_ORA_EmployeeDimension-1784818706860.zip"),
                 Path("D:/Download/SDE_EmployeeHeadCount-1784818653833.zip"),
@@ -1424,37 +1423,231 @@ class IdmcExportPackageGenerator:
                     Path(r"C:/Users/rkumar/AppData/Local/Temp/codex-clipboard-a3a05abf-f5b2-49a7-a1bf-15cf73355e6f.png"),
                 ]
             )
+        pinned_preview = self._pinned_mapping_preview_bytes(mapping_name)
+        if pinned_preview and self._is_preview_image(pinned_preview):
+            return pinned_preview
+        previews: list[bytes] = []
         for candidate in candidates:
             if candidate.exists():
-                return candidate.read_bytes()
+                data = candidate.read_bytes()
+                if self._is_preview_image(data):
+                    previews.append(data)
+        exact_native_preview = self._exact_native_package_preview_bytes(mapping_name)
+        if exact_native_preview and self._is_preview_image(exact_native_preview):
+            return exact_native_preview
         reference_preview = self._reference_package_preview_bytes(mapping_name)
-        if reference_preview:
-            return reference_preview
+        if reference_preview and self._is_preview_image(reference_preview):
+            previews.append(reference_preview)
+        if previews:
+            return max(previews, key=len)
         return self._preview_bytes(mapping_name)
 
-    def _reference_package_preview_bytes(self, mapping_name: str) -> bytes | None:
-        if not self.reference_package or not self.reference_package.exists():
-            return None
+    def _pinned_mapping_preview_bytes(self, mapping_name: str) -> bytes | None:
+        pinned_images = {
+            "SDE_ORA_JobDimension": self.project_root / "reference_packages" / "mapping_images" / "SDE_ORA_JobDimension_preview.png",
+        }
+        pinned_path = pinned_images.get(mapping_name)
+        if pinned_path and pinned_path.exists():
+            return pinned_path.read_bytes()
+        return None
+
+    @staticmethod
+    def _is_preview_image(value: bytes) -> bool:
+        return value.startswith(b"\x89PNG\r\n\x1a\n") or value.startswith(b"\xff\xd8")
+
+    def _exact_native_package_preview_bytes(self, mapping_name: str) -> bytes | None:
+        for package_path in self._client_native_source_candidates():
+            if mapping_name.lower() not in package_path.stem.lower():
+                continue
+            names = self._native_package_mapping_names(package_path)
+            if names != {mapping_name}:
+                continue
+            preview = self._preview_from_native_package(package_path, mapping_name)
+            if preview:
+                return preview
+        return None
+
+    def _preview_from_native_package(self, package_path: Path, mapping_name: str) -> bytes | None:
         try:
-            with zipfile.ZipFile(self.reference_package) as package:
+            with zipfile.ZipFile(package_path) as package:
                 for member in package.namelist():
                     if not member.endswith(f"/{mapping_name}.DTEMPLATE.zip"):
                         continue
                     with zipfile.ZipFile(io.BytesIO(package.read(member))) as template_zip:
-                        if "fileRecord.json" not in template_zip.namelist():
-                            continue
-                        records = json.loads(template_zip.read("fileRecord.json").decode("utf-8"))
-                        for record in records if isinstance(records, list) else []:
-                            if record.get("type") != "IMAGE":
+                        embedded = self._template_zip_image_bytes(template_zip)
+                        if embedded:
+                            return embedded
+                        for bin_member in template_zip.namelist():
+                            if not (bin_member.startswith("bin/") and bin_member.endswith(".bin")):
                                 continue
-                            record_id = str(record.get("id", "")).lstrip("@")
-                            bin_member = f"bin/@{record_id}.bin"
-                            if bin_member in template_zip.namelist():
-                                return template_zip.read(bin_member)
-        except (OSError, zipfile.BadZipFile, KeyError, json.JSONDecodeError) as exc:
-            self.logger.warning("Failed to load reference preview for %s: %s", mapping_name, exc)
+                            try:
+                                payload = json.loads(template_zip.read(bin_member).decode("utf-8-sig"))
+                            except (UnicodeDecodeError, json.JSONDecodeError):
+                                continue
+                            rendered = self._render_native_dtemplate_preview(payload, mapping_name)
+                            if rendered:
+                                return rendered
+        except (OSError, zipfile.BadZipFile, KeyError) as exc:
+            self.logger.warning("Failed to render native preview for %s from %s: %s", mapping_name, package_path, exc)
         return None
 
+    def _template_zip_image_bytes(self, template_zip: zipfile.ZipFile) -> bytes | None:
+        if "fileRecord.json" not in template_zip.namelist():
+            return None
+        try:
+            records = json.loads(template_zip.read("fileRecord.json").decode("utf-8-sig"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return None
+        for record in records if isinstance(records, list) else []:
+            if record.get("type") != "IMAGE":
+                continue
+            record_id = str(record.get("id", "")).lstrip("@")
+            bin_member = f"bin/@{record_id}.bin"
+            if bin_member in template_zip.namelist():
+                data = template_zip.read(bin_member)
+                if self._is_preview_image(data):
+                    return data
+        return None
+
+    def _render_native_dtemplate_preview(self, payload: dict[str, Any], mapping_name: str) -> bytes | None:
+        content = payload.get("content") if isinstance(payload, dict) else None
+        if not isinstance(content, dict):
+            return None
+        transformations = [item for item in content.get("transformations", []) if isinstance(item, dict) and item.get("name")]
+        links = [item for item in content.get("links", []) if isinstance(item, dict)]
+        if not transformations:
+            return None
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+        except Exception:
+            return None
+        tx_by_id = {int(item.get("$$ID")): item for item in transformations if isinstance(item.get("$$ID"), int)}
+        edges: list[tuple[str, str]] = []
+        for link in links:
+            source_id = ((link.get("fromTransformation") or {}).get("##ID"))
+            target_id = ((link.get("toTransformation") or {}).get("##ID"))
+            source = tx_by_id.get(source_id, {}).get("name")
+            target = tx_by_id.get(target_id, {}).get("name")
+            if source and target and (source, target) not in edges:
+                edges.append((source, target))
+        names = [item["name"] for item in transformations]
+        layers = self._graph_layers(names, edges)
+        max_layer = max(layers.values(), default=0)
+        max_per_layer = max((sum(1 for value in layers.values() if value == layer) for layer in set(layers.values())), default=1)
+        width = max(1280, 230 * (max_layer + 1) + 180)
+        height = max(560, 95 * max_per_layer + 180)
+        image = Image.new("RGB", (width, height), (248, 250, 252))
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.load_default()
+        draw.text((28, 24), mapping_name, fill=(17, 24, 39), font=font)
+        by_layer: dict[int, list[str]] = {}
+        for name in names:
+            by_layer.setdefault(layers.get(name, 0), []).append(name)
+        positions: dict[str, tuple[int, int, int, int]] = {}
+        box_w, box_h = 165, 54
+        for layer in sorted(by_layer):
+            layer_names = by_layer[layer]
+            x = 70 + layer * 230
+            total_h = len(layer_names) * box_h + (len(layer_names) - 1) * 38
+            start_y = max(90, (height - total_h) // 2)
+            for index, name in enumerate(layer_names):
+                y = start_y + index * (box_h + 38)
+                positions[name] = (x, y, x + box_w, y + box_h)
+        for source, target in edges:
+            if source not in positions or target not in positions:
+                continue
+            sx1, sy1, sx2, sy2 = positions[source]
+            tx1, ty1, tx2, ty2 = positions[target]
+            start = (sx2, (sy1 + sy2) // 2)
+            end = (tx1, (ty1 + ty2) // 2)
+            mid_x = (start[0] + end[0]) // 2
+            draw.line([start, (mid_x, start[1]), (mid_x, end[1]), end], fill=(102, 102, 102), width=2)
+            draw.polygon([(end[0], end[1]), (end[0] - 8, end[1] - 5), (end[0] - 8, end[1] + 5)], fill=(102, 102, 102))
+        for item in transformations:
+            name = item["name"]
+            x1, y1, x2, y2 = positions[name]
+            cls = item.get("$$class")
+            fill = (207, 231, 248) if cls == 6 else (220, 236, 252) if cls == 7 else (201, 229, 246)
+            draw.rounded_rectangle((x1, y1, x2, y2), radius=5, fill=fill, outline=(142, 202, 239), width=2)
+            draw.ellipse((x1 + 10, y1 + 19, x1 + 22, y1 + 31), fill=(122, 77, 157) if cls == 7 else (68, 114, 148))
+            ty = y1 + 8
+            for label_line in self._wrap_label(name, 18):
+                draw.text((x1 + 30, ty), label_line, fill=(31, 41, 55), font=font)
+                ty += 13
+        output = io.BytesIO()
+        image.save(output, format="PNG")
+        return output.getvalue()
+
+    @staticmethod
+    def _wrap_label(value: str, width: int) -> list[str]:
+        parts = value.replace("_", " _").split()
+        lines: list[str] = []
+        current = ""
+        for part in parts:
+            candidate = f"{current}{part}" if part.startswith("_") else f"{current} {part}".strip()
+            if len(candidate) <= width:
+                current = candidate
+            else:
+                if current:
+                    lines.append(current[:width])
+                current = part.lstrip("_")[:width]
+        if current:
+            lines.append(current[:width])
+        return lines[:3]
+
+    @staticmethod
+    def _graph_layers(names: list[str], edges: list[tuple[str, str]]) -> dict[str, int]:
+        incoming = {name: 0 for name in names}
+        outgoing = {name: [] for name in names}
+        for source, target in edges:
+            if source in incoming and target in incoming:
+                outgoing[source].append(target)
+                incoming[target] += 1
+        layers = {name: 0 for name, count in incoming.items() if count == 0}
+        queue = list(layers)
+        while queue:
+            source = queue.pop(0)
+            for target in outgoing[source]:
+                next_layer = layers[source] + 1
+                if next_layer > layers.get(target, -1):
+                    layers[target] = next_layer
+                    queue.append(target)
+        for name in names:
+            layers.setdefault(name, 0)
+        return layers
+
+    def _reference_package_preview_bytes(self, mapping_name: str) -> bytes | None:
+        previews: list[bytes] = []
+        packages = self._client_native_source_candidates()
+        if self.reference_package and self.reference_package.exists():
+            packages.insert(0, self.reference_package)
+        try:
+            for package_path in self._ordered_unique_paths(packages):
+                with zipfile.ZipFile(package_path) as package:
+                    for member in package.namelist():
+                        if f"{mapping_name}_" in member and member.lower().endswith((".png", ".jpg", ".jpeg")):
+                            data = package.read(member)
+                            if self._is_preview_image(data):
+                                previews.append(data)
+                    for member in package.namelist():
+                        if not member.endswith(f"/{mapping_name}.DTEMPLATE.zip"):
+                            continue
+                        with zipfile.ZipFile(io.BytesIO(package.read(member))) as template_zip:
+                            if "fileRecord.json" not in template_zip.namelist():
+                                continue
+                            records = json.loads(template_zip.read("fileRecord.json").decode("utf-8"))
+                            for record in records if isinstance(records, list) else []:
+                                if record.get("type") != "IMAGE":
+                                    continue
+                                record_id = str(record.get("id", "")).lstrip("@")
+                                bin_member = f"bin/@{record_id}.bin"
+                                if bin_member in template_zip.namelist():
+                                    data = template_zip.read(bin_member)
+                                    if self._is_preview_image(data):
+                                        previews.append(data)
+        except (OSError, zipfile.BadZipFile, KeyError, json.JSONDecodeError) as exc:
+            self.logger.warning("Failed to load reference preview for %s: %s", mapping_name, exc)
+        return max(previews, key=len) if previews else None
     def _sync_dtemplate_file_records(
         self,
         rewritten: dict[str, bytes],
@@ -3173,30 +3366,132 @@ class IdmcExportPackageGenerator:
             self.logger.warning("Failed to load %s success taskflow templates: %s", profile, exc)
             return []
 
-    def _client_native_jobdimension_sources(self) -> list[Path]:
-        return [
-            Path(r"D:/Download/SIL_JobDimension-1784817642871.zip"),
-            Path(r"D:/Download/SDE_ORA_JobDimension-1784818062356.zip"),
-        ]
+    def _client_native_source_candidates(self) -> list[Path]:
+        candidates: list[Path] = []
+        if self.reference_package:
+            candidates.append(self.reference_package)
+        for folder in [Path("D:/Downloads"), Path("D:/Download")]:
+            if folder.exists():
+                candidates.extend(sorted(folder.glob("*.zip"), key=lambda item: item.stat().st_mtime, reverse=True))
+        reference_root = self.project_root / "reference_packages"
+        if reference_root.exists():
+            candidates.extend(sorted(reference_root.rglob("*.zip"), key=lambda item: item.stat().st_mtime, reverse=True))
+        seen: set[str] = set()
+        result: list[Path] = []
+        for candidate in candidates:
+            resolved = self._resolve_path(candidate)
+            key = str(resolved).lower()
+            if key in seen or not resolved.exists() or resolved == self.package_path:
+                continue
+            seen.add(key)
+            result.append(resolved)
+        return result
 
-    def _can_generate_client_native_jobdimension_package(self, mapping_assets: list[dict[str, Any]]) -> bool:
-        names = {asset.get("name") for asset in mapping_assets}
-        if names != {"SIL_JobDimension", "SDE_ORA_JobDimension"}:
-            return False
-        return all(path.exists() for path in self._client_native_jobdimension_sources())
+    @staticmethod
+    def _ordered_unique_paths(paths: list[Path]) -> list[Path]:
+        seen: set[str] = set()
+        result: list[Path] = []
+        for path in paths:
+            key = str(path).lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            result.append(path)
+        return result
 
-    def _generate_client_native_jobdimension_package(
+    @staticmethod
+    def _native_package_mapping_names(source: Path) -> set[str]:
+        try:
+            with zipfile.ZipFile(source) as package:
+                if "exportMetadata.v2.json" not in package.namelist():
+                    return set()
+                metadata = json.loads(package.read("exportMetadata.v2.json").decode("utf-8"))
+        except (OSError, zipfile.BadZipFile, KeyError, UnicodeDecodeError, json.JSONDecodeError):
+            return set()
+        names: set[str] = set()
+        for obj in metadata.get("exportedObjects", []):
+            if obj.get("objectType") in {"DTEMPLATE", "MTT", "TASKFLOW"} and obj.get("objectName"):
+                names.add(obj["objectName"])
+        return names
+
+    def _client_native_sources_for_mappings(self, mapping_assets: list[dict[str, Any]]) -> list[Path]:
+        required = {asset.get("name") for asset in mapping_assets if asset.get("name")}
+        if not required:
+            return []
+        coverage_by_source: list[tuple[Path, set[str]]] = []
+        for source in self._client_native_source_candidates():
+            coverage = self._native_package_mapping_names(source) & required
+            if coverage:
+                coverage_by_source.append((source, coverage))
+        selected: list[Path] = []
+        covered: set[str] = set()
+        for mapping_name in sorted(required):
+            exact_candidates = [
+                source
+                for source, coverage in coverage_by_source
+                if coverage == {mapping_name} and mapping_name.lower() in source.stem.lower()
+            ]
+            if exact_candidates:
+                chosen = sorted(exact_candidates, key=lambda item: item.stat().st_mtime, reverse=True)[0]
+                selected.append(chosen)
+                covered.add(mapping_name)
+        for source, coverage in sorted(coverage_by_source, key=lambda item: (-len(item[1] - covered), str(item[0]).lower())):
+            if coverage <= covered:
+                continue
+            selected.append(source)
+            covered.update(coverage)
+            if covered == required:
+                break
+        selected = self._ordered_unique_paths(selected)
+        if covered != required:
+            missing = sorted(required - covered)
+            self.logger.info(
+                "No complete native IDMC source export set found for mappings %s. Missing native exports for: %s",
+                sorted(required),
+                missing,
+            )
+            return []
+        self.logger.info(
+            "Using dynamic native IDMC source exports for mappings %s: %s",
+            sorted(required),
+            [str(path) for path in selected],
+        )
+        return selected
+
+    @staticmethod
+    def _client_native_remap_context(metadata: dict[str, Any], mapping_names: set[str]) -> tuple[set[str], set[str]]:
+        projects: set[str] = set()
+        folders: set[str] = set()
+        for obj in metadata.get("exportedObjects", []):
+            object_type = obj.get("objectType")
+            object_name = obj.get("objectName", "")
+            path = str(obj.get("path", ""))
+            if object_type == "Project" and object_name:
+                projects.add(object_name)
+            parts = [part for part in path.strip("/").split("/") if part]
+            if len(parts) >= 2 and parts[0] == "Explore":
+                projects.add(parts[1])
+            if object_type == "Folder" and object_name:
+                folders.add(object_name)
+            if object_name in mapping_names and len(parts) >= 3 and parts[0] == "Explore":
+                folders.add(parts[2])
+            if object_type in {"DTEMPLATE", "MTT", "TASKFLOW", "DMAPPLET", "SequenceGenerator"} and len(parts) >= 3 and parts[0] == "Explore":
+                folders.add(parts[2])
+        return projects, folders
+
+    def _generate_client_native_package(
         self,
         xml_files: list[Path],
         mapping_assets: list[dict[str, Any]],
         now: datetime,
+        native_sources: list[Path],
     ) -> IdmcExportSummary:
-        """Build the JobDimension package from client-tested native IDMC exports.
+        """Build the package from discovered client-tested native IDMC exports.
 
-        The supplied SIL/SDE exports are the import-compatible source of truth
-        for native DTEMPLATE/MTT/TASKFLOW runtime metadata. This method only
-        remaps paths into the requested project/folder, fixes file records, adds
-        missing preview images, and rebuilds package metadata/checksums.
+        Native exports are discovered by inspecting exportMetadata.v2.json and
+        matching DTEMPLATE/MTT/TASKFLOW object names to the current XML mappings.
+        This keeps package creation dynamic while preserving IDMC-generated
+        DTEMPLATE internals instead of handcrafting bin/@2.bin.
         """
 
         entries: dict[str, bytes] = {}
@@ -3204,19 +3499,15 @@ class IdmcExportPackageGenerator:
         seen_guids: set[str] = set()
         project_object: dict[str, Any] | None = None
         folder_object: dict[str, Any] | None = None
-        old_project = "BIAINFADEV2_FLEX"
-        old_folders = {"Custom_SIL", "Custom_SDE"}
-
+        mapping_names = {asset["name"] for asset in mapping_assets}
         folder_token = "__IDMC_TARGET_FOLDER__"
-        replacements = {
-            old_project: self.PROJECT_NAME,
-            "Custom_SIL": folder_token,
-            "Custom_SDE": folder_token,
-        }
 
-        for source in self._client_native_jobdimension_sources():
+        for source in native_sources:
             with zipfile.ZipFile(source) as package:
                 metadata = json.loads(package.read("exportMetadata.v2.json").decode("utf-8"))
+                old_projects, old_folders = self._client_native_remap_context(metadata, mapping_names)
+                replacements = {project: self.PROJECT_NAME for project in old_projects}
+                replacements.update({folder: folder_token for folder in old_folders})
                 for obj in metadata.get("exportedObjects", []):
                     obj = json.loads(json.dumps(obj))
                     object_type = obj.get("objectType")
@@ -3232,7 +3523,7 @@ class IdmcExportPackageGenerator:
                             obj["path"] = f"/Explore/{self.PROJECT_NAME}"
                             folder_object = self._replace_client_native_json(obj, replacements, folder_token)
                         continue
-                    obj["path"] = self._remap_client_native_path(str(obj.get("path", "")), old_project, old_folders)
+                    obj["path"] = self._remap_client_native_path(str(obj.get("path", "")), old_projects, old_folders)
                     obj = self._replace_client_native_json(obj, replacements, folder_token)
                     guid = obj.get("objectGuid") or f"{obj.get('objectType')}|{obj.get('path')}|{obj.get('objectName')}"
                     if guid in seen_guids:
@@ -3247,7 +3538,7 @@ class IdmcExportPackageGenerator:
                         or member.startswith("ContentsofExportPackage_")
                     ):
                         continue
-                    target_member = self._remap_client_native_member(member, old_project, old_folders)
+                    target_member = self._remap_client_native_member(member, old_projects, old_folders)
                     content = package.read(member)
                     if member.endswith(".zip"):
                         mapping_name = Path(target_member).name.split(".")[0]
@@ -3298,7 +3589,6 @@ class IdmcExportPackageGenerator:
             package_path=str(self.package_path),
             staging_folder=str(self.staging_folder),
         )
-
     def _rewrite_client_native_nested_zip(
         self,
         source_bytes: bytes,
@@ -3407,33 +3697,35 @@ class IdmcExportPackageGenerator:
         entries["MappingImages/index.json"] = json.dumps(image_index, indent=2).encode("utf-8")
 
     @staticmethod
-    def _remap_client_native_path(path: str, old_project: str, old_folders: set[str]) -> str:
-        for folder in old_folders:
-            old_prefix = f"/Explore/{old_project}/{folder}"
-            new_prefix = "/Explore/RPA_PC_Modernization/Custom_SDE_SupplyChain"
-            if path == old_prefix:
-                return new_prefix
-            if path.startswith(f"{old_prefix}/"):
-                return f"{new_prefix}{path[len(old_prefix):]}"
-        if path == f"/Explore/{old_project}":
-            return "/Explore/RPA_PC_Modernization"
-        if path.startswith(f"/Explore/{old_project}/"):
-            return f"/Explore/RPA_PC_Modernization{path[len(f'/Explore/{old_project}'):]}"
+    def _remap_client_native_path(path: str, old_projects: set[str], old_folders: set[str]) -> str:
+        new_folder_prefix = "/Explore/RPA_PC_Modernization/Custom_SDE_SupplyChain"
+        for project in old_projects:
+            for folder in old_folders:
+                old_prefix = f"/Explore/{project}/{folder}"
+                if path == old_prefix:
+                    return new_folder_prefix
+                if path.startswith(f"{old_prefix}/"):
+                    return f"{new_folder_prefix}{path[len(old_prefix):]}"
+            if path == f"/Explore/{project}":
+                return "/Explore/RPA_PC_Modernization"
+            if path.startswith(f"/Explore/{project}/"):
+                return f"/Explore/RPA_PC_Modernization/{path[len(f'/Explore/{project}/') :]}"
         return path
 
     @staticmethod
-    def _remap_client_native_member(member: str, old_project: str, old_folders: set[str]) -> str:
-        for folder in old_folders:
-            old_prefix = f"Explore/{old_project}/{folder}/"
-            if member.startswith(old_prefix):
-                return f"Explore/RPA_PC_Modernization/Custom_SDE_SupplyChain/{member[len(old_prefix):]}"
-            old_folder_file = f"Explore/{old_project}/{folder}.Folder.json"
-            if member == old_folder_file:
-                return "Explore/RPA_PC_Modernization/Custom_SDE_SupplyChain.Folder.json"
-        if member == f"Explore/{old_project}.Project.json":
-            return "Explore/RPA_PC_Modernization.Project.json"
-        if member.startswith(f"Explore/{old_project}/"):
-            return f"Explore/RPA_PC_Modernization/{member[len(f'Explore/{old_project}/'):]}"
+    def _remap_client_native_member(member: str, old_projects: set[str], old_folders: set[str]) -> str:
+        for project in old_projects:
+            for folder in old_folders:
+                old_prefix = f"Explore/{project}/{folder}/"
+                if member.startswith(old_prefix):
+                    return f"Explore/RPA_PC_Modernization/Custom_SDE_SupplyChain/{member[len(old_prefix):]}"
+                old_folder_file = f"Explore/{project}/{folder}.Folder.json"
+                if member == old_folder_file:
+                    return "Explore/RPA_PC_Modernization/Custom_SDE_SupplyChain.Folder.json"
+            if member == f"Explore/{project}.Project.json":
+                return "Explore/RPA_PC_Modernization.Project.json"
+            if member.startswith(f"Explore/{project}/"):
+                return f"Explore/RPA_PC_Modernization/{member[len(f'Explore/{project}/') :]}"
         return member
 
     @staticmethod
