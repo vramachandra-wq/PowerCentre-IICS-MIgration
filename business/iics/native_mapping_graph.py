@@ -25,6 +25,18 @@ class MappingNode:
 class MappingEdge:
     from_node: str
     to_node: str
+    from_field: str = ""
+    to_field: str = ""
+
+
+@dataclass(frozen=True)
+class MappingPort:
+    node: str
+    name: str
+    direction: str = ""
+    datatype: str = ""
+    precision: str = ""
+    scale: str = ""
 
 
 @dataclass(frozen=True)
@@ -32,13 +44,18 @@ class MappingGraph:
     name: str
     nodes: list[MappingNode]
     edges: list[MappingEdge]
+    ports: list[MappingPort]
 
     def to_dict(self) -> dict[str, object]:
         return {
             "name": self.name,
             "nodes": [asdict(node) for node in self.nodes],
             "edges": [asdict(edge) for edge in self.edges],
+            "ports": [asdict(port) for port in self.ports],
         }
+
+    def component_edges(self) -> list[MappingEdge]:
+        return _dedupe_component_edges((edge.from_node, edge.to_node) for edge in self.edges)
 
 
 VISUAL_EDGE_OVERRIDES: dict[str, list[tuple[str, str]]] = {
@@ -89,7 +106,12 @@ def graph_from_mapping_element(mapping: ET.Element, *, visual_overrides: bool = 
         nodes_by_name.setdefault(node_name, MappingNode(node_name, kind, tx_type))
 
     edges = _dedupe_edges(
-        (connector.get("FROMINSTANCE", ""), connector.get("TOINSTANCE", ""))
+        (
+            connector.get("FROMINSTANCE", ""),
+            connector.get("TOINSTANCE", ""),
+            connector.get("FROMFIELD", ""),
+            connector.get("TOFIELD", ""),
+        )
         for connector in mapping.findall("CONNECTOR")
     )
     if visual_overrides and name in VISUAL_EDGE_OVERRIDES:
@@ -100,9 +122,12 @@ def graph_from_mapping_element(mapping: ET.Element, *, visual_overrides: bool = 
             for endpoint in [edge.from_node, edge.to_node]:
                 if endpoint not in nodes_by_name:
                     nodes_by_name[endpoint] = MappingNode(endpoint, _inferred_kind(endpoint), _inferred_kind(endpoint))
+        ports = _ports_from_mapping(mapping, set(nodes_by_name))
+    else:
+        ports = _ports_from_mapping(mapping, set(nodes_by_name))
 
-    ordered_names = _ordered_node_names(nodes_by_name, edges)
-    return MappingGraph(name=name, nodes=[nodes_by_name[item] for item in ordered_names], edges=edges)
+    ordered_names = _ordered_node_names(nodes_by_name, graph_edges=_dedupe_component_edges((edge.from_node, edge.to_node) for edge in edges))
+    return MappingGraph(name=name, nodes=[nodes_by_name[item] for item in ordered_names], edges=edges, ports=ports)
 
 
 def graph_from_xml_file(path: str | Path, mapping_name: str, *, visual_overrides: bool = False) -> MappingGraph:
@@ -117,7 +142,19 @@ def write_graph_json(graph: MappingGraph, path: str | Path) -> None:
     Path(path).write_text(json.dumps(graph.to_dict(), indent=2), encoding="utf-8")
 
 
-def _dedupe_edges(raw_edges: Iterable[tuple[str, str]]) -> list[MappingEdge]:
+def _dedupe_edges(raw_edges: Iterable[tuple[str, str, str, str]]) -> list[MappingEdge]:
+    seen: set[tuple[str, str, str, str]] = set()
+    edges: list[MappingEdge] = []
+    for source, target, from_field, to_field in raw_edges:
+        key = (source, target, from_field, to_field)
+        if not source or not target or key in seen:
+            continue
+        seen.add(key)
+        edges.append(MappingEdge(source, target, from_field, to_field))
+    return edges
+
+
+def _dedupe_component_edges(raw_edges: Iterable[tuple[str, str]]) -> list[MappingEdge]:
     seen: set[tuple[str, str]] = set()
     edges: list[MappingEdge] = []
     for source, target in raw_edges:
@@ -128,11 +165,11 @@ def _dedupe_edges(raw_edges: Iterable[tuple[str, str]]) -> list[MappingEdge]:
     return edges
 
 
-def _ordered_node_names(nodes: dict[str, MappingNode], edges: list[MappingEdge]) -> list[str]:
+def _ordered_node_names(nodes: dict[str, MappingNode], graph_edges: list[MappingEdge]) -> list[str]:
     names = list(nodes)
     incoming = {name: 0 for name in names}
     outgoing = {name: [] for name in names}
-    for edge in edges:
+    for edge in graph_edges:
         if edge.from_node in nodes and edge.to_node in nodes:
             outgoing[edge.from_node].append(edge.to_node)
             incoming[edge.to_node] += 1
@@ -150,6 +187,64 @@ def _ordered_node_names(nodes: dict[str, MappingNode], edges: list[MappingEdge])
     emitted = set(ordered)
     ordered.extend(name for name in names if name not in emitted)
     return ordered
+
+
+def _ports_from_mapping(mapping: ET.Element, node_names: set[str]) -> list[MappingPort]:
+    ports: list[MappingPort] = []
+    seen: set[tuple[str, str, str]] = set()
+
+    def add(node: str, field: ET.Element, direction: str = "") -> None:
+        name = field.get("NAME", "")
+        if not node or node not in node_names or not name:
+            return
+        port_type = direction or field.get("PORTTYPE", "") or field.get("PORT_TYPE", "")
+        key = (node, name, port_type)
+        if key in seen:
+            return
+        seen.add(key)
+        ports.append(
+            MappingPort(
+                node=node,
+                name=name,
+                direction=port_type,
+                datatype=field.get("DATATYPE", ""),
+                precision=field.get("PRECISION", ""),
+                scale=field.get("SCALE", ""),
+            )
+        )
+
+    for transformation in mapping.findall("TRANSFORMATION"):
+        transformation_name = transformation.get("NAME", "")
+        instance_names = [
+            instance.get("NAME", "")
+            for instance in mapping.findall("INSTANCE")
+            if instance.get("TRANSFORMATION_NAME") == transformation_name or instance.get("NAME") == transformation_name
+        ]
+        for field in transformation.findall("TRANSFORMFIELD"):
+            for instance_name in instance_names:
+                add(instance_name, field)
+
+    for source in mapping.findall("SOURCE"):
+        for field in source.findall("SOURCEFIELD"):
+            add(source.get("NAME", ""), field, "OUTPUT")
+
+    for target in mapping.findall("TARGET"):
+        for field in target.findall("TARGETFIELD"):
+            add(target.get("NAME", ""), field, "INPUT")
+
+    for connector in mapping.findall("CONNECTOR"):
+        from_node = connector.get("FROMINSTANCE", "")
+        from_field = connector.get("FROMFIELD", "")
+        to_node = connector.get("TOINSTANCE", "")
+        to_field = connector.get("TOFIELD", "")
+        if from_node in node_names and from_field and (from_node, from_field, "OUTPUT") not in seen:
+            seen.add((from_node, from_field, "OUTPUT"))
+            ports.append(MappingPort(node=from_node, name=from_field, direction="OUTPUT"))
+        if to_node in node_names and to_field and (to_node, to_field, "INPUT") not in seen:
+            seen.add((to_node, to_field, "INPUT"))
+            ports.append(MappingPort(node=to_node, name=to_field, direction="INPUT"))
+
+    return ports
 
 
 def _inferred_kind(name: str) -> str:

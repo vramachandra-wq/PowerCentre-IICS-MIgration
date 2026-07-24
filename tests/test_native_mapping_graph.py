@@ -52,6 +52,23 @@ class NativeMappingGraphTests(unittest.TestCase):
         self.assertIn(("_EXPR_Upd_W_JOB_D_Ins_Upd", "Upd_W_JOB_D_Ins_Upd"), edges)
         self.assertIn(("Upd_W_JOB_D_Ins_Upd", "W_JOB_D"), edges)
 
+    def test_canonical_graph_preserves_field_level_connectors_and_ports(self) -> None:
+        graph = graph_from_xml_file(
+            Path("output/remediated_xml/SIL_JobDimension_remediated.xml"),
+            "SIL_JobDimension",
+        )
+        field_edges = {
+            (edge.from_node, edge.from_field, edge.to_node, edge.to_field)
+            for edge in graph.edges
+        }
+        component_edges = {(edge.from_node, edge.to_node) for edge in graph.component_edges()}
+        ports = {(port.node, port.name) for port in graph.ports}
+
+        self.assertGreater(len(graph.edges), len(graph.component_edges()))
+        self.assertIn(("Upd_W_JOB_D_Ins_Upd", "W_INSERT_DT", "W_JOB_D", "W_INSERT_DT"), field_edges)
+        self.assertIn(("Upd_W_JOB_D_Ins_Upd", "W_JOB_D"), component_edges)
+        self.assertIn(("W_JOB_D", "W_INSERT_DT"), ports)
+
     def test_generated_zip_dtemplates_materialize_expected_canvas_graphs(self) -> None:
         config = AppConfig(
             database=DatabaseConfig("", 0, "", "", "", ""),
@@ -63,39 +80,36 @@ class NativeMappingGraphTests(unittest.TestCase):
 
         for mapping_name in ["SDE_ORA_JobDimension", "SIL_JobDimension"]:
             graph = graphs[mapping_name]
-            self.assertEqual(
-                {"WC_PBCS_BUDGET_ACTUALS_F", "SQ_WC_PBCS_BUDGET_ACTUALS_FS", "EXPTRANS"},
-                graph["nodes"],
-            )
-            self.assertEqual(
-                {
-                    ("SQ_WC_PBCS_BUDGET_ACTUALS_FS", "EXPTRANS"),
-                    ("EXPTRANS", "WC_PBCS_BUDGET_ACTUALS_F"),
-                },
-                graph["edges"],
-            )
+            expected_nodes = _xml_instance_names(Path("input_xml") / f"{mapping_name}.XML", mapping_name)
+            if mapping_name == "SIL_JobDimension":
+                expected_nodes.remove("W_JOB_DS")
+                expected_nodes.add("_EXPR_Upd_W_JOB_D_Ins_Upd")
+            else:
+                expected_nodes.update(
+                    {
+                        "_EXPR_Exp_W_JOB_DS_Integration_Id",
+                        "_EXPR_Input_mplt_SA_ORA_JobDimension",
+                    }
+                )
+            self.assertEqual(expected_nodes, graph["nodes"])
             self.assertIsNone(graph["native"])
 
         mtt_parameters = _mtt_runtime_parameters(Path(summary.package_path))
-        for mapping_name in ["SDE_ORA_JobDimension", "SIL_JobDimension"]:
-            self.assertEqual(
-                [
-                    ("$SQ_WC_PBCS_BUDGET_ACTUALS_FS$", "SOURCE", "Source"),
-                    ("$WC_PBCS_BUDGET_ACTUALS_F$", "TARGET", "Target"),
-                ],
-                mtt_parameters[mapping_name],
-            )
+        self.assertEqual(4, len(mtt_parameters["SDE_ORA_JobDimension"]))
+        self.assertIn(("$W_JOB_DS$", "TARGET", "DBConnection_OLAP"), mtt_parameters["SDE_ORA_JobDimension"])
+        self.assertEqual(12, len(mtt_parameters["SIL_JobDimension"]))
+        self.assertIn(("$Sq_W_JOB_DS$", "SOURCE", "DBConnection_OLAP"), mtt_parameters["SIL_JobDimension"])
+        self.assertIn(("$W_JOB_D$", "TARGET", "DBConnection_OLAP"), mtt_parameters["SIL_JobDimension"])
 
-        images = _mapping_images(Path(summary.package_path))
+        source_xml = _source_xml_entries(Path(summary.package_path))
         self.assertEqual(
             {
-                "MappingImages/SDE_ORA_JobDimension_full_transformations.png",
-                "MappingImages/SDE_ORA_JobDimension_valid_mapping.png",
-                "MappingImages/SIL_JobDimension_full_transformations.png",
-                "MappingImages/SIL_JobDimension_valid_mapping.png",
+                "SourceXML/SDE_ORA_JobDimension_remediated.xml",
+                "SourceXML/SIL_JobDimension_remediated.xml",
             },
-            images,
+            source_xml,
         )
+
 
 
 class _NullLogger:
@@ -114,10 +128,19 @@ def _dtemplate_graphs(package_path: Path) -> dict[str, dict[str, set]]:
                 continue
             mapping_name = Path(member).name.removesuffix(".DTEMPLATE.zip")
             with zipfile.ZipFile(io.BytesIO(package.read(member))) as dtemplate:
-                bin_member = next(
-                    item for item in dtemplate.namelist() if item.startswith("bin/") and item.endswith(".bin")
-                )
-                payload = json.loads(dtemplate.read(bin_member).decode("utf-8"))
+                payload = None
+                for bin_member in dtemplate.namelist():
+                    if not bin_member.startswith("bin/") or not bin_member.endswith(".bin"):
+                        continue
+                    try:
+                        candidate = json.loads(dtemplate.read(bin_member).decode("utf-8"))
+                    except (UnicodeDecodeError, json.JSONDecodeError):
+                        continue
+                    if isinstance(candidate, dict) and isinstance(candidate.get("content"), dict):
+                        payload = candidate
+                        break
+                if payload is None:
+                    raise AssertionError(f"No JSON DTEMPLATE bin found for {mapping_name}")
             content = payload.get("content", {})
             transformations = content.get("transformations", [])
             refs = {item.get("$$ID"): item.get("name") for item in transformations if isinstance(item, dict)}
@@ -154,9 +177,19 @@ def _mtt_runtime_parameters(package_path: Path) -> dict[str, list[tuple[str, str
     return parameters_by_mapping
 
 
-def _mapping_images(package_path: Path) -> set[str]:
+def _xml_instance_names(path: Path, mapping_name: str) -> set[str]:
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(path).getroot()
+    for mapping in root.iter("MAPPING"):
+        if mapping.get("NAME") == mapping_name:
+            return {item.get("NAME", "") for item in mapping.findall("INSTANCE") if item.get("NAME")}
+    return set()
+
+
+def _source_xml_entries(package_path: Path) -> set[str]:
     with zipfile.ZipFile(package_path) as package:
-        return {member for member in package.namelist() if member.startswith("MappingImages/") and member.endswith(".png")}
+        return {member for member in package.namelist() if member.startswith("SourceXML/") and member.endswith(".xml")}
 
 
 if __name__ == "__main__":

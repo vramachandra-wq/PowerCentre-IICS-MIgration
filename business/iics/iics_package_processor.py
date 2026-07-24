@@ -80,6 +80,7 @@ class IICSPackageProcessor:
     ASSET_FILE_EXTENSIONS = {
         ".MTT.zip", ".DTEMPLATE.zip", ".TASKFLOW.xml",
         ".Connection.zip", ".AgentGroup.zip",
+        ".DMAPPLET.zip", ".SequenceGenerator.zip",
         ".Project.json", ".Folder.json",
     }
     ASSET_TYPE_LABELS = {
@@ -88,6 +89,8 @@ class IICSPackageProcessor:
         "TASKFLOW": "Task Flow / Workflow",
         "Connection": "Database Connection",
         "AgentGroup": "Secure Agent Group",
+        "DMAPPLET": "Reusable Mapplet",
+        "SequenceGenerator": "Sequence Generator",
         "Project": "IICS Project",
         "Folder": "IICS Folder",
     }
@@ -209,6 +212,8 @@ class IICSPackageProcessor:
             "TASKFLOW": f"{name}.TASKFLOW.xml",
             "Connection": f"{name}.Connection.zip",
             "AgentGroup": f"{name}.AgentGroup.zip",
+            "DMAPPLET": f"{name}.DMAPPLET.zip",
+            "SequenceGenerator": f"{name}.SequenceGenerator.zip",
             "Project": f"{name}.Project.json",
             "Folder": f"{name}.Folder.json",
         }

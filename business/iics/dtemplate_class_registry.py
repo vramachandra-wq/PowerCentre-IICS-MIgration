@@ -8,6 +8,7 @@ whether the full PowerCenter canvas compiler can be enabled.
 from __future__ import annotations
 
 import json
+import io
 import zipfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -53,8 +54,22 @@ class RegistryStatus:
 class DtemplateClassRegistry:
     """Discover real IDMC DTEMPLATE prototype exports by transformation type."""
 
-    def __init__(self, root: str | Path = "reference_packages/iics_native_classes") -> None:
+    CLASS_NAME_TYPES = {
+        "tmplsource": "source",
+        "tmplexpression": "expression",
+        "tmpltarget": "target",
+        "tmpllookup": "lookup",
+        "tmplmapplet": "mapplet",
+        "tmplsql": "sql",
+    }
+
+    def __init__(
+        self,
+        root: str | Path = "reference_packages/iics_native_classes",
+        source_packages: Iterable[str | Path] | None = None,
+    ) -> None:
         self.root = Path(root)
+        self.source_packages = [Path(item) for item in source_packages or []]
 
     def status(self, required_types: Iterable[str] = REQUIRED_NATIVE_TYPES) -> RegistryStatus:
         statuses = [self._status_for_type(item) for item in required_types]
@@ -67,9 +82,14 @@ class DtemplateClassRegistry:
         return status
 
     def _status_for_type(self, transformation_type: str) -> PrototypeStatus:
+        lookup_type = "source" if transformation_type == "source_qualifier" else transformation_type
         type_dir = self.root / transformation_type
         if not type_dir.exists():
-            return PrototypeStatus(transformation_type, False)
+            alternate_dir = self.root / lookup_type
+            if alternate_dir.exists():
+                type_dir = alternate_dir
+            else:
+                type_dir = self.root / transformation_type
         for candidate in sorted(type_dir.rglob("*.DTEMPLATE.zip")):
             if self._looks_like_dtemplate(candidate):
                 return PrototypeStatus(transformation_type, True, str(candidate))
@@ -77,6 +97,9 @@ class DtemplateClassRegistry:
             nested = self._first_nested_dtemplate(candidate)
             if nested:
                 return PrototypeStatus(transformation_type, True, f"{candidate}!{nested}")
+        discovered = self._discover_type_in_source_packages(lookup_type)
+        if discovered:
+            return PrototypeStatus(transformation_type, True, discovered)
         return PrototypeStatus(transformation_type, False)
 
     @staticmethod
@@ -114,4 +137,56 @@ class DtemplateClassRegistry:
                         continue
         except (OSError, zipfile.BadZipFile):
             return ""
+        return ""
+
+    def _discover_type_in_source_packages(self, transformation_type: str) -> str:
+        for package_path in self.source_packages:
+            if not package_path.exists():
+                continue
+            try:
+                with zipfile.ZipFile(package_path) as package:
+                    for member in package.namelist():
+                        if not member.endswith(".DTEMPLATE.zip"):
+                            continue
+                        try:
+                            data = package.read(member)
+                        except KeyError:
+                            continue
+                        discovered = self._discover_type_in_dtemplate_bytes(data, transformation_type)
+                        if discovered:
+                            return f"{package_path}!{member}!{discovered}"
+            except (OSError, zipfile.BadZipFile):
+                continue
+        return ""
+
+    @classmethod
+    def _discover_type_in_dtemplate_bytes(cls, data: bytes, transformation_type: str) -> str:
+        try:
+            with zipfile.ZipFile(io.BytesIO(data)) as dtemplate:
+                for member in dtemplate.namelist():
+                    if not member.startswith("bin/") or not member.endswith(".bin"):
+                        continue
+                    try:
+                        payload = json.loads(dtemplate.read(member).decode("utf-8"))
+                    except (KeyError, UnicodeDecodeError, json.JSONDecodeError):
+                        continue
+                    content = payload.get("content", {}) if isinstance(payload, dict) else {}
+                    metadata = payload.get("metadata", {}) if isinstance(payload, dict) else {}
+                    class_info = metadata.get("$$classInfo", {}) if isinstance(metadata, dict) else {}
+                    for transformation in content.get("transformations", []) if isinstance(content, dict) else []:
+                        if not isinstance(transformation, dict):
+                            continue
+                        class_id = transformation.get("$$class")
+                        class_name = str(class_info.get(str(class_id), "")).lower()
+                        if cls._type_from_class_name(class_name) == transformation_type:
+                            return f"{member}#{transformation.get('name', '')}"
+        except (OSError, zipfile.BadZipFile):
+            return ""
+        return ""
+
+    @classmethod
+    def _type_from_class_name(cls, class_name: str) -> str:
+        for marker, transformation_type in cls.CLASS_NAME_TYPES.items():
+            if marker in class_name:
+                return transformation_type
         return ""
