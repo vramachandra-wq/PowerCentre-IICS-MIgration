@@ -131,16 +131,45 @@ class IdmcExportIntegrityTests(unittest.TestCase):
                 self.now,
             )
             with zipfile.ZipFile(output) as zf:
-                record = json.loads(zf.read("fileRecord.json").decode("utf-8"))[0]
-                bin_bytes = zf.read("bin/@2.bin")
-                payload = json.loads(bin_bytes.decode("utf-8"))
+                records = json.loads(zf.read("fileRecord.json").decode("utf-8"))
                 template = json.loads(zf.read("mappingTemplate.json").decode("utf-8"))[0]
+                object_record = next(record for record in records if record["type"] == "IMFOBJECT")
+                preview_record = next(record for record in records if record["type"] == "IMAGE")
+                bin_bytes = zf.read(f"bin/{object_record['id']}.bin")
+                payload = json.loads(bin_bytes.decode("utf-8"))
+                preview_bytes = zf.read(f"bin/{preview_record['id']}.bin")
 
-            self.assertEqual(len(bin_bytes), record["size"])
-            self.assertEqual(target_name, record["name"])
+            self.assertEqual(len(bin_bytes), object_record["size"])
+            self.assertEqual(target_name, object_record["name"])
             self.assertEqual(target_name, payload["content"]["name"])
             self.assertEqual(target_name, template["name"])
             self.assertEqual(self.ids.dtemplate, template["assetFrsGuid"])
+            self.assertEqual("@2", template["mappingPreviewFileRecordId"])
+            self.assertEqual("@2", preview_record["id"])
+            self.assertEqual(object_record["id"], template["templateId"])
+            self.assertTrue(preview_bytes.startswith(b"\x89PNG\r\n\x1a\n") or preview_bytes.startswith(b"\xff\xd8"))
+
+    def test_sde_preview_is_rendered_from_remediated_mapping_when_reference_has_no_image(self) -> None:
+        try:
+            import PIL  # noqa: F401
+        except Exception:
+            self.skipTest("Pillow is required for mapping-aware preview rendering")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            self.generator.output_folder = Path(tmp)
+            self.generator.remediated_folder = Path("output/remediated_xml")
+            self.generator._exact_native_package_preview_bytes = MagicMock(return_value=None)
+            self.generator._reference_package_preview_bytes = MagicMock(return_value=None)
+            self.generator._pinned_mapping_preview_bytes = MagicMock(return_value=None)
+
+            preview = self.generator._mapping_reference_preview_bytes("SDE_ORA_JobDimension")
+
+            self.assertTrue(preview.startswith(b"\x89PNG\r\n\x1a\n"))
+            self.assertNotEqual(
+                IdmcExportPackageGenerator._preview_bytes("SDE_ORA_JobDimension"),
+                preview,
+            )
+            self.assertTrue((Path(tmp) / "downloadable_mapping_images_from_zip" / "SDE_ORA_JobDimension_valid_mapping.png").exists())
 
     def test_assert_dtemplate_integrity_rejects_missing_class_info(self) -> None:
         broken = _dtemplate_bytes("SDE_ORA_JobDimension", include_class_info=False)
@@ -187,6 +216,51 @@ class IdmcExportIntegrityTests(unittest.TestCase):
             path.write_bytes(stale)
             with self.assertRaisesRegex(ValueError, "shortDescription still references sample template"):
                 IdmcExportPackageGenerator._assert_mtt_integrity(path, "SDE_ORA_JobDimension", self.ids)
+
+    def test_runtime_parameters_are_rebuilt_from_remediated_xml(self) -> None:
+        task = {
+            "parameters": [
+                {
+                    "@type": "mtTaskParameter",
+                    "id": 10,
+                    "name": "$SQ_WC_PBCS_BUDGET_ACTUALS_FS$",
+                    "type": "SOURCE",
+                    "sourceObject": "DUMMY_SQ_WC_PBCS_BUDGET_ACTUALS_FS",
+                    "runtimeParameterData": {"connectionParameterName": "Source"},
+                },
+                {
+                    "@type": "mtTaskParameter",
+                    "id": 11,
+                    "name": "$WC_PBCS_BUDGET_ACTUALS_F$",
+                    "type": "TARGET",
+                    "targetObject": "WC_PBCS_BUDGET_ACTUALS_F",
+                    "runtimeParameterData": {"connectionParameterName": "Target"},
+                },
+            ]
+        }
+        xml = """<POWERMART><REPOSITORY><FOLDER><MAPPING NAME="SIL_JobDimension">
+            <INSTANCE NAME="W_JOB_DS" TYPE="SOURCE"/>
+            <INSTANCE NAME="W_JOB_D" TYPE="TARGET"/>
+        </MAPPING></FOLDER></REPOSITORY></POWERMART>"""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            remediated = Path(tmp) / "remediated_xml"
+            remediated.mkdir()
+            (remediated / "SIL_JobDimension_remediated.xml").write_text(xml, encoding="utf-8")
+            self.generator.remediated_folder = remediated
+
+            self.generator._apply_mapping_runtime_parameters(task, "SIL_JobDimension", self.ids)
+
+        parameters = task["parameters"]
+        self.assertEqual(["$W_JOB_DS$", "$W_JOB_D$"], [item["name"] for item in parameters])
+        self.assertEqual(["SOURCE", "TARGET"], [item["type"] for item in parameters])
+        self.assertEqual(f"@{self.ids.connection}", parameters[0]["sourceConnectionId"])
+        self.assertEqual("W_JOB_D", parameters[1]["targetObject"])
+        self.assertEqual("Source", parameters[0]["runtimeParameterData"]["connectionParameterName"])
+        self.assertEqual("Target", parameters[1]["runtimeParameterData"]["connectionParameterName"])
+        self.assertNotIn("WC_PBCS", json.dumps(parameters))
+        self.assertEqual({}, parameters[0]["runtimeAttrs"])
+        self.assertEqual({"INSERT": "YES"}, parameters[1]["runtimeAttrs"])
 
     def test_processor_marks_size_mismatch_invalid(self) -> None:
         broken = _dtemplate_bytes("SDE_ORA_JobDimension", declared_size=99999)
