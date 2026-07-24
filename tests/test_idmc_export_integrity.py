@@ -131,16 +131,45 @@ class IdmcExportIntegrityTests(unittest.TestCase):
                 self.now,
             )
             with zipfile.ZipFile(output) as zf:
-                record = json.loads(zf.read("fileRecord.json").decode("utf-8"))[0]
-                bin_bytes = zf.read("bin/@2.bin")
-                payload = json.loads(bin_bytes.decode("utf-8"))
+                records = json.loads(zf.read("fileRecord.json").decode("utf-8"))
                 template = json.loads(zf.read("mappingTemplate.json").decode("utf-8"))[0]
+                object_record = next(record for record in records if record["type"] == "IMFOBJECT")
+                preview_record = next(record for record in records if record["type"] == "IMAGE")
+                bin_bytes = zf.read(f"bin/{object_record['id']}.bin")
+                payload = json.loads(bin_bytes.decode("utf-8"))
+                preview_bytes = zf.read(f"bin/{preview_record['id']}.bin")
 
-            self.assertEqual(len(bin_bytes), record["size"])
-            self.assertEqual(target_name, record["name"])
+            self.assertEqual(len(bin_bytes), object_record["size"])
+            self.assertEqual(target_name, object_record["name"])
             self.assertEqual(target_name, payload["content"]["name"])
             self.assertEqual(target_name, template["name"])
             self.assertEqual(self.ids.dtemplate, template["assetFrsGuid"])
+            self.assertEqual("@2", template["mappingPreviewFileRecordId"])
+            self.assertEqual("@2", preview_record["id"])
+            self.assertEqual(object_record["id"], template["templateId"])
+            self.assertTrue(preview_bytes.startswith(b"\x89PNG\r\n\x1a\n") or preview_bytes.startswith(b"\xff\xd8"))
+
+    def test_sde_preview_is_rendered_from_remediated_mapping_when_reference_has_no_image(self) -> None:
+        try:
+            import PIL  # noqa: F401
+        except Exception:
+            self.skipTest("Pillow is required for mapping-aware preview rendering")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            self.generator.output_folder = Path(tmp)
+            self.generator.remediated_folder = Path("output/remediated_xml")
+            self.generator._exact_native_package_preview_bytes = MagicMock(return_value=None)
+            self.generator._reference_package_preview_bytes = MagicMock(return_value=None)
+            self.generator._pinned_mapping_preview_bytes = MagicMock(return_value=None)
+
+            preview = self.generator._mapping_reference_preview_bytes("SDE_ORA_JobDimension")
+
+            self.assertTrue(preview.startswith(b"\x89PNG\r\n\x1a\n"))
+            self.assertNotEqual(
+                IdmcExportPackageGenerator._preview_bytes("SDE_ORA_JobDimension"),
+                preview,
+            )
+            self.assertTrue((Path(tmp) / "downloadable_mapping_images_from_zip" / "SDE_ORA_JobDimension_valid_mapping.png").exists())
 
     def test_assert_dtemplate_integrity_rejects_missing_class_info(self) -> None:
         broken = _dtemplate_bytes("SDE_ORA_JobDimension", include_class_info=False)

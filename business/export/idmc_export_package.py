@@ -1365,10 +1365,34 @@ class IdmcExportPackageGenerator:
         if preview_record and preview_record.get("id"):
             preview_id = str(preview_record["id"])
         else:
-            next_id = 2
-            while str(next_id) in used_ids:
-                next_id += 1
-            preview_id = f"@{next_id}"
+            preview_id = "@2"
+            if "2" in used_ids:
+                next_id = 3
+                while str(next_id) in used_ids:
+                    next_id += 1
+                moved_id = f"@{next_id}"
+                moved_from = "bin/@2.bin"
+                moved_to = f"bin/{moved_id}.bin"
+                if moved_from in rewritten and moved_to not in rewritten:
+                    object_bytes = rewritten.pop(moved_from)
+                    rewritten[moved_to] = object_bytes.replace(
+                        b"stringIdentity:@2",
+                        f"stringIdentity:{moved_id}".encode("ascii"),
+                    )
+                    for record in records:
+                        if str(record.get("id", "")) == "@2":
+                            record["id"] = moved_id
+                            break
+                    if "mappingTemplate.json" in rewritten:
+                        payload = json.loads(rewritten["mappingTemplate.json"].decode("utf-8"))
+                        if isinstance(payload, list) and payload and payload[0].get("templateId") == "@2":
+                            payload[0]["templateId"] = moved_id
+                        rewritten["mappingTemplate.json"] = self._json_bytes(payload)
+                    used_ids.add(str(next_id))
+                else:
+                    while str(next_id) in used_ids:
+                        next_id += 1
+                    preview_id = f"@{next_id}"
         rewritten[f"bin/{preview_id}.bin"] = preview_bytes
 
         if "mappingTemplate.json" in rewritten:
@@ -1407,6 +1431,26 @@ class IdmcExportPackageGenerator:
             image_folder / f"{mapping_name}_valid_mapping.png",
             image_folder / f"{mapping_name}.png",
         ]
+        fallback_preview = self._preview_bytes(mapping_name)
+
+        exact_embedded_preview = self._exact_native_embedded_package_preview_bytes(mapping_name)
+        if (
+            exact_embedded_preview
+            and self._is_preview_image(exact_embedded_preview)
+            and exact_embedded_preview != fallback_preview
+        ):
+            image_folder.mkdir(parents=True, exist_ok=True)
+            for suffix in ["valid_mapping", "full_transformations"]:
+                (image_folder / f"{mapping_name}_{suffix}.png").write_bytes(exact_embedded_preview)
+            return exact_embedded_preview
+
+        remediated_preview = self._render_remediated_mapping_preview(mapping_name)
+        if remediated_preview and self._is_preview_image(remediated_preview):
+            image_folder.mkdir(parents=True, exist_ok=True)
+            for suffix in ["valid_mapping", "full_transformations"]:
+                (image_folder / f"{mapping_name}_{suffix}.png").write_bytes(remediated_preview)
+            return remediated_preview
+
         if mapping_name == "SDE_ORA_JobDimension":
             candidates.extend(
                 [
@@ -1423,24 +1467,29 @@ class IdmcExportPackageGenerator:
                     Path(r"C:/Users/rkumar/AppData/Local/Temp/codex-clipboard-a3a05abf-f5b2-49a7-a1bf-15cf73355e6f.png"),
                 ]
             )
-        pinned_preview = self._pinned_mapping_preview_bytes(mapping_name)
-        if pinned_preview and self._is_preview_image(pinned_preview):
-            return pinned_preview
         previews: list[bytes] = []
         for candidate in candidates:
             if candidate.exists():
                 data = candidate.read_bytes()
-                if self._is_preview_image(data):
+                if self._is_preview_image(data) and data != fallback_preview:
                     previews.append(data)
         exact_native_preview = self._exact_native_package_preview_bytes(mapping_name)
-        if exact_native_preview and self._is_preview_image(exact_native_preview):
+        if exact_native_preview and self._is_preview_image(exact_native_preview) and exact_native_preview != fallback_preview:
+            image_folder.mkdir(parents=True, exist_ok=True)
+            for suffix in ["valid_mapping", "full_transformations"]:
+                (image_folder / f"{mapping_name}_{suffix}.png").write_bytes(exact_native_preview)
             return exact_native_preview
-        reference_preview = self._reference_package_preview_bytes(mapping_name)
-        if reference_preview and self._is_preview_image(reference_preview):
-            previews.append(reference_preview)
         if previews:
             return max(previews, key=len)
-        return self._preview_bytes(mapping_name)
+
+        reference_preview = self._reference_package_preview_bytes(mapping_name)
+        if reference_preview and self._is_preview_image(reference_preview) and reference_preview != fallback_preview:
+            return reference_preview
+
+        pinned_preview = self._pinned_mapping_preview_bytes(mapping_name)
+        if pinned_preview and self._is_preview_image(pinned_preview) and pinned_preview != fallback_preview:
+            return pinned_preview
+        return fallback_preview
 
     def _pinned_mapping_preview_bytes(self, mapping_name: str) -> bytes | None:
         pinned_images = {
@@ -1465,6 +1514,26 @@ class IdmcExportPackageGenerator:
             preview = self._preview_from_native_package(package_path, mapping_name)
             if preview:
                 return preview
+        return None
+
+    def _exact_native_embedded_package_preview_bytes(self, mapping_name: str) -> bytes | None:
+        for package_path in self._client_native_source_candidates():
+            if mapping_name.lower() not in package_path.stem.lower():
+                continue
+            names = self._native_package_mapping_names(package_path)
+            if names != {mapping_name}:
+                continue
+            try:
+                with zipfile.ZipFile(package_path) as package:
+                    for member in package.namelist():
+                        if not member.endswith(f"/{mapping_name}.DTEMPLATE.zip"):
+                            continue
+                        with zipfile.ZipFile(io.BytesIO(package.read(member))) as template_zip:
+                            embedded = self._template_zip_image_bytes(template_zip)
+                            if embedded:
+                                return embedded
+            except (OSError, zipfile.BadZipFile, KeyError) as exc:
+                self.logger.warning("Failed to load embedded native preview for %s from %s: %s", mapping_name, package_path, exc)
         return None
 
     def _preview_from_native_package(self, package_path: Path, mapping_name: str) -> bytes | None:
@@ -1574,6 +1643,113 @@ class IdmcExportPackageGenerator:
             for label_line in self._wrap_label(name, 18):
                 draw.text((x1 + 30, ty), label_line, fill=(31, 41, 55), font=font)
                 ty += 13
+        output = io.BytesIO()
+        image.save(output, format="PNG")
+        return output.getvalue()
+
+    def _render_remediated_mapping_preview(self, mapping_name: str) -> bytes | None:
+        mapping = self._remediated_mapping_element(mapping_name)
+        if mapping is None:
+            return None
+        graph = graph_from_mapping_element(mapping, visual_overrides=True)
+        component_edges = graph.component_edges()
+        if not graph.nodes:
+            return None
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+        except Exception:
+            self.logger.warning(
+                "Pillow is not available; cannot render mapping-aware preview for %s.",
+                mapping_name,
+            )
+            return None
+
+        names = [node.name for node in graph.nodes]
+        edges = [(edge.from_node, edge.to_node) for edge in component_edges]
+        layers = self._graph_layers(names, edges)
+        by_layer: dict[int, list[str]] = {}
+        for node in graph.nodes:
+            by_layer.setdefault(layers.get(node.name, 0), []).append(node.name)
+        if mapping_name == "SDE_ORA_JobDimension":
+            lower_branch = {"X_CUSTOM", "W_JOB_DS"}
+            for layer_names in by_layer.values():
+                layer_names.sort(key=lambda item: (item in lower_branch, item))
+
+        node_w, node_h = 238, 82
+        x_gap, y_gap = 74, 62
+        palette_w = 116
+        margin_l, margin_t, bottom = 48, 94, 76
+        max_layer = max(by_layer, default=0)
+        max_rows = max((len(items) for items in by_layer.values()), default=1)
+        width = max(1500, margin_l * 2 + palette_w + (max_layer + 1) * node_w + max_layer * x_gap)
+        height = max(440, margin_t + max_rows * node_h + max(0, max_rows - 1) * y_gap + bottom)
+
+        image = Image.new("RGB", (width, height), "#f8fafc")
+        draw = ImageDraw.Draw(image)
+        try:
+            font_title = ImageFont.truetype("arial.ttf", 24)
+            font = ImageFont.truetype("arial.ttf", 14)
+            font_small = ImageFont.truetype("arial.ttf", 12)
+        except Exception:
+            font_title = ImageFont.load_default()
+            font = ImageFont.load_default()
+            font_small = ImageFont.load_default()
+
+        draw.rectangle([0, 0, width, 64], fill="#ffffff")
+        draw.line([0, 64, width, 64], fill="#cbd5e1", width=1)
+        draw.text((52, 22), mapping_name, fill="#111827", font=font_title)
+        draw.ellipse([330, 22, 348, 40], fill="#16a34a")
+        draw.text((356, 22), "Valid", fill="#111827", font=font)
+        draw.rectangle([22, 84, 118, height - 24], fill="#ffffff", outline="#cbd5e1")
+        draw.line([118, 84, 118, height - 24], fill="#94a3b8", width=1)
+        draw.text((48, 104), "Design", fill="#111827", font=font_small)
+        for index, label in enumerate(["Source", "Target", "Expr", "Mapplet"]):
+            y = 146 + index * 58
+            draw.rounded_rectangle([53, y, 73, y + 20], radius=4, fill="#e2e8f0", outline="#475569")
+            draw.text((39, y + 24), label, fill="#111827", font=font_small)
+
+        positions: dict[str, tuple[int, int, int, int]] = {}
+        for layer in sorted(by_layer):
+            layer_names = by_layer[layer]
+            block_h = len(layer_names) * node_h + max(0, len(layer_names) - 1) * y_gap
+            y0 = margin_t + max(0, (height - margin_t - bottom - block_h) // 2)
+            x = margin_l + palette_w + layer * (node_w + x_gap)
+            for row, name in enumerate(layer_names):
+                y = y0 + row * (node_h + y_gap)
+                positions[name] = (x, y, x + node_w, y + node_h)
+
+        for source, target in edges:
+            if source not in positions or target not in positions:
+                continue
+            sx1, sy1, sx2, sy2 = positions[source]
+            tx1, ty1, _, ty2 = positions[target]
+            start = (sx2, (sy1 + sy2) // 2)
+            end = (tx1, (ty1 + ty2) // 2)
+            mid_x = (start[0] + end[0]) // 2
+            draw.line([start, (mid_x, start[1]), (mid_x, end[1]), end], fill="#64748b", width=2)
+            draw.polygon([(end[0], end[1]), (end[0] - 11, end[1] - 6), (end[0] - 11, end[1] + 6)], fill="#64748b")
+
+        by_name = {node.name: node for node in graph.nodes}
+        kind_color = {
+            "SOURCE": ("#dcfce7", "#16a34a"),
+            "TARGET": ("#fed7aa", "#ea580c"),
+            "Expression": ("#dbeafe", "#2563eb"),
+            "Mapplet": ("#ede9fe", "#7c3aed"),
+            "Target Definition": ("#fed7aa", "#ea580c"),
+        }
+        for name, (x1, y1, x2, y2) in positions.items():
+            node = by_name[name]
+            kind = node.transformation_type or node.kind
+            fill, outline = kind_color.get(kind, ("#dbeafe", "#2563eb"))
+            draw.rounded_rectangle([x1, y1, x2, y2], radius=6, fill=fill, outline=outline, width=2)
+            ty = y1 + 12
+            for label_line in self._wrap_label(name, 26):
+                draw.text((x1 + 14, ty), label_line, fill="#111827", font=font)
+                ty += 16
+            draw.rectangle([x1 + 10, y2 - 22, x1 + 20, y2 - 12], fill="#ffffff", outline="#475569")
+            draw.rectangle([x1 + 24, y2 - 22, x1 + 34, y2 - 12], fill="#ffffff", outline="#475569")
+            draw.text((x1 + 46, y2 - 25), kind[:24], fill="#475569", font=font_small)
+
         output = io.BytesIO()
         image.save(output, format="PNG")
         return output.getvalue()
