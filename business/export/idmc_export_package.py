@@ -48,8 +48,8 @@ class _AssetIds:
 class IdmcExportPackageGenerator:
     """Builds one combined IDMC-style export package from remediated XML files."""
 
-    PROJECT_NAME = "BIAINFADEV2_FLEX"
-    FOLDER_NAME = "Custom_Project_Export"
+    PROJECT_NAME = "RPA_PC_Modernization"
+    FOLDER_NAME = "Custom_SDE_SupplyChain"
     CONNECTION_NAME = "Oracle_Connection"
     AGENT_GROUP_NAME = "Secure_Agent_Group"
 
@@ -796,6 +796,22 @@ class IdmcExportPackageGenerator:
         mapping_folder = self.staging_folder / "Explore" / self.PROJECT_NAME / self.folder_name
         mapping_folder.mkdir(parents=True, exist_ok=True)
         mapping_name = asset["name"]
+        mapping = asset.get("mapping")
+        has_pc_graph = False
+        if mapping is not None:
+            instances = getattr(mapping, "instances", None)
+            connectors = getattr(mapping, "connectors", None)
+            if instances is None and isinstance(mapping, dict):
+                instances = mapping.get("instances")
+                connectors = mapping.get("connectors")
+            has_pc_graph = bool(instances) and bool(connectors)
+
+        # Prefer native CDI built from PC INSTANCE/CONNECTOR graph so the
+        # imported mapping structure matches PowerCenter (not sample canvas).
+        if has_pc_graph and self._write_native_cdi_mapping_artifacts(
+            asset, ids, base_ids, mapping_folder
+        ):
+            return
         if template.get("name") != mapping_name and self._write_native_cdi_mapping_artifacts(
             asset, ids, base_ids, mapping_folder
         ):
@@ -880,6 +896,7 @@ class IdmcExportPackageGenerator:
                 conn_guids,
                 folder_data,
                 mapping_name,
+                mapping=mapping_dict,
             )
         except Exception as exc:
             self.logger.warning(

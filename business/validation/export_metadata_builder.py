@@ -151,7 +151,7 @@ class ExportMetadataBuilder:
         """Merge mapping records into one exportMetadata payload."""
 
         deduped_records = self._dedupe_records(records)
-        project_name = deduped_records[0].project_name if deduped_records else str(self.export_config.get("project_name", "BIAINFADEV2_FLEX"))
+        project_name = deduped_records[0].project_name if deduped_records else str(self.export_config.get("project_name", "RPA_PC_Modernization"))
         connection_name = str(self.export_config.get("connection_name", "DBConnection_OLAP_Oracle"))
         agent_group_name = str(self.export_config.get("agent_group_name", "PC Secure Agent Group"))
 
@@ -235,7 +235,7 @@ class ExportMetadataBuilder:
         configured = self.export_config.get("project_name")
         if configured:
             return str(configured)
-        return repository_name or "BIAINFADEV2_FLEX"
+        return repository_name or "RPA_PC_Modernization"
 
     @staticmethod
     def _workflow_name(

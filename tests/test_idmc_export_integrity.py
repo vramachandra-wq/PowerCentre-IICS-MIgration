@@ -213,11 +213,11 @@ class IdmcExportIntegrityTests(unittest.TestCase):
                 json.dumps({"name": "job-1", "sourceOrgId": "x", "exportedObjects": []}),
             )
             zf.writestr(
-                "Explore/BIAINFADEV2_FLEX/Custom_Project/SDE_ORA_JobDimension.DTEMPLATE.zip",
+                "Explore/RPA_PC_Modernization/Custom_SDE_SupplyChain/SDE_ORA_JobDimension.DTEMPLATE.zip",
                 _dtemplate_bytes("SDE_ORA_JobDimension", declared_size=99999),
             )
             zf.writestr(
-                "Explore/BIAINFADEV2_FLEX/Custom_Project/SDE_ORA_JobDimension.MTT.zip",
+                "Explore/RPA_PC_Modernization/Custom_SDE_SupplyChain/SDE_ORA_JobDimension.MTT.zip",
                 _mtt_bytes(
                     "SDE_ORA_JobDimension",
                     short_description="Session pushed from PC to ICS : OLD_TEMPLATE_NAME",
@@ -234,8 +234,8 @@ class IdmcExportIntegrityTests(unittest.TestCase):
             repair_export_package(input_zip, output_zip)
 
             with zipfile.ZipFile(output_zip) as zf:
-                dt = zf.read("Explore/BIAINFADEV2_FLEX/Custom_Project/SDE_ORA_JobDimension.DTEMPLATE.zip")
-                mtt = zf.read("Explore/BIAINFADEV2_FLEX/Custom_Project/SDE_ORA_JobDimension.MTT.zip")
+                dt = zf.read("Explore/RPA_PC_Modernization/Custom_SDE_SupplyChain/SDE_ORA_JobDimension.DTEMPLATE.zip")
+                mtt = zf.read("Explore/RPA_PC_Modernization/Custom_SDE_SupplyChain/SDE_ORA_JobDimension.MTT.zip")
 
             with zipfile.ZipFile(io.BytesIO(dt)) as dtz:
                 record = json.loads(dtz.read("fileRecord.json").decode("utf-8"))[0]

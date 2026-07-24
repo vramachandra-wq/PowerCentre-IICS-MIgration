@@ -58,6 +58,7 @@ class TransformationPort:
     scale: str
     port_type: str
     expression: str
+    mapplet_group: str = ""
 
 
 @dataclass
@@ -120,6 +121,19 @@ class MappingMetadata:
 
 
 @dataclass
+class MappletMetadata:
+    """Folder-level PowerCenter MAPPLET definition (reusable subgraph)."""
+
+    mapplet_name: str
+    is_valid: str
+    transformation_count: int
+    transformations: list[TransformationMetadata] = field(default_factory=list)
+    connectors: list[ConnectorMetadata] = field(default_factory=list)
+    instances: list[InstanceMetadata] = field(default_factory=list)
+    sql_overrides: list[SqlOverrideMetadata] = field(default_factory=list)
+
+
+@dataclass
 class SessionMetadata:
     """Encapsulates session metadata behavior for migration workflows."""
 
@@ -129,6 +143,7 @@ class SessionMetadata:
     reusable_flag: str
     attributes: dict[str, str] = field(default_factory=dict)
     sql_overrides: list[SqlOverrideMetadata] = field(default_factory=list)
+    transformation_instances: list[dict[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -157,6 +172,8 @@ class FolderMetadata:
     sources: list[SourceMetadata] = field(default_factory=list)
     targets: list[TargetMetadata] = field(default_factory=list)
     mappings: list[MappingMetadata] = field(default_factory=list)
+    mapplets: list[MappletMetadata] = field(default_factory=list)
+    reusable_transformations: list[TransformationMetadata] = field(default_factory=list)
     sessions: list[SessionMetadata] = field(default_factory=list)
     workflows: list[WorkflowMetadata] = field(default_factory=list)
 

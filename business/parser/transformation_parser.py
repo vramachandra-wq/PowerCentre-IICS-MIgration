@@ -35,6 +35,7 @@ class TransformationParser:
                 scale=field.attrib.get("SCALE", ""),
                 port_type=field.attrib.get("PORTTYPE", ""),
                 expression=field.attrib.get("EXPRESSION", ""),
+                mapplet_group=field.attrib.get("MAPPLETGROUP", ""),
             )
             for field in transformation.findall("TRANSFORMFIELD")
         ]

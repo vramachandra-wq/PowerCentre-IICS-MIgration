@@ -220,10 +220,16 @@ def main() -> None:
                 logger=logger,
             )
             summary = generator.generate()
-            logger.info(
-                "IICS package generation completed. assets=%s output=%s",
-                summary["total_assets"], summary["output_zip"],
-            )
+            if summary.get("mode") == "single_session_per_mapping":
+                logger.info(
+                    "IICS single-session packages generated. zips=%s",
+                    summary.get("output_zips"),
+                )
+            else:
+                logger.info(
+                    "IICS package generation completed. assets=%s output=%s",
+                    summary["total_assets"], summary["output_zip"],
+                )
     else:
         from business.parser.xml_parser import XMLParser
         from data.repositories.metadata_repository import CanonicalMetadataBuilder

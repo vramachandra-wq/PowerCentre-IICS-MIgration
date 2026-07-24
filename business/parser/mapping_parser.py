@@ -8,10 +8,16 @@ from __future__ import annotations
 from xml.etree.ElementTree import Element
 
 try:
-    from data.models.mapping_model import ConnectorMetadata, InstanceMetadata, MappingMetadata
+    from data.models.mapping_model import (
+        ConnectorMetadata,
+        InstanceMetadata,
+        MappingMetadata,
+        MappletMetadata,
+        TransformationMetadata,
+    )
     from business.parser.transformation_parser import TransformationParser
 except ModuleNotFoundError:
-    from models import ConnectorMetadata, InstanceMetadata, MappingMetadata
+    from models import ConnectorMetadata, InstanceMetadata, MappingMetadata, MappletMetadata
     from transformation_parser import TransformationParser
 
 
@@ -27,6 +33,21 @@ class MappingParser:
         """Parse mappings using the provided folder."""
 
         return [self.parse_mapping(mapping) for mapping in folder.findall("MAPPING")]
+
+    def parse_mapplets(self, folder: Element) -> list[MappletMetadata]:
+        """Parse folder-level MAPPLET definitions (same graph shape as MAPPING)."""
+
+        return [self.parse_mapplet(mapplet) for mapplet in folder.findall("MAPPLET")]
+
+    def parse_reusable_transformations(self, folder: Element) -> list[TransformationMetadata]:
+        """Parse folder-level reusable TRANSFORMATION defs referenced by mapplet instances."""
+
+        reusable: list[TransformationMetadata] = []
+        for item in folder.findall("TRANSFORMATION"):
+            if str(item.attrib.get("REUSABLE", "")).upper() != "YES":
+                continue
+            reusable.append(self.transformation_parser.parse_transformation(item))
+        return reusable
 
     def parse_mapping(self, mapping: Element) -> MappingMetadata:
         """Parse mapping using the provided mapping."""
@@ -44,6 +65,22 @@ class MappingParser:
             connectors=connectors,
             instances=instances,
             sql_overrides=self.transformation_parser.parse_sql_overrides(mapping),
+        )
+
+    def parse_mapplet(self, mapplet: Element) -> MappletMetadata:
+        """Parse a folder-level MAPPLET element like a mapping graph."""
+
+        transformations = self.transformation_parser.parse_transformations(mapplet)
+        connectors = self._parse_connectors(mapplet)
+        instances = self._parse_instances(mapplet)
+        return MappletMetadata(
+            mapplet_name=mapplet.attrib.get("NAME", ""),
+            is_valid=mapplet.attrib.get("ISVALID", ""),
+            transformation_count=len(transformations),
+            transformations=transformations,
+            connectors=connectors,
+            instances=instances,
+            sql_overrides=self.transformation_parser.parse_sql_overrides(mapplet),
         )
 
     @staticmethod

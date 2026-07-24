@@ -47,6 +47,14 @@ class WorkflowParser:
             for item in session.iter("ATTRIBUTE")
             if item.attrib.get("NAME") in self.SQL_OVERRIDE_NAMES and item.attrib.get("VALUE", "")
         ]
+        transformation_instances: list[dict[str, str]] = []
+        for inst in session.findall("SESSTRANSFORMATIONINST"):
+            entry = dict(inst.attrib)
+            for attr in inst.findall("ATTRIBUTE"):
+                name = attr.attrib.get("NAME", "")
+                if name:
+                    entry[name] = attr.attrib.get("VALUE", "")
+            transformation_instances.append(entry)
         return SessionMetadata(
             session_name=session_name,
             mapping_name=session.attrib.get("MAPPINGNAME", ""),
@@ -54,6 +62,7 @@ class WorkflowParser:
             reusable_flag=session.attrib.get("REUSABLE", ""),
             attributes=attributes,
             sql_overrides=sql_overrides,
+            transformation_instances=transformation_instances,
         )
 
     @staticmethod

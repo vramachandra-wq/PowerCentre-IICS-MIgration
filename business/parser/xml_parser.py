@@ -102,6 +102,8 @@ class XMLParser:
                     sources=self.source_target_parser.parse_sources(folder),
                     targets=self.source_target_parser.parse_targets(folder),
                     mappings=self.mapping_parser.parse_mappings(folder),
+                    mapplets=self.mapping_parser.parse_mapplets(folder),
+                    reusable_transformations=self.mapping_parser.parse_reusable_transformations(folder),
                     sessions=self.workflow_parser.parse_sessions(folder),
                     workflows=self.workflow_parser.parse_workflows(folder),
                 )
@@ -137,6 +139,7 @@ class XMLParser:
             "workflows": [],
             "sessions": [],
             "mappings": [],
+            "mapplets": [],
             "sources": [],
             "source_columns": [],
             "targets": [],
@@ -162,6 +165,7 @@ class XMLParser:
                         "source_count": len(folder.sources),
                         "target_count": len(folder.targets),
                         "mapping_count": len(folder.mappings),
+                        "mapplet_count": len(folder.mapplets),
                         "session_count": len(folder.sessions),
                         "workflow_count": len(folder.workflows),
                     }
@@ -169,6 +173,7 @@ class XMLParser:
                 self._flatten_sources(folder.sources, base, tables)
                 self._flatten_targets(folder.targets, base, tables)
                 self._flatten_mappings(folder.mappings, base, tables)
+                self._flatten_mapplets(folder.mapplets, base, tables)
                 self._flatten_sessions(folder.sessions, base, tables)
                 self._flatten_workflows(folder.workflows, base, tables)
         return tables
@@ -252,6 +257,52 @@ class XMLParser:
                 tables["instances"].append({**mapping_base, **asdict(instance)})
             for sql_override in mapping.sql_overrides:
                 tables["sql_overrides"].append({**mapping_base, **asdict(sql_override)})
+
+    @staticmethod
+    def _flatten_mapplets(mapplets, base, tables) -> None:
+        """Flatten folder-level MAPPLET definitions into metadata tables."""
+
+        for mapplet in mapplets:
+            mapplet_base = {**base, "mapplet_name": mapplet.mapplet_name}
+            tables["mapplets"].append(
+                {
+                    **mapplet_base,
+                    "is_valid": mapplet.is_valid,
+                    "transformation_count": mapplet.transformation_count,
+                    "connector_count": len(mapplet.connectors),
+                    "instance_count": len(mapplet.instances),
+                    "sql_override_count": len(mapplet.sql_overrides),
+                }
+            )
+            for transformation in mapplet.transformations:
+                transformation_base = {
+                    **mapplet_base,
+                    "mapping_name": mapplet.mapplet_name,
+                    "transformation_name": transformation.transformation_name,
+                }
+                tables["transformations"].append(
+                    {
+                        **transformation_base,
+                        "transformation_type": transformation.transformation_type,
+                        "reusable_flag": transformation.reusable_flag,
+                        "attribute_count": len(transformation.attributes),
+                        "port_count": len(transformation.ports),
+                    }
+                )
+                for port in transformation.ports:
+                    tables["ports"].append(
+                        {
+                            **transformation_base,
+                            "port_scope": "MAPPLET",
+                            **asdict(port),
+                        }
+                    )
+            for connector in mapplet.connectors:
+                tables["connectors"].append({**mapplet_base, "mapping_name": mapplet.mapplet_name, **asdict(connector)})
+            for instance in mapplet.instances:
+                tables["instances"].append({**mapplet_base, "mapping_name": mapplet.mapplet_name, **asdict(instance)})
+            for sql_override in mapplet.sql_overrides:
+                tables["sql_overrides"].append({**mapplet_base, "mapping_name": mapplet.mapplet_name, **asdict(sql_override)})
 
     @staticmethod
     def _flatten_sessions(sessions, base, tables) -> None:
