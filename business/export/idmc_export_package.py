@@ -1670,54 +1670,69 @@ class IdmcExportPackageGenerator:
         by_layer: dict[int, list[str]] = {}
         for node in graph.nodes:
             by_layer.setdefault(layers.get(node.name, 0), []).append(node.name)
-        if mapping_name == "SDE_ORA_JobDimension":
-            lower_branch = {"X_CUSTOM", "W_JOB_DS"}
-            for layer_names in by_layer.values():
-                layer_names.sort(key=lambda item: (item in lower_branch, item))
+        main_path = self._longest_graph_path(names, edges)
+        main_path_index = {name: index for index, name in enumerate(main_path)}
+        original_index = {node.name: index for index, node in enumerate(graph.nodes)}
+        for layer_names in by_layer.values():
+            layer_names.sort(key=lambda item: (0 if item in main_path_index else 1, main_path_index.get(item, original_index[item])))
 
-        node_w, node_h = 238, 82
-        x_gap, y_gap = 74, 62
-        palette_w = 116
-        margin_l, margin_t, bottom = 48, 94, 76
+        node_w, node_h = 154, 66
+        x_gap, y_gap = 71, 47
+        canvas_left, canvas_top = 36, 73
+        palette_left, palette_top, palette_w = 70, 119, 106
+        graph_left, graph_top = 290, 233
         max_layer = max(by_layer, default=0)
         max_rows = max((len(items) for items in by_layer.values()), default=1)
-        width = max(1500, margin_l * 2 + palette_w + (max_layer + 1) * node_w + max_layer * x_gap)
-        height = max(440, margin_t + max_rows * node_h + max(0, max_rows - 1) * y_gap + bottom)
+        width = max(1451, graph_left + (max_layer + 1) * node_w + max_layer * x_gap + 105)
+        height = max(474, graph_top + max_rows * node_h + max(0, max_rows - 1) * y_gap + 62)
 
-        image = Image.new("RGB", (width, height), "#f8fafc")
+        image = Image.new("RGB", (width, height), "#f7f8fa")
         draw = ImageDraw.Draw(image)
         try:
-            font_title = ImageFont.truetype("arial.ttf", 24)
-            font = ImageFont.truetype("arial.ttf", 14)
+            font_title = ImageFont.truetype("arial.ttf", 20)
+            font = ImageFont.truetype("arial.ttf", 12)
             font_small = ImageFont.truetype("arial.ttf", 12)
         except Exception:
             font_title = ImageFont.load_default()
             font = ImageFont.load_default()
             font_small = ImageFont.load_default()
 
-        draw.rectangle([0, 0, width, 64], fill="#ffffff")
-        draw.line([0, 64, width, 64], fill="#cbd5e1", width=1)
-        draw.text((52, 22), mapping_name, fill="#111827", font=font_title)
-        draw.ellipse([330, 22, 348, 40], fill="#16a34a")
-        draw.text((356, 22), "Valid", fill="#111827", font=font)
-        draw.rectangle([22, 84, 118, height - 24], fill="#ffffff", outline="#cbd5e1")
-        draw.line([118, 84, 118, height - 24], fill="#94a3b8", width=1)
-        draw.text((48, 104), "Design", fill="#111827", font=font_small)
-        for index, label in enumerate(["Source", "Target", "Expr", "Mapplet"]):
-            y = 146 + index * 58
-            draw.rounded_rectangle([53, y, 73, y + 20], radius=4, fill="#e2e8f0", outline="#475569")
-            draw.text((39, y + 24), label, fill="#111827", font=font_small)
+        draw.rectangle([0, 0, width, 73], fill="#f4f4f5")
+        draw.line([0, 72, width, 72], fill="#d8d8d8", width=1)
+        draw.text((67, 26), mapping_name, fill="#111827", font=font_title)
+        draw.line([302, 24, 302, 51], fill="#b7b7b7", width=1)
+        draw.ellipse([326, 27, 344, 45], fill="#0ba33c")
+        draw.text((355, 26), "Valid", fill="#111827", font=font)
+        draw.rounded_rectangle([937, 23, 1151, 50], radius=2, fill="#4b237a")
+        draw.text((963, 30), "Switch to Advanced...", fill="#ffffff", font=font)
+        draw.rectangle([1195, 23, 1281, 50], fill="#ffffff")
+        draw.text((1220, 30), "Save", fill="#6b7280", font=font)
+        draw.rectangle([1295, 23, 1375, 50], fill="#064ec3")
+        draw.text((1324, 30), "Run", fill="#ffffff", font=font)
+
+        draw.rectangle([canvas_left, canvas_top, width, height], fill="#ffffff")
+        draw.text((70, 89), "Design", fill="#111827", font=font_title)
+        draw.line([70, 118, width, 118], fill="#0f4f9f", width=2)
+        draw.rectangle([palette_left, palette_top, palette_left + palette_w, height], fill="#fbfbfb")
+        draw.line([palette_left, palette_top, palette_left, height], fill="#1d75d9", width=1)
+        draw.line([palette_left + palette_w, palette_top, palette_left + palette_w, height], fill="#c5cbd3", width=1)
+        draw.rounded_rectangle([167, 119, 176, 177], radius=5, fill="#81868c")
+        for index, label in enumerate(["Source", "Target", "Access\nPolicy", "Aggregator", "B2B"]):
+            y = 144 + index * 61
+            draw.rounded_rectangle([109, y, 129, y + 20], radius=5, fill="#cfe4f2", outline="#39434d", width=2)
+            for line_index, line in enumerate(label.split("\n")):
+                draw.text((100, y + 24 + line_index * 14), line, fill="#000000", font=font_small)
 
         positions: dict[str, tuple[int, int, int, int]] = {}
         for layer in sorted(by_layer):
             layer_names = by_layer[layer]
-            block_h = len(layer_names) * node_h + max(0, len(layer_names) - 1) * y_gap
-            y0 = margin_t + max(0, (height - margin_t - bottom - block_h) // 2)
-            x = margin_l + palette_w + layer * (node_w + x_gap)
+            x = graph_left + layer * (node_w + x_gap)
             for row, name in enumerate(layer_names):
-                y = y0 + row * (node_h + y_gap)
+                y = graph_top + row * (node_h + y_gap)
                 positions[name] = (x, y, x + node_w, y + node_h)
 
+        port_color = "#6f4aa0"
+        line_color = "#757575"
         for source, target in edges:
             if source not in positions or target not in positions:
                 continue
@@ -1725,30 +1740,39 @@ class IdmcExportPackageGenerator:
             tx1, ty1, _, ty2 = positions[target]
             start = (sx2, (sy1 + sy2) // 2)
             end = (tx1, (ty1 + ty2) // 2)
-            mid_x = (start[0] + end[0]) // 2
-            draw.line([start, (mid_x, start[1]), (mid_x, end[1]), end], fill="#64748b", width=2)
-            draw.polygon([(end[0], end[1]), (end[0] - 11, end[1] - 6), (end[0] - 11, end[1] + 6)], fill="#64748b")
+            if layers.get(target, 0) - layers.get(source, 0) > 1:
+                draw.line([start, end], fill=line_color, width=1)
+            else:
+                mid_x = (start[0] + end[0]) // 2
+                draw.line([start, (mid_x, start[1]), (mid_x, end[1]), end], fill=line_color, width=2)
+            draw.polygon([(sx2, start[1] - 11), (sx2 + 17, start[1]), (sx2, start[1] + 11)], fill=port_color)
+            draw.ellipse([end[0] - 7, end[1] - 7, end[0] + 7, end[1] + 7], fill=port_color)
+            draw.polygon([(end[0] - 18, end[1] - 7), (end[0] - 5, end[1]), (end[0] - 18, end[1] + 7)], outline=line_color, fill="#ffffff")
 
         by_name = {node.name: node for node in graph.nodes}
         kind_color = {
-            "SOURCE": ("#dcfce7", "#16a34a"),
-            "TARGET": ("#fed7aa", "#ea580c"),
-            "Expression": ("#dbeafe", "#2563eb"),
-            "Mapplet": ("#ede9fe", "#7c3aed"),
-            "Target Definition": ("#fed7aa", "#ea580c"),
+            "SOURCE": ("#d2e9f8", "#a5d2ee"),
+            "TARGET": ("#d2e9f8", "#a5d2ee"),
+            "Expression": ("#d2e9f8", "#a5d2ee"),
+            "Mapplet": ("#d2e9f8", "#a5d2ee"),
+            "Target Definition": ("#d2e9f8", "#a5d2ee"),
         }
         for name, (x1, y1, x2, y2) in positions.items():
             node = by_name[name]
             kind = node.transformation_type or node.kind
-            fill, outline = kind_color.get(kind, ("#dbeafe", "#2563eb"))
-            draw.rounded_rectangle([x1, y1, x2, y2], radius=6, fill=fill, outline=outline, width=2)
-            ty = y1 + 12
-            for label_line in self._wrap_label(name, 26):
-                draw.text((x1 + 14, ty), label_line, fill="#111827", font=font)
-                ty += 16
-            draw.rectangle([x1 + 10, y2 - 22, x1 + 20, y2 - 12], fill="#ffffff", outline="#475569")
-            draw.rectangle([x1 + 24, y2 - 22, x1 + 34, y2 - 12], fill="#ffffff", outline="#475569")
-            draw.text((x1 + 46, y2 - 25), kind[:24], fill="#475569", font=font_small)
+            fill, outline = kind_color.get(kind, ("#d2e9f8", "#a5d2ee"))
+            draw.rounded_rectangle([x1, y1, x2, y2], radius=3, fill=fill, outline=outline, width=3)
+            ty = y1 + 10
+            for label_line in self._wrap_label(name, 20):
+                draw.text((x1 + 12, ty), label_line, fill="#111827", font=font)
+                ty += 13
+            icon_y = y2 - 23
+            draw.rectangle([x1 + 17, icon_y, x1 + 23, icon_y + 6], fill="#f7eee6", outline="#4b5563", width=1)
+            draw.rectangle([x1 + 28, icon_y + 10, x1 + 34, icon_y + 16], fill="#f7eee6", outline="#4b5563", width=1)
+            if kind == "Expression":
+                draw.text((x1 + 22, y2 - 24), "fx", fill="#895123", font=font_small)
+            elif "Target" in kind:
+                draw.rectangle([x1 + 19, y2 - 24, x1 + 34, y2 - 12], fill="#f3b179", outline="#4b5563", width=1)
 
         output = io.BytesIO()
         image.save(output, format="PNG")
@@ -1791,6 +1815,29 @@ class IdmcExportPackageGenerator:
         for name in names:
             layers.setdefault(name, 0)
         return layers
+
+    @staticmethod
+    def _longest_graph_path(names: list[str], edges: list[tuple[str, str]]) -> list[str]:
+        outgoing = {name: [] for name in names}
+        incoming = {name: 0 for name in names}
+        for source, target in edges:
+            if source in outgoing and target in outgoing:
+                outgoing[source].append(target)
+                incoming[target] += 1
+        starts = [name for name in names if incoming[name] == 0] or names[:1]
+        best: list[str] = []
+
+        def walk(name: str, path: list[str]) -> None:
+            nonlocal best
+            if len(path) > len(best):
+                best = path[:]
+            for target in outgoing.get(name, []):
+                if target not in path:
+                    walk(target, path + [target])
+
+        for start in starts:
+            walk(start, [start])
+        return best
 
     def _reference_package_preview_bytes(self, mapping_name: str) -> bytes | None:
         previews: list[bytes] = []
