@@ -82,6 +82,18 @@ class XmlRemediationEngine:
         """Handle remediate all for the migration workflow."""
 
         self.remediated_folder.mkdir(parents=True, exist_ok=True)
+        expected_outputs = {
+            f"{xml_path.stem}_remediated{xml_path.suffix.lower()}"
+            for xml_path in self._xml_files()
+        }
+        for stale_xml in self.remediated_folder.glob("*_remediated.xml"):
+            if stale_xml.name in expected_outputs:
+                continue
+            try:
+                stale_xml.chmod(0o666)
+                stale_xml.unlink()
+            except PermissionError:
+                continue
         target_updates, transform_updates = self._build_updates(self._read_csv(self.datatype_report))
         changes: list[XmlChange] = []
 

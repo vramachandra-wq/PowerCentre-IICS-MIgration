@@ -61,6 +61,13 @@ class IdmcExportPackageGenerator:
     CONNECTION_NAME = "DataWarehouse_PA"
     AGENT_GROUP_NAME = "PC Secure Agent Group"
     PARAMETER_FILE_DIRECTORY = "/JacobsAnalytics/IICS/Data_Integration/Param"
+    IMPORT_QUARANTINED_MAPPING_TASKS = {
+        "SDE_ORA_EmployeeDimension": (
+            "IDMC import raises DMappletSignature.isActive() null while materializing the Mapping Task "
+            "when this asset is remapped into Custom_SDE_SupplyChain. The Mapping/DTEMPLATE and dependent "
+            "mapplets are still imported; the source XML, graph JSON, and mapping images remain bundled."
+        )
+    }
 
     def __init__(
         self,
@@ -3383,9 +3390,28 @@ class IdmcExportPackageGenerator:
             key = str(resolved).lower()
             if key in seen or not resolved.exists() or resolved == self.package_path:
                 continue
+            if not self._is_trusted_client_native_source(resolved):
+                continue
             seen.add(key)
             result.append(resolved)
         return result
+
+    @staticmethod
+    def _is_trusted_client_native_source(source: Path) -> bool:
+        try:
+            with zipfile.ZipFile(source) as package:
+                if "exportMetadata.v2.json" not in package.namelist():
+                    return False
+                metadata = json.loads(package.read("exportMetadata.v2.json").decode("utf-8"))
+        except (OSError, zipfile.BadZipFile, KeyError, UnicodeDecodeError, json.JSONDecodeError):
+            return False
+        source_org_id = str(metadata.get("sourceOrgId", "")).strip().lower()
+        source_org_name = str(metadata.get("sourceOrgName", "")).strip().lower()
+        if source_org_id in {"generated", "client-native-remapped"}:
+            return False
+        if source_org_name in {"pc_iics_migration", ""}:
+            return False
+        return True
 
     @staticmethod
     def _ordered_unique_paths(paths: list[Path]) -> list[Path]:
@@ -3414,22 +3440,44 @@ class IdmcExportPackageGenerator:
                 names.add(obj["objectName"])
         return names
 
+    @staticmethod
+    def _native_package_mapping_types(source: Path) -> dict[str, set[str]]:
+        try:
+            with zipfile.ZipFile(source) as package:
+                if "exportMetadata.v2.json" not in package.namelist():
+                    return {}
+                metadata = json.loads(package.read("exportMetadata.v2.json").decode("utf-8"))
+        except (OSError, zipfile.BadZipFile, KeyError, UnicodeDecodeError, json.JSONDecodeError):
+            return {}
+        mapping_types: dict[str, set[str]] = {}
+        for obj in metadata.get("exportedObjects", []):
+            if obj.get("objectType") in {"DTEMPLATE", "MTT", "TASKFLOW"} and obj.get("objectName"):
+                mapping_types.setdefault(obj["objectName"], set()).add(obj["objectType"])
+        return mapping_types
+
     def _client_native_sources_for_mappings(self, mapping_assets: list[dict[str, Any]]) -> list[Path]:
         required = {asset.get("name") for asset in mapping_assets if asset.get("name")}
         if not required:
             return []
+        workflow_required = {
+            self._asset_name(str(asset.get("workflow_name", "")))
+            for asset in mapping_assets
+            if asset.get("workflow_name")
+        }
+        source_required = required | workflow_required
         coverage_by_source: list[tuple[Path, set[str]]] = []
         for source in self._client_native_source_candidates():
-            coverage = self._native_package_mapping_names(source) & required
+            coverage = self._native_package_mapping_names(source) & source_required
             if coverage:
                 coverage_by_source.append((source, coverage))
         selected: list[Path] = []
         covered: set[str] = set()
-        for mapping_name in sorted(required):
+        for mapping_name in sorted(source_required):
             exact_candidates = [
                 source
                 for source, coverage in coverage_by_source
                 if coverage == {mapping_name} and mapping_name.lower() in source.stem.lower()
+                and {"DTEMPLATE", "MTT"} <= self._native_package_mapping_types(source).get(mapping_name, set())
             ]
             if exact_candidates:
                 chosen = sorted(exact_candidates, key=lambda item: item.stat().st_mtime, reverse=True)[0]
@@ -3440,17 +3488,21 @@ class IdmcExportPackageGenerator:
                 continue
             selected.append(source)
             covered.update(coverage)
-            if covered == required:
+            if covered == source_required:
                 break
         selected = self._ordered_unique_paths(selected)
-        if covered != required:
-            missing = sorted(required - covered)
+        if not selected:
             self.logger.info(
                 "No complete native IDMC source export set found for mappings %s. Missing native exports for: %s",
                 sorted(required),
-                missing,
+                sorted(required),
             )
             return []
+        if not required <= covered:
+            self.logger.warning(
+                "Using partial native IDMC source export coverage. Missing importable native mapping exports for: %s",
+                sorted(required - covered),
+            )
         self.logger.info(
             "Using dynamic native IDMC source exports for mappings %s: %s",
             sorted(required),
@@ -3500,14 +3552,29 @@ class IdmcExportPackageGenerator:
         project_object: dict[str, Any] | None = None
         folder_object: dict[str, Any] | None = None
         mapping_names = {asset["name"] for asset in mapping_assets}
+        workflow_names = {
+            self._asset_name(str(asset.get("workflow_name", "")))
+            for asset in mapping_assets
+            if asset.get("workflow_name")
+        }
         folder_token = "__IDMC_TARGET_FOLDER__"
 
         for source in native_sources:
             with zipfile.ZipFile(source) as package:
                 metadata = json.loads(package.read("exportMetadata.v2.json").decode("utf-8"))
+                allowed_guids = self._client_native_allowed_object_guids(metadata, mapping_names, workflow_names)
                 old_projects, old_folders = self._client_native_remap_context(metadata, mapping_names)
                 replacements = {project: self.PROJECT_NAME for project in old_projects}
                 replacements.update({folder: folder_token for folder in old_folders})
+                allowed_members = {
+                    self._remap_client_native_member(
+                        self._client_native_member_for_object(obj),
+                        old_projects,
+                        old_folders,
+                    )
+                    for obj in metadata.get("exportedObjects", [])
+                    if obj.get("objectGuid") in allowed_guids or obj.get("objectType") in {"Project", "Folder"}
+                }
                 for obj in metadata.get("exportedObjects", []):
                     obj = json.loads(json.dumps(obj))
                     object_type = obj.get("objectType")
@@ -3522,6 +3589,10 @@ class IdmcExportPackageGenerator:
                             obj["objectName"] = self.folder_name
                             obj["path"] = f"/Explore/{self.PROJECT_NAME}"
                             folder_object = self._replace_client_native_json(obj, replacements, folder_token)
+                        continue
+                    if obj.get("objectGuid") not in allowed_guids:
+                        continue
+                    if self._is_import_quarantined_object(obj):
                         continue
                     obj["path"] = self._remap_client_native_path(str(obj.get("path", "")), old_projects, old_folders)
                     obj = self._replace_client_native_json(obj, replacements, folder_token)
@@ -3539,6 +3610,10 @@ class IdmcExportPackageGenerator:
                     ):
                         continue
                     target_member = self._remap_client_native_member(member, old_projects, old_folders)
+                    if target_member not in allowed_members:
+                        continue
+                    if self._is_import_quarantined_member(target_member):
+                        continue
                     content = package.read(member)
                     if member.endswith(".zip"):
                         mapping_name = Path(target_member).name.split(".")[0]
@@ -3560,13 +3635,18 @@ class IdmcExportPackageGenerator:
         if folder_object:
             ordered_objects.append(folder_object)
         exported_objects = ordered_objects + exported_objects
+        exported_objects, deduped_guid_map = self._dedupe_exported_objects_by_import_name(exported_objects)
+        exported_objects, quarantine_guid_map = self._remove_refs_to_import_quarantined_tasks(exported_objects)
+        deduped_guid_map.update(quarantine_guid_map)
+        if deduped_guid_map:
+            entries = self._replace_removed_duplicate_guids(entries, deduped_guid_map)
 
         self._add_client_native_support_artifacts(entries, xml_files, mapping_assets, now)
+        self._add_client_native_reference_analysis_artifact(entries, mapping_assets, native_sources, now)
         entries["exportMetadata.v2.json"] = self._json_bytes(
             {
                 "name": self.package_name.removesuffix(".zip"),
-                "sourceOrgId": "client-native-remapped",
-                "sourceOrgName": "PC_IICS_MIGRATION",
+                **self._client_native_source_org(native_sources),
                 "exportedObjects": exported_objects,
             }
         )
@@ -3589,6 +3669,153 @@ class IdmcExportPackageGenerator:
             package_path=str(self.package_path),
             staging_folder=str(self.staging_folder),
         )
+
+    def _is_import_quarantined_object(self, obj: dict[str, Any]) -> bool:
+        return (
+            obj.get("objectName") in self.IMPORT_QUARANTINED_MAPPING_TASKS
+            and obj.get("objectType") in {"MTT", "TASKFLOW"}
+        )
+
+    def _is_import_quarantined_member(self, member: str) -> bool:
+        member_name = Path(member).name
+        for mapping_name in self.IMPORT_QUARANTINED_MAPPING_TASKS:
+            if member_name in {f"{mapping_name}.MTT.zip", f"{mapping_name}.TASKFLOW.xml"}:
+                return True
+        return False
+
+    def _remove_refs_to_import_quarantined_tasks(
+        self,
+        exported_objects: list[dict[str, Any]],
+    ) -> tuple[list[dict[str, Any]], dict[str, str]]:
+        quarantined_guids = {
+            str(obj.get("objectGuid"))
+            for obj in exported_objects
+            if self._is_import_quarantined_object(obj) and obj.get("objectGuid")
+        }
+        if not quarantined_guids:
+            return exported_objects, {}
+        cleaned: list[dict[str, Any]] = []
+        for obj in exported_objects:
+            if str(obj.get("objectGuid")) in quarantined_guids:
+                continue
+            metadata = obj.get("metadata")
+            if isinstance(metadata, dict):
+                refs = metadata.get("objectRefs")
+                if isinstance(refs, list):
+                    metadata["objectRefs"] = [ref for ref in refs if ref not in quarantined_guids]
+            cleaned.append(obj)
+        return cleaned, {guid: "" for guid in quarantined_guids}
+
+    @staticmethod
+    def _client_native_source_org(native_sources: list[Path]) -> dict[str, str]:
+        for source in native_sources:
+            try:
+                with zipfile.ZipFile(source) as package:
+                    metadata = json.loads(package.read("exportMetadata.v2.json").decode("utf-8"))
+            except (OSError, zipfile.BadZipFile, KeyError, UnicodeDecodeError, json.JSONDecodeError):
+                continue
+            source_org_id = str(metadata.get("sourceOrgId", "")).strip()
+            source_org_name = str(metadata.get("sourceOrgName", "")).strip()
+            if source_org_id and source_org_name and source_org_id.lower() not in {"generated", "client-native-remapped"}:
+                return {"sourceOrgId": source_org_id, "sourceOrgName": source_org_name}
+        return {"sourceOrgId": "gO4aVWAxgK0lY2UdXmECWZ", "sourceOrgName": "Jacobs"}
+
+    def _client_native_allowed_object_guids(
+        self,
+        metadata: dict[str, Any],
+        mapping_names: set[str],
+        workflow_names: set[str],
+    ) -> set[str]:
+        objects = [obj for obj in metadata.get("exportedObjects", []) if obj.get("objectGuid")]
+        by_guid = {obj["objectGuid"]: obj for obj in objects}
+        mapping_layer_by_name: dict[str, dict[str, dict[str, Any]]] = {}
+        for obj in objects:
+            object_type = str(obj.get("objectType", ""))
+            object_name = str(obj.get("objectName", ""))
+            if object_type in {"DTEMPLATE", "MTT", "TASKFLOW"} and object_name:
+                mapping_layer_by_name.setdefault(object_name, {})[object_type] = obj
+
+        allowed: set[str] = set()
+        queue: list[str] = []
+
+        def add(obj: dict[str, Any] | None) -> None:
+            if not obj:
+                return
+            guid = obj.get("objectGuid")
+            if guid and guid not in allowed:
+                allowed.add(guid)
+                queue.append(guid)
+
+        for name in mapping_names:
+            by_type = mapping_layer_by_name.get(name, {})
+            add(by_type.get("DTEMPLATE"))
+            add(by_type.get("MTT"))
+        for name in workflow_names | mapping_names:
+            add(mapping_layer_by_name.get(name, {}).get("TASKFLOW"))
+
+        while queue:
+            guid = queue.pop(0)
+            obj = by_guid.get(guid, {})
+            for ref in (obj.get("metadata") or {}).get("objectRefs") or []:
+                ref_obj = by_guid.get(ref)
+                if ref_obj:
+                    add(ref_obj)
+        return allowed
+
+    @staticmethod
+    def _client_native_member_for_object(obj: dict[str, Any]) -> str:
+        path = str(obj.get("path", "")).strip("/")
+        name = str(obj.get("objectName", ""))
+        object_type = str(obj.get("objectType", ""))
+        extension = ".xml" if object_type == "TASKFLOW" else ".json" if object_type in {"Project", "Folder"} else ".zip"
+        member_name = f"{name}.{object_type}{extension}"
+        return f"{path}/{member_name}" if path else member_name
+
+    def _dedupe_exported_objects_by_import_name(
+        self,
+        exported_objects: list[dict[str, Any]],
+    ) -> tuple[list[dict[str, Any]], dict[str, str]]:
+        """Remove duplicate import-visible objects after merging reference exports.
+
+        IDMC rejects packages that contain two assets with the same name, type,
+        and target location. Keeping the first object preserves the higher
+        priority source selected by _client_native_sources_for_mappings().
+        """
+
+        seen: set[tuple[str, str, str]] = set()
+        kept_guid_by_key: dict[tuple[str, str, str], str] = {}
+        guid_replacements: dict[str, str] = {}
+        deduped: list[dict[str, Any]] = []
+        for obj in exported_objects:
+            key = (
+                str(obj.get("path", "")),
+                str(obj.get("objectType", "")),
+                str(obj.get("objectName", "")),
+            )
+            if key in seen:
+                old_guid = str(obj.get("objectGuid", ""))
+                kept_guid = kept_guid_by_key.get(key, "")
+                if old_guid and kept_guid and old_guid != kept_guid:
+                    guid_replacements[old_guid] = kept_guid
+                continue
+            seen.add(key)
+            if obj.get("objectGuid"):
+                kept_guid_by_key[key] = str(obj["objectGuid"])
+            deduped.append(obj)
+        if guid_replacements:
+            deduped = self._replace_json_strings(deduped, guid_replacements)
+        return deduped, guid_replacements
+
+    def _replace_removed_duplicate_guids(
+        self,
+        entries: dict[str, bytes],
+        guid_replacements: dict[str, str],
+    ) -> dict[str, bytes]:
+        return {
+            name: self._replace_text_bytes(content, guid_replacements)
+            for name, content in entries.items()
+        }
+
     def _rewrite_client_native_nested_zip(
         self,
         source_bytes: bytes,
@@ -3695,6 +3922,64 @@ class IdmcExportPackageGenerator:
                     }
                 )
         entries["MappingImages/index.json"] = json.dumps(image_index, indent=2).encode("utf-8")
+
+    def _add_client_native_reference_analysis_artifact(
+        self,
+        entries: dict[str, bytes],
+        mapping_assets: list[dict[str, Any]],
+        native_sources: list[Path],
+        now: datetime,
+    ) -> None:
+        required = sorted(asset["name"] for asset in mapping_assets)
+        source_rows = []
+        covered: set[str] = set()
+        for source in native_sources:
+            mappings = sorted(self._native_package_mapping_names(source))
+            matched = sorted(set(mappings) & set(required))
+            covered.update(matched)
+            source_rows.append(
+                {
+                    "sourceZip": str(source),
+                    "nativeMappings": mappings,
+                    "matchedInputMappings": matched,
+                    "strategy": "reuse-native-export-internals-and-remap-project-folder",
+                }
+            )
+        report = {
+            "generatedAt": self._timestamp(now),
+            "targetProject": self.PROJECT_NAME,
+            "targetFolder": self.folder_name,
+            "requiredMappings": required,
+            "coveredMappings": sorted(covered),
+            "missingNativeReferences": sorted(set(required) - covered),
+            "importQuarantinedMappingTasks": [
+                {"mappingName": name, "reason": reason}
+                for name, reason in sorted(self.IMPORT_QUARANTINED_MAPPING_TASKS.items())
+            ],
+            "rulesApplied": [
+                "Preserve DTEMPLATE/MTT/TASKFLOW internals from client-tested native exports.",
+                "Remap only project and folder paths into the target IDMC location.",
+                "Regenerate package manifest, contents CSV, fileRecord sizes, and exportPackage checksum.",
+                "Preserve objectRefs, repo handles, runtime metadata, and dependency artifacts.",
+                "Bundle source XML, graph JSON, and mapping preview images as support artifacts.",
+            ],
+            "classification": {
+                "implemented": [
+                    "ZIP hierarchy normalization",
+                    "manifest/objectRef preservation",
+                    "DTEMPLATE fileRecord validation",
+                    "native dependency preservation",
+                    "mapping image bundling",
+                    "checksum validation",
+                ],
+                "intentionallyNotImplemented": [
+                    "Synthetic DTEMPLATE canvas metadata injection. It previously caused incorrect IDMC image rendering.",
+                    "Mapping-specific hardcoded graph rewrites for unsupported future mappings.",
+                ],
+            },
+            "sources": source_rows,
+        }
+        entries["ValidationReports/native_reference_analysis.json"] = json.dumps(report, indent=2).encode("utf-8")
 
     @staticmethod
     def _remap_client_native_path(path: str, old_projects: set[str], old_folders: set[str]) -> str:
@@ -3865,7 +4150,20 @@ class IdmcExportPackageGenerator:
         return f"{name}_{index}"
 
     def _xml_files(self) -> list[Path]:
-        return sorted({path.resolve() for path in [*self.remediated_folder.glob("*.XML"), *self.remediated_folder.glob("*.xml")]})
+        candidates = sorted({path.resolve() for path in [*self.remediated_folder.glob("*.XML"), *self.remediated_folder.glob("*.xml")]})
+        input_folder = self._resolve_path(self.config.paths.xml_folder)
+        if not input_folder.exists():
+            return candidates
+        input_stems = {
+            path.stem.lower()
+            for path in [*input_folder.glob("*.XML"), *input_folder.glob("*.xml")]
+        }
+        filtered = [
+            path
+            for path in candidates
+            if re.sub(r"_remediated$", "", path.stem, flags=re.IGNORECASE).lower() in input_stems
+        ]
+        return filtered or candidates
 
     def _resolve_path(self, path: str | Path) -> Path:
         candidate = Path(path)
