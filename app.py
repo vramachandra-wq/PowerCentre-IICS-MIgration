@@ -212,6 +212,8 @@ def main() -> None:
             )
         else:
             # Generate a new IICS package from the parsed PowerCenter XML files.
+            from business.export.idmc_export_package import generate_individual_idmc_export_packages
+
             generator = IICSPackageGenerator(
                 parsed_json_dir=Path(config.paths.output_folder) / "parsed_json",
                 remediated_xml_dir=Path(config.paths.output_folder) / "remediated_xml",
@@ -223,6 +225,13 @@ def main() -> None:
             logger.info(
                 "IICS package generation completed. assets=%s output=%s",
                 summary["total_assets"], summary["output_zip"],
+            )
+            individual_summary = generate_individual_idmc_export_packages(config=config, logger=logger)
+            logger.info(
+                "Individual IDMC package generation completed. input_xml=%s packages=%s output_folder=%s",
+                individual_summary.input_xml_count,
+                individual_summary.package_count,
+                individual_summary.output_folder,
             )
     else:
         from business.parser.xml_parser import XMLParser
@@ -268,7 +277,7 @@ def run_all(
     from data.repositories.metadata_repository import CanonicalMetadataBuilder
     from reports.html_report import EnterpriseReportBuilder
     from automation.automated_validation_framework import AutomatedValidationFramework
-    from business.export.idmc_export_package import generate_idmc_export_package
+    from business.export.idmc_export_package import generate_idmc_export_package, generate_individual_idmc_export_packages
 
     logger.info("Starting full metadata, validation, and remediation run.")
 
@@ -327,6 +336,7 @@ def run_all(
     existing_package = package_path.read_bytes() if package_path.exists() else None
     try:
         idmc_export_summary = generate_idmc_export_package(config=config, logger=logger)
+        individual_idmc_export_summary = generate_individual_idmc_export_packages(config=config, logger=logger)
     except Exception:
         if package_path.exists():
             package_path.unlink()
@@ -349,6 +359,7 @@ def run_all(
         "xml": xml_summary,
         "automation": automation_summary,
         "idmc_export": idmc_export_summary,
+        "individual_idmc_exports": individual_idmc_export_summary,
     }
 
 

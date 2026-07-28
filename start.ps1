@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('canonical','parse','explore','classify','persist','reports','enterprise','automation','all')]
+    [ValidateSet('canonical','parse','explore','classify','persist','reports','enterprise','automation','iics-package','all')]
     [string]$Mode   = $(if ($env:MODE)   { $env:MODE }   else { 'all' }),
     [string]$Config = $(if ($env:CONFIG) { $env:CONFIG } else { 'common/config/config.json' }),
     [string]$LogDir = $(if ($env:LOG_DIR){ $env:LOG_DIR } else { 'output' }),
@@ -137,6 +137,24 @@ function Invoke-Pipeline ([string]$Label, [string]$Exe, [string[]]$SArgs,
     }
     Write-Host "  $Label completed successfully" -ForegroundColor Green
 }
+
+function Assert-IndividualPackages ([string]$InputXmlDir, [string]$OutputDir) {
+    $expected = @(Get-ChildItem -LiteralPath $InputXmlDir -File -ErrorAction SilentlyContinue | Where-Object {
+        $_.Extension -in @('.xml', '.XML')
+    })
+    $packageDir = Join-Path $OutputDir 'individual_idmc_exports'
+    $actual = @()
+    if (Test-Path -LiteralPath $packageDir -PathType Container) {
+        $actual = @(Get-ChildItem -LiteralPath $packageDir -File -Filter '*.zip' | Where-Object {
+            $_.BaseName -in $expected.BaseName
+        })
+    }
+    if ($actual.Count -lt $expected.Count) {
+        throw "Individual ZIP generation incomplete. Expected $($expected.Count) package(s), found $($actual.Count) in $packageDir."
+    }
+    Write-Host "  Individual ZIP packages: $($actual.Count)/$($expected.Count) generated in $packageDir" -ForegroundColor Green
+}
+
 function Start-Service ([string]$Label, [string]$Exe, [string[]]$SArgs,
                         [string]$WorkDir, [string]$StdOut, [string]$StdErr,
                         [string]$PidPath, [int]$HealthPort = 0) {
@@ -274,6 +292,12 @@ try {
         -StdOut  (Join-Path $logPath 'app.log') `
         -StdErr  (Join-Path $logPath 'app.err') `
         -PidPath (Join-Path $logPath 'app.pid')
+
+    if ($Mode -in @('all', 'iics-package')) {
+        Assert-IndividualPackages `
+            -InputXmlDir $inputXml `
+            -OutputDir   (Resolve-FullPath 'output' $rootDir)
+    }
 
     Write-Host ''
     Write-Host '  --> FastAPI / Uvicorn (port 8000)' -ForegroundColor White
