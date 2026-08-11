@@ -34,7 +34,7 @@
   "ai_validation": {
     "model_name": "Qwen/Qwen3-8B",
     "hf_token_env": "HF_TOKEN",
-    "max_records": 200,
+    "max_records": 90,
     "max_new_tokens": 96,
     "temperature": 0.0,
     "timeout_seconds": 60,
@@ -46,16 +46,11 @@
     "enabled": true,
     "model_name": "Qwen/Qwen3-8B",
     "hf_token_env": "HF_TOKEN",
-    "max_records": 12,
+    "max_records": 5,
     "max_new_tokens": 192,
     "temperature": 0.0,
     "timeout_seconds": 60,
     "provider": "auto",
     "max_workers": 16
-  },
-  "iics_success": {
-    "criteria_path": "common/config/iics_success_criteria.json",
-    "multi_session_reference": "reference_packages/iics_success/multi_session/TaskFlow_SDE_EmployeeHeadCount_Informatica_ConvTool.zip",
-    "single_session_reference": "reference_packages/iics_success/single_session/JEG_SIL_WC_PBCS_BUDGET_ACTUALS_F-1784088987453.zip"
   }
 }

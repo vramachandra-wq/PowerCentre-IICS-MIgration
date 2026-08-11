@@ -10,7 +10,6 @@ import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from business.validation.export_metadata_builder import ExportMetadataBuilder
 from business.validation.xml_comparison_engine import XmlComparisonEngine
 from business.validation.xml_remediation_engine import XmlChange, XmlRemediationEngine
 
@@ -38,12 +37,10 @@ class BatchXmlProcessor:
         self._write_xml_remediation_report(changes)
         self._write_migration_improvement_report(changes)
         self._write_consolidated_dashboard(changes)
-        export_summary = ExportMetadataBuilder(output_folder=self.output_folder).build_and_write()
         return {
             "xml_files": len(list(self.remediation_engine.remediated_folder.glob("*_remediated.xml"))),
             "changes": len([change for change in changes if change.status == "AUTO_FIXED"]),
             "ai_assistance_flags": len([change for change in changes if change.status == "AI_ASSISTANCE_REQUIRED"]),
-            "export_metadata": export_summary,
         }
 
     def _write_xml_remediation_report(self, changes: list[XmlChange]) -> None:

@@ -44,27 +44,16 @@ def parse_args() -> argparse.Namespace:
             "reports",
             "enterprise",
             "automation",
-            "iics-package",
             "all",
         ],
         default="canonical",
         help=(
             "Run canonical model build, raw metadata parser, XML structure explorer, complexity classifier, "
             "report builder, MySQL persistence, the enterprise pipeline, automated validation, "
-            "IICS package processing, "
             "or all metadata, validation, remediation, and automation outputs."
         ),
     )
-    parser.add_argument(
-        "--iics-zip",
-        default=None,
-        help="Path to client-provided IICS export zip. Required when --mode iics-package.",
-    )
-    parser.add_argument(
-        "--fix-checksum",
-        action="store_true",
-        help="With --mode iics-package and --iics-zip, rewrite exportPackage.chksum only.",
-    )
+
     parser.add_argument(
         "--config",
         default="common/config/config.json",
@@ -182,48 +171,7 @@ def main() -> None:
 
         summary = AutomatedValidationFramework(config_path=args.automation_config).run()
         logger.info("Automated validation framework completed. %s", summary)
-    elif args.mode == "iics-package":
-        from business.iics.iics_package_processor import IICSPackageProcessor
-        from business.iics.iics_package_generator import IICSPackageGenerator
-        from business.iics.checksum_utils import rewrite_zip_checksums, validate_zip_checksums
 
-        if args.fix_checksum:
-            if not args.iics_zip:
-                raise ValueError("--iics-zip is required when --fix-checksum is set")
-            out_dir = Path(config.paths.output_folder) / "iics"
-            out_dir.mkdir(parents=True, exist_ok=True)
-            out_zip = out_dir / "iics_checksum_fixed.zip"
-            rewrite_zip_checksums(args.iics_zip, out_zip)
-            ok, errors = validate_zip_checksums(out_zip)
-            if not ok:
-                raise RuntimeError(f"Checksum fix failed validation: {errors[0]}")
-            logger.info("Checksum fixed and validated. output=%s", out_zip)
-        elif args.iics_zip:
-            # Validate/repackage a client-supplied zip
-            processor = IICSPackageProcessor(
-                input_zip=args.iics_zip,
-                output_dir=Path(config.paths.output_folder) / "iics",
-                logger=logger,
-            )
-            summary = processor.process()
-            logger.info(
-                "IICS package processing completed. valid=%s invalid=%s output=%s",
-                summary["valid_assets"], summary["invalid_assets"], summary["output_zip"],
-            )
-        else:
-            # Generate a new IICS package from the parsed PowerCenter XML files.
-            generator = IICSPackageGenerator(
-                parsed_json_dir=Path(config.paths.output_folder) / "parsed_json",
-                remediated_xml_dir=Path(config.paths.output_folder) / "remediated_xml",
-                output_dir=Path(config.paths.output_folder),
-                output_zip_name="Custom_Project_Export.zip",
-                logger=logger,
-            )
-            summary = generator.generate()
-            logger.info(
-                "IICS package generation completed. assets=%s output=%s",
-                summary["total_assets"], summary["output_zip"],
-            )
     else:
         from business.parser.xml_parser import XMLParser
         from data.repositories.metadata_repository import CanonicalMetadataBuilder
@@ -268,7 +216,6 @@ def run_all(
     from data.repositories.metadata_repository import CanonicalMetadataBuilder
     from reports.html_report import EnterpriseReportBuilder
     from automation.automated_validation_framework import AutomatedValidationFramework
-    from business.export.idmc_export_package import generate_idmc_export_package
 
     logger.info("Starting full metadata, validation, and remediation run.")
 
@@ -323,17 +270,6 @@ def run_all(
 
         automation_framework.config = replace(automation_framework.config, execute_existing_modules=False)
     automation_summary = automation_framework.run()
-    package_path = Path(config.paths.output_folder) / "Custom_Project_Export.zip"
-    existing_package = package_path.read_bytes() if package_path.exists() else None
-    try:
-        idmc_export_summary = generate_idmc_export_package(config=config, logger=logger)
-    except Exception:
-        if package_path.exists():
-            package_path.unlink()
-        if existing_package is not None:
-            package_path.write_bytes(existing_package)
-        logger.exception("IDMC export package generation failed after XML remediation completed.")
-        raise
 
     return {
         "enterprise": enterprise_summary,
@@ -348,7 +284,6 @@ def run_all(
         },
         "xml": xml_summary,
         "automation": automation_summary,
-        "idmc_export": idmc_export_summary,
     }
 
 
